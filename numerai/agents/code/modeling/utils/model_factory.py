@@ -11,10 +11,17 @@ def build_model(
     if model_type == "LGBMRegressor":
         from agents.code.modeling.models.lgbm_regressor import LGBMRegressor
         model = LGBMRegressor(feature_cols=feature_cols, **model_params)
+    elif model_type == "TorchTabularRegressor":
+        from agents.code.modeling.models.torch_tabular_regressor import (
+            TorchTabularRegressor,
+        )
+
+        model = TorchTabularRegressor(feature_cols=feature_cols, **model_params)
     else:
         raise ValueError(
             "Unsupported model type: "
-            f"{model_type}. Supported types: LGBMRegressor"
+            f"{model_type}. Supported types: LGBMRegressor, "
+            "TorchTabularRegressor"
         )
 
     target_transform = model_config.get("target_transform")

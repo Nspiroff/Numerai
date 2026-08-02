@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable, Sequence
+from typing import Any, Iterable, Sequence
 
 import pandas as pd
 
@@ -18,7 +18,7 @@ _DEFAULT_X_GROUPS = ("features", "era", "benchmark_models")
 
 @dataclass(frozen=True)
 class ModelDataBatch:
-    X: pd.DataFrame
+    X: Any
     y: pd.Series
     era: pd.Series
     id: pd.Series | None

@@ -133,6 +133,43 @@ def build_oof_predictions(
         model.fit(train_data.X, train_data.y)
         preds = model.predict(val_data.X)
 
+        model_diagnostics = {}
+        best_epoch = getattr(model, "best_epoch_", None)
+        if best_epoch is not None:
+            model_diagnostics["best_epoch"] = int(best_epoch)
+        n_parameters = getattr(model, "n_parameters_", None)
+        if n_parameters is not None:
+            model_diagnostics["n_parameters"] = int(n_parameters)
+        training_history = getattr(model, "training_history_", None)
+        if training_history:
+            model_diagnostics["epochs_ran"] = len(training_history)
+            model_diagnostics["best_val_loss"] = float(
+                min(row["val_loss"] for row in training_history)
+            )
+            model_diagnostics["final_train_loss"] = float(
+                training_history[-1]["train_loss"]
+            )
+        if getattr(model, "data_mode_", None) == "disk_feature_store":
+            model_diagnostics["data_mode"] = "disk_feature_store"
+            for attribute, key in (
+                ("disk_train_rows_", "disk_train_rows"),
+                ("disk_validation_rows_", "disk_validation_rows"),
+                ("disk_prediction_batches_", "disk_prediction_batches"),
+            ):
+                value = getattr(model, attribute, None)
+                if value is not None:
+                    model_diagnostics[key] = int(value)
+            batches_per_epoch = getattr(model, "disk_batches_per_epoch_", None)
+            rows_per_epoch = getattr(model, "disk_rows_per_epoch_", None)
+            if batches_per_epoch is not None:
+                model_diagnostics["disk_batches_per_epoch"] = [
+                    int(value) for value in batches_per_epoch
+                ]
+            if rows_per_epoch is not None:
+                model_diagnostics["disk_rows_per_epoch"] = [
+                    int(value) for value in rows_per_epoch
+                ]
+
         fold_predictions = {}
         if id_col and val_data.id is not None:
             fold_predictions[id_col] = _as_array(val_data.id)
@@ -148,6 +185,7 @@ def build_oof_predictions(
                 "val_eras": len(val_eras),
                 "train_rows": int(train_rows),
                 "val_rows": int(val_rows),
+                "model_diagnostics": model_diagnostics or None,
             }
         )
 
@@ -196,6 +234,8 @@ def _subset_data(data: ModelDataBatch, max_samples: int, seed: int) -> ModelData
 def _subset_value(value, indices):
     if value is None:
         return None
+    if getattr(value, "is_disk_feature_view", False):
+        return value.take(indices)
     if hasattr(value, "iloc"):
         return value.iloc[indices]
     return value[indices]

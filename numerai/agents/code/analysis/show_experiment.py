@@ -190,8 +190,13 @@ def _per_era_bmc(
     benchmark: pd.DataFrame,
     benchmark_col: str,
 ) -> pd.Series:
+    scoring_df = df
+    if benchmark_col in df.columns:
+        # Benchmark-base rows are already enriched for display metrics. Reattach
+        # from the authoritative source so strict id/era validation still runs.
+        scoring_df = df.drop(columns=benchmark_col)
     enriched = numerai_metrics.attach_benchmark_predictions(
-        df,
+        scoring_df,
         benchmark,
         benchmark_col,
         era_col=era_col,
