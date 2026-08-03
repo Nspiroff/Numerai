@@ -128,7 +128,15 @@ def build_oof_predictions(
             )
 
         model = build_model(
-            model_type, model_params, model_config, feature_cols=feature_cols
+            model_type,
+            model_params,
+            model_config,
+            feature_cols=feature_cols,
+            disk_materialization_max_rows=(
+                max_train_samples
+                if getattr(train_data.X, "is_disk_feature_view", False)
+                else None
+            ),
         )
         model.fit(train_data.X, train_data.y)
         preds = model.predict(val_data.X)
@@ -149,11 +157,23 @@ def build_oof_predictions(
             model_diagnostics["final_train_loss"] = float(
                 training_history[-1]["train_loss"]
             )
+        effective_device_type = getattr(model, "effective_device_type_", None)
+        if effective_device_type is not None:
+            model_diagnostics["effective_device_type"] = str(
+                effective_device_type
+            )
+        gpu_fallback_used = getattr(model, "gpu_fallback_used_", None)
+        if gpu_fallback_used is not None:
+            model_diagnostics["gpu_fallback_used"] = bool(gpu_fallback_used)
         if getattr(model, "data_mode_", None) == "disk_feature_store":
             model_diagnostics["data_mode"] = "disk_feature_store"
             for attribute, key in (
                 ("disk_train_rows_", "disk_train_rows"),
                 ("disk_validation_rows_", "disk_validation_rows"),
+                (
+                    "disk_prediction_batch_size_",
+                    "disk_prediction_batch_size",
+                ),
                 ("disk_prediction_batches_", "disk_prediction_batches"),
             ):
                 value = getattr(model, attribute, None)

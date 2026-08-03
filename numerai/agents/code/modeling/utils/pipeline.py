@@ -393,7 +393,8 @@ def run_training(
     nan_missing_all_twos = preprocessing_config.get("nan_missing_all_twos", False)
     missing_value = preprocessing_config.get("missing_value", 2.0)
 
-    max_train_samples = training_config.get("max_train_samples")
+    raw_max_train_samples = training_config.get("max_train_samples")
+    max_train_samples = raw_max_train_samples
     if max_train_samples is not None:
         max_train_samples = int(max_train_samples)
     sample_seed = int(training_config.get("sample_seed", 1337))
@@ -475,10 +476,20 @@ def run_training(
                 pred_col=pred_col,
             )
     else:
-        if model_type != "TorchTabularRegressor":
+        disk_model_types = {"LGBMRegressor", "TorchTabularRegressor"}
+        if model_type not in disk_model_types:
             raise ValueError(
                 "training.data_mode='disk_feature_store' currently requires "
-                "model.type='TorchTabularRegressor'."
+                "model.type to be 'LGBMRegressor' or 'TorchTabularRegressor'."
+            )
+        if model_type == "LGBMRegressor" and (
+            isinstance(raw_max_train_samples, bool)
+            or not isinstance(raw_max_train_samples, int)
+            or max_train_samples <= 0
+        ):
+            raise ValueError(
+                "Disk LGBMRegressor training requires training.max_train_samples "
+                "to be an explicit positive integer materialization cap."
             )
         if nan_missing_all_twos:
             raise ValueError(
