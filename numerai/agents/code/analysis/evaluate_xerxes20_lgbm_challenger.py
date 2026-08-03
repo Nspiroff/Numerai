@@ -55,6 +55,13 @@ EXPECTED_LIGHTGBM_DLL_SIZE = 4_169_216
 EXPECTED_LIGHTGBM_DLL_SHA256 = (
     "2ab79db409bba74a97b40485126528358058ebec914cac176e38d9fb1bfdb356"
 )
+TWO_SEED_RECEIPT_SHA256 = (
+    "960b299f85bc68dfdb6c84a88d38008058b6f6c38aee8cfc0887850ed03bf95c"
+)
+TWO_SEED_PREDICTION_SHA256 = {
+    "seed1337": "196f56053eb23a04d32c80118dd90e99c41290c99cefcf1de2afd05bb1c4597e",
+    "seed2027": "58027368888ba806383003acb8cdbcc6252223b0b7539537c66d7cedd94601e4",
+}
 
 ID_COLUMN = "id"
 ERA_COLUMN = "era"
@@ -1575,6 +1582,12 @@ def load_frozen_two_seed_residual(
     seed2027_path: Path,
     ender_manifest_path: Path,
 ) -> tuple[np.ndarray, dict[str, str]]:
+    receipt_hash = _sha256_file(receipt_path)
+    _exact_equal(
+        receipt_hash,
+        TWO_SEED_RECEIPT_SHA256,
+        "two-seed stability receipt hash",
+    )
     receipt = _load_json(receipt_path, "two-seed stability receipt")
     _exact_equal(receipt.get("experiment"), "ender20_seed_ensemble_stability_v53",
                  "two-seed receipt experiment")
@@ -1587,7 +1600,7 @@ def load_frozen_two_seed_residual(
     semantics_receipt = inputs.get("prediction_semantics")
     _require(isinstance(semantics_receipt, dict), "Two-seed semantics receipt is missing.")
     raw_signals: list[np.ndarray] = []
-    hashes: dict[str, str] = {"receipt": _sha256_file(receipt_path)}
+    hashes: dict[str, str] = {"receipt": receipt_hash}
     for label, path, receipt_key, semantics_key in (
         ("seed1337", seed1337_path, "seed1337_predictions",
          "scale_disk_tabm_k64_train500k"),
@@ -1597,6 +1610,11 @@ def load_frozen_two_seed_residual(
         artifact_receipt = inputs.get(receipt_key)
         _require(isinstance(artifact_receipt, dict), f"Two-seed {label} receipt is missing.")
         actual_hash = _sha256_file(path)
+        _exact_equal(
+            actual_hash,
+            TWO_SEED_PREDICTION_SHA256[label],
+            f"frozen {label} prediction hash",
+        )
         _exact_equal(actual_hash, artifact_receipt.get("sha256"), f"{label} prediction hash")
         expected_semantics = semantics_receipt.get(semantics_key)
         _require(isinstance(expected_semantics, dict), f"{label} semantics receipt is missing.")

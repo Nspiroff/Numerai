@@ -185,6 +185,7 @@ class GpuRuntimeProvenanceTests(unittest.TestCase):
             xerxes.EXPECTED_LIGHTGBM_DLL_SHA256,
         )
 
+
     def test_gpu_runtime_schema_fails_closed_even_with_mocked_file_hash(self) -> None:
         receipt = json.loads(self._runtime_path().read_text(encoding="utf-8"))
         del receipt["proof"]["wrapper_gpu_fallback_used"]
@@ -225,6 +226,41 @@ class GpuRuntimeProvenanceTests(unittest.TestCase):
                 xerxes.XerxesEvaluationError, "Python major/minor"
             ):
                 xerxes.verify_live_gpu_runtime(Path("gpu_runtime.json"))
+
+
+class FrozenComparatorProvenanceTests(unittest.TestCase):
+    def test_two_seed_receipt_and_predictions_are_pinned(self) -> None:
+        self.assertEqual(
+            xerxes.TWO_SEED_RECEIPT_SHA256,
+            "960b299f85bc68dfdb6c84a88d38008058b6f6c38aee8cfc0887850ed03bf95c",
+        )
+        self.assertEqual(
+            xerxes.TWO_SEED_PREDICTION_SHA256,
+            {
+                "seed1337": (
+                    "196f56053eb23a04d32c80118dd90e99c41290c99cefcf1de2afd05bb1c4597e"
+                ),
+                "seed2027": (
+                    "58027368888ba806383003acb8cdbcc6252223b0b7539537c66d7cedd94601e4"
+                ),
+            },
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            receipt = Path(tmp) / "receipt.json"
+            receipt.write_text("{}", encoding="utf-8")
+            missing = Path(tmp) / "missing"
+            with self.assertRaisesRegex(
+                xerxes.XerxesEvaluationError,
+                "two-seed stability receipt hash",
+            ):
+                xerxes.load_frozen_two_seed_residual(
+                    None,  # type: ignore[arg-type]
+                    receipt,
+                    missing,
+                    missing,
+                    missing,
+                )
+
 
 class ConfirmationGateTests(unittest.TestCase):
     def _summaries(self) -> dict[str, dict]:
