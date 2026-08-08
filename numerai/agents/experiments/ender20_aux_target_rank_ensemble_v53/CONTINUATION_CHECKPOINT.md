@@ -4,7 +4,7 @@ Date: 2026-08-08
 
 Branch: `agent/optimized-ender20-model`
 
-State: `SCOUT_COMPONENTS_SEALED_NOT_CALIBRATED`
+State: `STOP_NO_ELIGIBLE_CANDIDATE`
 
 Frozen pre-scoring protocol commit:
 `ef4ee304d6088f10d27e4d49a80d67ec925dbbf3`
@@ -20,7 +20,11 @@ training authority.
 
 - Jasper, Teager2b, Victor, and Tyler each completed exactly one authorized
   GPU Scout run and each has a finalized non-scoring seal.
-- No Scout calibration or locked Ender20 metric has been computed.
+- Scout calibration completed exactly once over the authorized 164-era slice.
+  None of the five frozen Tyler-weight candidates passed every calibration
+  check, so the experiment stopped at `STOP_NO_ELIGIBLE_CANDIDATE`.
+- No Scout locked Ender20 metric has been computed; the 50 locked eras remain
+  unopened.
 - No confirmation component has been trained or scored.
 - No final model has been fit or packaged.
 - Nothing has been uploaded, assigned, submitted, staked, or changed in the
@@ -28,6 +32,8 @@ training authority.
 - The eight new Scout result/prediction files and their immutable receipt
   chains now exist locally and must not be deleted, renamed, overwritten, or
   rerun.
+- The finalized calibration receipt now exists locally and must not be
+  deleted, renamed, overwritten, substituted, or rerun.
 - All ten confirmation result/prediction destinations remain absent.
 - The unrelated untracked `.gpu-lgbm-source-build/` directory remains
   protected and is intentionally excluded from Git.
@@ -204,23 +210,47 @@ these receipts.
   - prediction SHA:
     `3b4903d2c3e5b38bd0a2c6562ebaa168eaa431e671b97174b95cb822819b6c32`
 
+## Scout calibration result
+
+The frozen calibration stage revalidated the four exact seals above and
+scored only the five predeclared Tyler-weight candidates over 164 calibration
+eras (`0373` through `1025`, 957,371 rows). It finalized with:
+
+- state: `STOP_NO_ELIGIBLE_CANDIDATE`;
+- passed: `false`;
+- selected formula: none;
+- receipt:
+  `receipts/calibrate-0544ff7beeb156266d859997636a4dc4af373af5dcb8bcea2d3a6f9a7fbd0e99.json`;
+- receipt SHA:
+  `0544ff7beeb156266d859997636a4dc4af373af5dcb8bcea2d3a6f9a7fbd0e99`.
+
+The required BMC checks were mean at least `0.0020`, Sharpe greater than
+`0.25`, and maximum drawdown less than `0.10`:
+
+| Candidate | BMC mean | BMC Sharpe | Max drawdown | Failed checks |
+| --- | ---: | ---: | ---: | --- |
+| `tyler_w00` | 0.001237 | 0.120002 | 0.076781 | mean, Sharpe |
+| `tyler_w10` | 0.001098 | 0.107232 | 0.082961 | mean, Sharpe |
+| `tyler_w20_equal5` | 0.000956 | 0.093845 | 0.092577 | mean, Sharpe |
+| `tyler_w30` | 0.000805 | 0.079438 | 0.100926 | mean, Sharpe, drawdown |
+| `tyler_w40` | 0.000656 | 0.064958 | 0.108313 | mean, Sharpe, drawdown |
+
+Every candidate passed the Corr-mean check and all three frozen similarity
+checks. That does not override the failed BMC checks: no candidate is eligible,
+the tie set is empty, and opening the locked slice is forbidden.
+
 ## Remaining order of operations
 
-Stop here. On the next authorized resume:
+Stop here permanently for this frozen experiment:
 
-1. Revalidate the exact four local seal paths/hashes above. Never retrain or
-   recreate any of the four Scout components.
-2. Create one unique empty external pycache directory and run Scout
-   calibration from exactly the four seals.
-3. Only if calibration passes, run the locked Scout stage. It must rederive
-   calibration and score only the selected formula.
-4. Only if Scout locked passes, create the committed confirmation store
-   inventory/config checkpoint, then the dynamic confirmation-pretraining
-   receipt.
-5. Run and seal the five confirmation components sequentially, then run
-    confirmation calibration and locked/full gates.
-6. Only if every frozen gate passes, create the offline model package and
-    stop at `PROMOTION_ELIGIBLE_NOT_UPLOADED`.
+1. Do not run the Scout locked stage.
+2. Do not train confirmation components or run confirmation gates.
+3. Do not package, upload, assign, submit, or stake this ensemble.
+4. Preserve the sealed Scout artifacts and calibration receipt as immutable
+   research evidence.
+5. Any future attempt must be a separately predeclared experiment with a new
+   frozen protocol and checkpoint; the candidates or thresholds in this
+   experiment must not be changed after observing this calibration result.
 
 Uploading, assigning the model to a Numerai slot, submitting predictions, or
 staking requires a separate explicit user request.
