@@ -239,6 +239,42 @@ Every candidate passed the Corr-mean check and all three frozen similarity
 checks. That does not override the failed BMC checks: no candidate is eligible,
 the tie set is empty, and opening the locked slice is forbidden.
 
+## Calibration postmortem
+
+The postmortem used only the finalized 164-era calibration receipt. It
+independently reproduced the persisted summaries and analyzed paired per-era
+deltas, four equal chronological 41-era blocks, drawdown windows, positive-era
+shares, and 10%-trimmed means. It did not read or score the locked 50 eras and
+did not compute any new component-level metric.
+
+Main findings:
+
+- `tyler_w00` remained the strongest candidate, but its BMC mean was 38.2%
+  below the `0.0020` gate. At its observed BMC standard deviation, satisfying
+  the Sharpe gate would require mean BMC above approximately `0.00258`.
+- Each additional 10 percentage points of Tyler weight reduced mean BMC by
+  approximately `0.000146` across the sweep. From 0% to 40% Tyler, mean BMC
+  fell by `0.000581` (47.0%), Sharpe fell from `0.1200` to `0.0650`, and
+  drawdown rose from `0.0768` to `0.1083`.
+- Tyler did add some diversity: from 0% to 40%, average Ender20 similarity
+  fell by `0.0095` and TabM similarity fell by `0.0186`. That diversity did
+  not convert into incremental benchmark contribution.
+- The 40% Tyler candidate beat the 0% candidate in 74 eras and lost in 90.
+  Its paired downside was larger than its upside, indicating regime-dependent
+  asymmetric degradation rather than a universally harmful Tyler component.
+- The weakest regime was eras `0701`-`0861`: 0% Tyler averaged only
+  `0.000126` BMC and every Tyler-bearing candidate averaged negative BMC.
+  No candidate reached `0.0020` in any chronological quartile, and the best
+  candidate's 10%-trimmed mean was still only `0.001112`. The failure was not
+  caused by a handful of isolated outliers.
+
+Interpretation: the ensemble had strong raw Ender correlation, but too little
+stable predictive contribution beyond the frozen Ender20 benchmark. The
+evidence supports a separately frozen `Ender21` research family focused on
+benchmark-neutral or benchmark-residual signal, walk-forward stability, and a
+genuinely different model structure. It does not support another post-hoc
+weight sweep inside Ender20.
+
 ## Remaining order of operations
 
 Stop here permanently for this frozen experiment:
