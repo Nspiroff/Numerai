@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 import hashlib
 import json
+import os
 from pathlib import Path
+import stat
 import uuid
 
 import numpy as np
@@ -45,13 +47,11 @@ def _canonical_generation_id(value: object) -> str:
 
 
 def _is_sha256(value: object) -> bool:
-    if not isinstance(value, str) or len(value) != 64:
-        return False
-    try:
-        int(value, 16)
-    except ValueError:
-        return False
-    return True
+    return (
+        isinstance(value, str)
+        and len(value) == 64
+        and all(character in "0123456789abcdef" for character in value)
+    )
 
 
 def _sha256_file(path: Path, *, chunk_size: int = 8 * 1024 * 1024) -> str:
@@ -60,6 +60,187 @@ def _sha256_file(path: Path, *, chunk_size: int = 8 * 1024 * 1024) -> str:
         while chunk := stream.read(chunk_size):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+class _ReadOnlyFileLease:
+    """Keep a verified store file open without permitting write/delete sharing."""
+
+    def __init__(self, path: Path, label: str) -> None:
+        self.path = path
+        self.label = label
+        self.stream = None
+        if os.name == "nt":
+            import ctypes
+            from ctypes import wintypes
+            import msvcrt
+
+            kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+            create_file = kernel32.CreateFileW
+            create_file.argtypes = (
+                wintypes.LPCWSTR,
+                wintypes.DWORD,
+                wintypes.DWORD,
+                wintypes.LPVOID,
+                wintypes.DWORD,
+                wintypes.DWORD,
+                wintypes.HANDLE,
+            )
+            create_file.restype = wintypes.HANDLE
+            handle = create_file(
+                str(path),
+                0x80000000,  # GENERIC_READ
+                0x00000001,  # FILE_SHARE_READ only
+                None,
+                3,  # OPEN_EXISTING
+                0x00000080,  # FILE_ATTRIBUTE_NORMAL
+                None,
+            )
+            invalid_handle = ctypes.c_void_p(-1).value
+            if handle == invalid_handle:
+                error = ctypes.WinError(ctypes.get_last_error())
+                raise ValueError(
+                    f"Cannot acquire immutable feature-store {label} lease: {path}"
+                ) from error
+            try:
+                descriptor = msvcrt.open_osfhandle(
+                    int(handle), os.O_RDONLY | getattr(os, "O_BINARY", 0)
+                )
+            except BaseException:
+                kernel32.CloseHandle(handle)
+                raise
+            self.stream = os.fdopen(descriptor, "rb", buffering=0)
+        else:
+            try:
+                stream = path.open("rb", buffering=0)
+                import fcntl
+
+                fcntl.flock(stream.fileno(), fcntl.LOCK_SH | fcntl.LOCK_NB)
+            except (OSError, BlockingIOError) as error:
+                try:
+                    stream.close()
+                except (UnboundLocalError, OSError):
+                    pass
+                raise ValueError(
+                    f"Cannot acquire immutable feature-store {label} lease: {path}"
+                ) from error
+            self.stream = stream
+
+    def read_bytes(self) -> bytes:
+        if self.stream is None:
+            raise RuntimeError(f"Feature-store {self.label} lease is closed.")
+        self.stream.seek(0)
+        value = self.stream.read()
+        self.stream.seek(0)
+        return value
+
+    def fileno(self) -> int:
+        if self.stream is None:
+            raise RuntimeError(f"Feature-store {self.label} lease is closed.")
+        return self.stream.fileno()
+
+    def size_bytes(self) -> int:
+        return int(os.fstat(self.fileno()).st_size)
+
+    def sha256(self, *, chunk_size: int = 8 * 1024 * 1024) -> str:
+        if self.stream is None:
+            raise RuntimeError(f"Feature-store {self.label} lease is closed.")
+        digest = hashlib.sha256()
+        self.stream.seek(0)
+        while chunk := self.stream.read(chunk_size):
+            digest.update(chunk)
+        self.stream.seek(0)
+        return digest.hexdigest()
+
+    def close(self) -> None:
+        stream = self.stream
+        self.stream = None
+        if stream is not None:
+            stream.close()
+
+
+def _require_plain_directory_chain(path: Path) -> None:
+    """Reject missing, symbolic, or reparse-point directories in a store path."""
+
+    absolute = Path(os.path.abspath(path))
+    chain = [absolute, *absolute.parents]
+    for directory in reversed(chain):
+        if directory == directory.parent:
+            continue
+        try:
+            inspected = directory.lstat()
+        except OSError as error:
+            raise ValueError(
+                f"Cannot inspect feature-store directory: {directory}"
+            ) from error
+        attributes = getattr(inspected, "st_file_attributes", 0)
+        if directory.is_symlink() or bool(
+            attributes & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0)
+        ):
+            raise ValueError(
+                f"Feature-store directory may not be a link or reparse point: {directory}"
+            )
+        if not stat.S_ISDIR(inspected.st_mode):
+            raise ValueError(f"Feature-store path is not a directory: {directory}")
+
+
+def _require_plain_file(path: Path, label: str) -> None:
+    """Reject symbolic, reparse-point, non-regular, or hard-linked artifacts."""
+
+    try:
+        inspected = path.lstat()
+    except OSError as error:
+        raise ValueError(f"Cannot inspect feature-store {label}: {path}") from error
+    attributes = getattr(inspected, "st_file_attributes", 0)
+    if path.is_symlink() or bool(
+        attributes & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0)
+    ):
+        raise ValueError(
+            f"Feature-store {label} may not be a link or reparse point: {path}"
+        )
+    if not stat.S_ISREG(inspected.st_mode):
+        raise ValueError(f"Feature-store {label} is not a regular file: {path}")
+    if inspected.st_nlink != 1:
+        raise ValueError(f"Feature-store {label} may not be hard linked: {path}")
+
+
+def _validate_expected_store_receipt(
+    value: Mapping[str, object],
+    *,
+    receipt_root: Path,
+    directory: Path,
+) -> dict[str, object]:
+    expected_keys = {
+        "generation_id",
+        "row_count",
+        "feature_count",
+        "feature_order_sha256",
+        "target_column",
+        "metadata",
+        "manifest",
+        "features",
+    }
+    if set(value) != expected_keys:
+        raise ValueError("Expected feature-store receipt keys are malformed.")
+    receipt = dict(value)
+    for name in ("metadata", "manifest", "features"):
+        item = receipt.get(name)
+        if not isinstance(item, Mapping) or set(item) != {
+            "path",
+            "sha256",
+            "size_bytes",
+        }:
+            raise ValueError(f"Expected feature-store {name} receipt is malformed.")
+        relative = Path(str(item.get("path")))
+        if relative.is_absolute() or ".." in relative.parts:
+            raise ValueError(f"Expected feature-store {name} path is not repo-relative.")
+        if not _is_sha256(item.get("sha256")):
+            raise ValueError(f"Expected feature-store {name} hash is malformed.")
+        if type(item.get("size_bytes")) is not int or item["size_bytes"] < 0:
+            raise ValueError(f"Expected feature-store {name} size is malformed.")
+        expected_path = Path(os.path.abspath(receipt_root / relative))
+        if expected_path.parent != directory:
+            raise ValueError(f"Expected feature-store {name} path targets another store.")
+    return receipt
 
 
 class _DiskFeatureStoreState:
@@ -75,6 +256,9 @@ class _DiskFeatureStoreState:
         feature_columns: Sequence[str],
         row_offsets: np.ndarray,
         feature_memmap: np.memmap,
+        metadata_sha256: str,
+        inventory_identity: Mapping[str, str] | None,
+        file_leases: Sequence[_ReadOnlyFileLease],
     ) -> None:
         self.directory = directory
         self.feature_path = feature_path
@@ -90,6 +274,11 @@ class _DiskFeatureStoreState:
         self.row_count = len(self.row_offsets)
         self.feature_count = len(self.feature_columns)
         self._memmap: np.memmap | None = feature_memmap
+        self.metadata_sha256 = metadata_sha256
+        self.inventory_identity = (
+            dict(inventory_identity) if inventory_identity is not None else None
+        )
+        self._file_leases = tuple(file_leases)
         self._closed = False
 
     def _features(self) -> np.memmap:
@@ -137,6 +326,9 @@ class _DiskFeatureStoreState:
         self._memmap = None
         if mmap is not None:
             mmap._mmap.close()
+        for lease in reversed(self._file_leases):
+            lease.close()
+        self._file_leases = ()
 
 
 class DiskFeatureView:
@@ -313,8 +505,58 @@ class DiskFeatureStoreLoader:
         target_col: str,
         id_col: str | None,
         benchmark_col: str,
+        expected_store_receipt: Mapping[str, object] | None = None,
+        expected_receipt_root: str | Path | None = None,
+        expected_inventory_identity: Mapping[str, str] | None = None,
     ) -> None:
-        self.directory = Path(directory).expanduser().resolve()
+        lexical_directory = Path(directory).expanduser()
+        if ".." in lexical_directory.parts:
+            raise ValueError("Feature-store directory may not contain parent traversal.")
+        self.directory = Path(os.path.abspath(lexical_directory))
+        _require_plain_directory_chain(self.directory)
+        if expected_store_receipt is None:
+            if expected_receipt_root is not None or expected_inventory_identity is not None:
+                raise ValueError("Expected store provenance is incomplete.")
+            self._expected_store_receipt = None
+            self._expected_inventory_identity = None
+            self._expected_receipt_root = None
+        else:
+            if expected_receipt_root is None or expected_inventory_identity is None:
+                raise ValueError("Expected store provenance is incomplete.")
+            receipt_root = Path(os.path.abspath(Path(expected_receipt_root)))
+            self._expected_store_receipt = _validate_expected_store_receipt(
+                expected_store_receipt,
+                receipt_root=receipt_root,
+                directory=self.directory,
+            )
+            self._expected_receipt_root = receipt_root
+            inventory = dict(expected_inventory_identity)
+            if set(inventory) != {"path", "git_blob_id", "checkpoint_commit"}:
+                raise ValueError("Expected inventory identity is malformed.")
+            if not isinstance(inventory["path"], str) or not inventory["path"]:
+                raise ValueError("Expected inventory path is malformed.")
+            inventory_path = Path(inventory["path"])
+            if inventory_path.is_absolute() or ".." in inventory_path.parts:
+                raise ValueError("Expected inventory path is not repo-relative.")
+            if (
+                not isinstance(inventory["git_blob_id"], str)
+                or len(inventory["git_blob_id"]) != 40
+                or not all(
+                    character in "0123456789abcdef"
+                    for character in inventory["git_blob_id"]
+                )
+            ):
+                raise ValueError("Expected inventory Git blob is malformed.")
+            if (
+                not isinstance(inventory["checkpoint_commit"], str)
+                or len(inventory["checkpoint_commit"]) != 40
+                or not all(
+                    character in "0123456789abcdef"
+                    for character in inventory["checkpoint_commit"]
+                )
+            ):
+                raise ValueError("Expected inventory checkpoint is malformed.")
+            self._expected_inventory_identity = inventory
         self.era_col = str(era_col)
         self.target_col = str(target_col)
         self.id_col = str(id_col) if id_col else None
@@ -322,13 +564,29 @@ class DiskFeatureStoreLoader:
         self._x_cols: tuple[str, ...] | None = None
         self._era_positions: dict[str, np.ndarray] | None = None
         self._loading_generation_id: str | None = None
+        self._loading_file_leases: list[_ReadOnlyFileLease] = []
         for attempt in range(3):
             try:
                 self._state = self._load_and_validate()
                 break
             except Exception:
+                self._close_loading_file_leases()
                 if attempt == 2 or not self._metadata_generation_changed():
                     raise
+
+    def _lease_file(self, path: Path, label: str) -> _ReadOnlyFileLease:
+        lease = _ReadOnlyFileLease(path, label)
+        self._loading_file_leases.append(lease)
+        return lease
+
+    def _close_loading_file_leases(self) -> None:
+        for lease in reversed(self._loading_file_leases):
+            lease.close()
+        self._loading_file_leases.clear()
+
+    def _release_loading_file_lease(self, lease: _ReadOnlyFileLease) -> None:
+        lease.close()
+        self._loading_file_leases.remove(lease)
 
     def _metadata_generation_changed(self) -> bool:
         previous = self._loading_generation_id
@@ -336,6 +594,7 @@ class DiskFeatureStoreLoader:
             return False
         metadata_path = self.directory / FEATURE_STORE_METADATA_FILENAME
         try:
+            _require_plain_file(metadata_path, "metadata")
             with metadata_path.open("r", encoding="utf-8") as stream:
                 current = json.load(stream)
             return (
@@ -351,9 +610,19 @@ class DiskFeatureStoreLoader:
     def _load_and_validate(self) -> _DiskFeatureStoreState:
         metadata_path = self.directory / FEATURE_STORE_METADATA_FILENAME
         try:
-            with metadata_path.open("r", encoding="utf-8") as stream:
-                metadata = json.load(stream)
-        except (OSError, json.JSONDecodeError) as error:
+            _require_plain_directory_chain(self.directory)
+            _require_plain_file(metadata_path, "metadata")
+            metadata_lease = self._lease_file(metadata_path, "metadata")
+            metadata_sha256 = metadata_lease.sha256()
+            if self._expected_store_receipt is not None:
+                expected_metadata = self._expected_store_receipt["metadata"]
+                assert isinstance(expected_metadata, Mapping)
+                if metadata_lease.size_bytes() != expected_metadata["size_bytes"]:
+                    raise ValueError("Feature-store metadata size differs from inventory.")
+                if metadata_sha256 != expected_metadata["sha256"]:
+                    raise ValueError("Feature-store metadata SHA-256 differs from inventory.")
+            metadata = json.loads(metadata_lease.read_bytes())
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
             raise ValueError(
                 f"Cannot read feature-store metadata: {metadata_path}"
             ) from error
@@ -377,6 +646,18 @@ class DiskFeatureStoreLoader:
                 f"Feature-store benchmark is {metadata.get('benchmark_column')!r}, "
                 f"not {self.benchmark_col!r}."
             )
+        if self._expected_store_receipt is not None:
+            for key in (
+                "generation_id",
+                "row_count",
+                "feature_count",
+                "feature_order_sha256",
+                "target_column",
+            ):
+                if metadata.get(key) != self._expected_store_receipt[key]:
+                    raise ValueError(
+                        f"Feature-store metadata.{key} differs from committed inventory."
+                    )
 
         feature_columns = metadata.get("feature_columns")
         if (
@@ -421,15 +702,48 @@ class DiskFeatureStoreLoader:
         manifest_path = _safe_artifact_path(
             self.directory, manifest_meta.get("filename")
         )
-        if not feature_path.is_file() or not manifest_path.is_file():
-            raise ValueError("Feature-store referenced artifacts do not exist.")
+        _require_plain_file(feature_path, "payload")
+        _require_plain_file(manifest_path, "manifest")
+        feature_lease = self._lease_file(feature_path, "payload")
+        manifest_lease = self._lease_file(manifest_path, "manifest")
+        if self._expected_store_receipt is not None:
+            for name, path in (("features", feature_path), ("manifest", manifest_path)):
+                expected_item = self._expected_store_receipt[name]
+                assert isinstance(expected_item, Mapping)
+                expected_path = Path(
+                    os.path.abspath(
+                        self._expected_receipt_root / str(expected_item["path"])
+                    )
+                )
+                if expected_path != path:
+                    raise ValueError(
+                        f"Feature-store {name} path differs from committed inventory."
+                    )
         expected_feature_bytes = row_count * feature_count * np.dtype(np.int8).itemsize
         if feature_meta.get("size_bytes") != expected_feature_bytes:
             raise ValueError("Feature-store payload size metadata is inconsistent.")
-        if feature_path.stat().st_size != expected_feature_bytes:
+        if feature_lease.size_bytes() != expected_feature_bytes:
             raise ValueError("Feature-store payload byte size does not match its shape.")
-        if manifest_meta.get("size_bytes") != manifest_path.stat().st_size:
+        if manifest_meta.get("size_bytes") != manifest_lease.size_bytes():
             raise ValueError("Feature-store manifest byte size does not match metadata.")
+        feature_sha256 = feature_lease.sha256()
+        if feature_sha256 != feature_meta["sha256"]:
+            raise ValueError("Feature-store payload SHA-256 does not match metadata.")
+        if self._expected_store_receipt is not None:
+            expected_features = self._expected_store_receipt["features"]
+            expected_manifest = self._expected_store_receipt["manifest"]
+            assert isinstance(expected_features, Mapping)
+            assert isinstance(expected_manifest, Mapping)
+            if (
+                feature_lease.size_bytes() != expected_features["size_bytes"]
+                or feature_sha256 != expected_features["sha256"]
+            ):
+                raise ValueError("Feature-store payload differs from committed inventory.")
+            if (
+                manifest_lease.size_bytes() != expected_manifest["size_bytes"]
+                or manifest_meta["sha256"] != expected_manifest["sha256"]
+            ):
+                raise ValueError("Feature-store manifest differs from committed inventory.")
         source_fingerprints = metadata.get("source_fingerprints")
         if not isinstance(source_fingerprints, list) or not source_fingerprints:
             raise ValueError("Feature-store source fingerprints are missing.")
@@ -447,12 +761,18 @@ class DiskFeatureStoreLoader:
         if manifest_meta.get("columns") != expected_manifest_columns:
             raise ValueError("Feature-store manifest columns do not match the request.")
 
-        # Acquire the generation lease before hashing or parsing the much larger
-        # manifest. A read-only memmap reserves address space but does not load
-        # the feature payload into RAM.
+        # Metadata is fully copied and externally bound at this point. Release
+        # only that lease so an atomic next-generation commit can replace it;
+        # retain the exact feature and manifest leases through OOF fitting.
+        self._release_loading_file_lease(metadata_lease)
+
+        # The payload and manifest leases were acquired before hashing. Keep
+        # them through OOF fitting; the memmap reserves address space without
+        # loading the feature payload into RAM.
+        assert feature_lease.stream is not None
         try:
             feature_memmap = np.memmap(
-                feature_path,
+                feature_lease.stream,
                 dtype=np.int8,
                 mode="r",
                 shape=(row_count, feature_count),
@@ -468,8 +788,10 @@ class DiskFeatureStoreLoader:
                 manifest_meta,
                 expected_manifest_columns,
                 row_count,
+                manifest_lease,
             )
-            return _DiskFeatureStoreState(
+            file_leases = tuple(self._loading_file_leases)
+            state = _DiskFeatureStoreState(
                 directory=self.directory,
                 feature_path=feature_path,
                 manifest_path=manifest_path,
@@ -479,7 +801,12 @@ class DiskFeatureStoreLoader:
                 feature_columns=feature_columns,
                 row_offsets=offsets,
                 feature_memmap=feature_memmap,
+                metadata_sha256=metadata_sha256,
+                inventory_identity=self._expected_inventory_identity,
+                file_leases=file_leases,
             )
+            self._loading_file_leases.clear()
+            return state
         except BaseException:
             feature_memmap._mmap.close()
             raise
@@ -490,11 +817,14 @@ class DiskFeatureStoreLoader:
         manifest_meta: dict,
         expected_manifest_columns: list[str],
         row_count: int,
+        manifest_lease: _ReadOnlyFileLease,
     ) -> tuple[pd.DataFrame, np.ndarray]:
-        if _sha256_file(manifest_path) != manifest_meta["sha256"]:
+        if manifest_lease.sha256() != manifest_meta["sha256"]:
             raise ValueError("Feature-store manifest SHA-256 does not match metadata.")
 
-        parquet = pq.ParquetFile(manifest_path)
+        assert manifest_lease.stream is not None
+        manifest_lease.stream.seek(0)
+        parquet = pq.ParquetFile(manifest_lease.stream)
         try:
             if parquet.metadata.num_rows != row_count:
                 raise ValueError("Feature-store manifest row count is inconsistent.")
@@ -506,7 +836,11 @@ class DiskFeatureStoreLoader:
         if schema.field("row_offset").type != pa.int64():
             raise ValueError("Feature-store row_offset must be int64.")
 
-        manifest = pd.read_parquet(manifest_path, columns=expected_manifest_columns)
+        manifest_lease.stream.seek(0)
+        manifest = pd.read_parquet(
+            manifest_lease.stream,
+            columns=expected_manifest_columns,
+        )
         manifest = manifest.reset_index(drop=True)
         offsets = manifest["row_offset"].to_numpy(dtype=np.int64, copy=False)
         if not np.array_equal(offsets, np.arange(row_count, dtype=np.int64)):
@@ -560,8 +894,10 @@ class DiskFeatureStoreLoader:
             "feature_bytes": int(metadata["features"]["size_bytes"]),
             "manifest_bytes": int(metadata["manifest"]["size_bytes"]),
             "feature_order_sha256": metadata["feature_order_sha256"],
+            "metadata_sha256": self._state.metadata_sha256,
             "feature_sha256": metadata["features"]["sha256"],
             "manifest_sha256": metadata["manifest"]["sha256"],
+            "committed_inventory": self._state.inventory_identity,
         }
 
     def configure_x_cols(self, x_cols: Sequence[str]) -> None:

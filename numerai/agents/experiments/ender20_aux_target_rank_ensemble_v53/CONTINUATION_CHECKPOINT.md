@@ -1,143 +1,180 @@
 # Ender20 auxiliary-target ensemble continuation checkpoint
 
-Date: 2026-08-03
+Date: 2026-08-08
 
 Branch: `agent/optimized-ender20-model`
+
+State: `TRAINING_READY_NOT_RUN`
 
 Frozen pre-scoring protocol commit:
 `ef4ee304d6088f10d27e4d49a80d67ec925dbbf3`
 
-This checkpoint was created because the Codex usage window was nearly
-exhausted. It is a durable work-in-progress handoff, not a training-ready or
-promotion-ready result.
+The pretraining checkpoint is the full 40-character commit containing this
+document and the implementation/test changes described below. After checking
+out the pushed branch, obtain it with `git rev-parse HEAD`; every authorized
+training and evaluator command must bind that exact commit.
 
 ## Safety state
 
-- No new Jasper, Teager2b, Victor, or Tyler GPU Scout training was started.
-- No Scout calibration or locked Ender20 metrics were computed.
-- No consecutive confirmation data was scored.
-- No final model was fit or packaged.
-- Nothing was uploaded, assigned, submitted, staked, or changed in the
+- No Jasper, Teager2b, Victor, or Tyler Scout training has started.
+- No Scout calibration or locked Ender20 metric has been computed.
+- No confirmation component has been trained or scored.
+- No final model has been fit or packaged.
+- Nothing has been uploaded, assigned, submitted, staked, or changed in the
   Numerai account.
-- All eight new Scout result/prediction destinations, all four deployment
-  destinations, and the receipt directory were absent at the final pre-save
-  check.
-- The local `.gpu-lgbm-source-build/` directory is unrelated untracked build
-  residue and is intentionally excluded from Git.
+- The experiment's `receipts/`, `results/`, and `predictions/`
+  directories are absent.
+- All eight new Scout result/prediction destinations and all ten confirmation
+  result/prediction destinations are therefore absent.
+- The unrelated untracked `.gpu-lgbm-source-build/` directory remains
+  protected and is intentionally excluded from Git.
+
+An existing receipt, claim, completion marker, result, prediction, partial
+file, dangling link, or output reservation is a hard stop. It is never
+authority to delete, rename, overwrite, or rerun.
 
 ## Frozen experiment
 
-The protocol is in `gate.md`, with source and artifact anchors in
-`source_manifest.json`. Its fixed Scout is a five-component within-era rank
-ensemble over direct-target LightGBM models for Jasper20, Teager2b20,
-Victor20, Xerxes20, and Tyler20. The only candidates vary Tyler weight across
-0.0, 0.1, 0.2, 0.3, and 0.4. The other four components share the remaining
-weight equally.
+The protocol is defined by `gate.md`, with frozen sources and artifact
+anchors in `source_manifest.json`.
 
 Protocol hashes:
 
-- `gate.md`: `c851e3e0637e26bff5b2c26eda5752a46a9d72fce2621678bd39ffa320983ffe`
+- `gate.md`:
+  `c851e3e0637e26bff5b2c26eda5752a46a9d72fce2621678bd39ffa320983ffe`
 - `source_manifest.json`:
   `3cc96dce9938306cc1f2e7d4ef6b6628f24494f5c30a1ca87d791b64ace662a8`
 
-The preceding Xerxes20 challenger closed with
-`STOP_NO_SCOUT_CALIBRATION_WINNER`; its best depth-8 component is reused only
-as the frozen Xerxes component in this new family.
+The Scout is a five-component within-era rank ensemble over direct-target
+LightGBM models for Jasper20, Teager2b20, Victor20, frozen Xerxes20, and
+Tyler20. The only candidate dimension is Tyler weight: 0.0, 0.1, 0.2, 0.3,
+or 0.4. The remaining weight is split equally across the other four
+components. Scout run order is fixed:
 
-## Implemented evaluator work
+1. Jasper
+2. Teager2b
+3. Victor
+4. Tyler
 
-`agents/code/analysis/evaluate_ender20_aux_target_rank_ensemble.py` currently
-contains:
+The preceding Xerxes20 depth-8 artifact is reused exactly; it is not retrained.
 
-- frozen Git/source/GPU/config validation;
-- exact Scout and confirmation cohort derivation;
-- exact ID, era, stored-target, fold, prediction-semantics, GPU-diagnostics,
-  and artifact-hash checks;
-- legacy downsampled and full-consecutive two-seed TabM contracts;
-- within-era average-tie component ranking, weighted blending, and reranking;
-- Corr, BMC, population-standard-deviation Sharpe, additive drawdown, and
-  symmetric per-era Spearman similarity calculations;
-- anchored calibration selection and strict locked/confirmation thresholds;
-- content-addressed receipt primitives with one-prefix refusal;
-- non-scoring Scout component sealing;
-- Scout calibration and selected-only Scout locked stage bodies;
-- a strict confirmation-pretraining receipt validator.
+## Training-ready implementation
 
-Real frozen-artifact smoke validation passed before this checkpoint:
+The evaluator and modeling pipeline now enforce:
+
+- exact Git checkpoint, source-manifest, gate, imported evaluator, config,
+  helper, loader, GPU runtime, raw-source, and historical-artifact bindings;
+- SHA/JSON parsing from the same no-write/no-delete leased manifest bytes;
+- exact Windows file identity, regular-file, link, reparse, directory-chain,
+  size, and SHA checks at every protected read boundary;
+- frozen Scout configs cached only after joint wrapper/base leases, with those
+  leases held through downstream artifact receipts;
+- exact confirmation wrapper source plus manifest-pinned base-helper leases
+  held through result/prediction validation and artifact receipts;
+- exact ID, era, stored target, producer fold, prediction semantics, GPU
+  diagnostics, result, Parquet, feature-store, and target-label validation;
+- immutable external confirmation store inventory and metadata, feature,
+  manifest, order, source, label, and checkpoint-blob bindings;
+- exact legacy/downsampled and full-consecutive two-seed TabM references and
+  frozen Xerxes reads under manifest-bound leases;
+- protected generic-output guards for every new destination and all ten
+  historical Xerxes/TabM result/prediction paths, including hardlink and
+  reparse aliases;
+- within-era average-tie ranking, weighted blending, reranking, Corr, BMC,
+  population-standard-deviation Sharpe, additive drawdown, and symmetric
+  per-era Spearman similarity;
+- content-addressed receipts with canonical directories, exact prefixes,
+  exclusive early claims, finalized-claim bindings, closed schemas, and
+  same-prefix rerun refusal;
+- deterministic Scout calibration rederivation before locked access and
+  selected-only locked scoring;
+- five mandatory non-scoring confirmation component seals and selected-only
+  655/200/855 confirmation ordering;
+- one-shot trainer authorization from the exact finalized pre-run receipt;
+- `CREATE_NEW` canonical output reservations, a durable consumed-run marker,
+  and a completion prefix claimed before model code;
+- completion receipts finalized from the same still-open output handles,
+  binding path, device, inode, size, and SHA;
+- completion, marker, output, config, and historical leases held through seal
+  construction and finalization;
+- terminal orphan claims/partial reservations on failure, intentionally
+  preventing a retry.
+
+The trainer also requires a fresh Python launch with both:
+
+- `-B`; and
+- `-X pycache_prefix=<unique empty absolute directory outside the repo>`.
+
+The prefix must be a plain, empty, non-reparse directory from process start.
+Adjacent ignored `__pycache__` files are not trusted.
+
+## Validation evidence
+
+No real Numerai data, protected metrics, GPU training, or production scoring
+was accessed during this hardening checkpoint. All executed validation used
+synthetic temporary fixtures.
+
+Primary focused validation:
+
+- evaluator and disk/modeling suites: 116/116 pass;
+- Python syntax compilation: pass;
+- `git diff --check`: pass (line-ending warnings only).
+
+Independent settled-byte validation:
+
+- evaluator suite: 82/82 pass;
+- disk/modeling suite: 34/34 pass;
+- adjacent disk feature-store suite: 12/12 pass;
+- adjacent scoring/prediction-semantics suite: 13/13 pass;
+- total: 141/141 pass;
+- six changed Python modules compile;
+- `git diff --check`: exit 0.
+
+Two independent final static reviews reported no remaining usable false-pass
+or pre-fit training-authority blocker under the declared Windows execution and
+trusted fresh-launch model.
+
+Covered negative cases include checkpoint/source drift, hash-to-parse swaps,
+config/helper swaps, dirty or untracked executable dependencies, receipt
+aliasing and nested leakage, forged selection and per-era metrics, fractional
+folds, wrong GPU/result/semantics/store identity, early reruns, duplicate or
+disconnected seal chains, output hardlinks/reparse points, poisoned timestamp
+bytecode, changed completion/consumption markers, concurrent/reused
+authorization, same-inode post-training output mutation, and post-verification
+historical artifact swaps.
+
+Prior real frozen-artifact smoke evidence from the 2026-08-03 checkpoint was
+not rerun here:
 
 - Scout expected cohort: 1,279,658 rows, 214 eras;
-- frozen two-seed TabM residual: exact artifacts validated, finite rank range
-  `0.0001384083044982699` through `1.0`;
-- reused Xerxes depth-8 component: exact result, GPU folds, semantics, target,
-  IDs, eras, and folds validated for all 1,279,658 rows; finite prediction
-  range `0.43853421346712984` through `0.5564638511519919`.
+- frozen two-seed TabM residual: exact artifacts validated;
+- reused Xerxes depth-8 result/predictions: exact 1,279,658-row validation.
 
-## Validation at save time
+## Remaining order of operations
 
-- Python syntax compilation: pass.
-- Focused unit suite:
-  `python -m unittest -q agents.tests.test_ender20_aux_target_rank_ensemble`
-  -> 29/29 pass.
-- `git diff --check`: pass.
+There is no known implementation blocker before Scout training. Continue only
+in this order:
 
-The tests cover checkpoint/imported-dependency dirtiness, manifest and path
-hashes, exact Scout/confirmation config shape, joins and producer folds,
-fractional-fold rejection, GPU/result/semantics contracts, legacy/full TabM,
-ranks/ties/metrics/similarities, thresholds and selection, receipt hashing and
-same-prefix refusal, standalone confirmation calibration checks, and
-selected-only blend construction.
+1. Confirm the pushed branch is clean and `HEAD` is the intended full
+   pretraining checkpoint. Keep `.gpu-lgbm-source-build/` untouched.
+2. Create one unique empty external pycache directory and launch every
+   authorized Python process with `-B -X pycache_prefix=<that-directory>`.
+3. For Jasper, create its canonical pre-run absence claim/receipt.
+4. Run Jasper once with its exact Scout component and pre-run receipt
+   path/SHA. Capture the emitted completion receipt path/SHA.
+5. Seal Jasper immediately with the exact pre-run and completion bindings.
+6. Repeat steps 3-5 sequentially for Teager2b, Victor, and Tyler, each binding
+   the immediately preceding finalized seal.
+7. Run Scout calibration from exactly the four seals.
+8. Only if calibration passes, run the locked Scout stage. It must rederive
+   calibration and score only the selected formula.
+9. Only if Scout locked passes, create the committed confirmation store
+   inventory/config checkpoint, then the dynamic confirmation-pretraining
+   receipt.
+10. Run and seal the five confirmation components sequentially, then run
+    confirmation calibration and locked/full gates.
+11. Only if every frozen gate passes, create the offline model package and
+    stop at `PROMOTION_ELIGIBLE_NOT_UPLOADED`.
 
-## Mandatory blockers before any training
-
-Do not use this progress commit as the pretraining checkpoint and do not start
-the four GPU runs until every item below is resolved and independently tested:
-
-1. Split the receipt prefix claim from final receipt writing. Claim the unique
-   canonical stage/component prefix before any scoring or holdout access, so a
-   rerun refuses before recomputing metrics. An incomplete early claim must
-   remain fail-closed.
-2. Constrain bound receipts to the canonical receipt directory, exact stage
-   prefix, and finalized claim/hash relationship.
-3. Before opening Scout locked eras, deterministically recompute and exactly
-   validate the calibration candidates, checks, anchored tie set, and selected
-   formula from the sealed inputs. A fabricated content-addressed calibration
-   JSON must not be able to choose a candidate.
-4. Add a durable per-component pre-run absence receipt/claim for each Scout
-   result and prediction destination. Scout sealing must bind that proof.
-5. Add the non-scoring confirmation-component seal stage for all five
-   confirmation outputs. Confirmation calibration must require exactly five
-   unique seal path/hash bindings.
-6. Finish `run_confirmation_calibrate` and `run_confirmation_locked`. The CLI
-   currently references these undefined functions and therefore confirmation
-   is intentionally not runnable.
-7. Make confirmation pretraining path/hash mandatory in the CLI and require
-   its exact bindings for configs, loader implementation, chosen stores or
-   sidecar, canonical Xerxes store, and ten absent output destinations.
-8. In confirmation locked, score only the selected locked-200 formula first.
-   Compute full-period metrics only after the locked-200 checks pass.
-9. Add mocked stage-body tests proving calibration slices before all-candidate
-   construction, locked stages never call the all-candidate builder, seal
-   receipts exclude automatic model metrics, early claims block reruns before
-   access, forged selections fail, and confirmation seals/pretraining bindings
-   are mandatory.
-
-## Safe resume order
-
-1. Pull this branch and read `gate.md`, `source_manifest.json`, this checkpoint,
-   the evaluator, and its focused tests.
-2. Confirm the twelve Scout/deployment paths and receipt directory are still
-   absent. Existing or partial paths are a stop, never a cleanup/rerun signal.
-3. Complete the blockers above using `apply_patch`; run syntax, focused unit,
-   diff, and an independent static audit.
-4. Commit the completed evaluator/tests as a new pretraining checkpoint and
-   use that full 40-character commit for evaluator CLI calls.
-5. Recheck each component's exact result and prediction destinations
-   immediately before its one sequential GPU run.
-6. Train Jasper, Teager2b, Victor, and Tyler sequentially in the frozen
-   `numerai-lgbm-gpu312` environment; seal each successful run immediately.
-7. Run calibration. Open locked Scout eras only for a passing, recomputed,
-   fixed selection. Continue to confirmation and packaging only if every
-   frozen gate passes.
-8. Even after a full offline pass, stop at
-   `PROMOTION_ELIGIBLE_NOT_UPLOADED`; uploading or assigning still requires a
-   separate explicit user request.
+Uploading, assigning the model to a Numerai slot, submitting predictions, or
+staking requires a separate explicit user request.
