@@ -4,28 +4,31 @@ Date: 2026-08-08
 
 Branch: `agent/optimized-ender20-model`
 
-State: `TRAINING_READY_NOT_RUN`
+State: `SCOUT_COMPONENTS_SEALED_NOT_CALIBRATED`
 
 Frozen pre-scoring protocol commit:
 `ef4ee304d6088f10d27e4d49a80d67ec925dbbf3`
 
-The pretraining checkpoint is the full 40-character commit containing this
-document and the implementation/test changes described below. After checking
-out the pushed branch, obtain it with `git rev-parse HEAD`; every authorized
-training and evaluator command must bind that exact commit.
+Frozen pretraining implementation commit:
+`b020661f1c7cf74b975a95e8ceb45d3f7c13b704`
+
+All four one-shot Scout runs and seals were bound to that exact pretraining
+commit. Later checkpoint-only documentation commits do not change that frozen
+training authority.
 
 ## Safety state
 
-- No Jasper, Teager2b, Victor, or Tyler Scout training has started.
+- Jasper, Teager2b, Victor, and Tyler each completed exactly one authorized
+  GPU Scout run and each has a finalized non-scoring seal.
 - No Scout calibration or locked Ender20 metric has been computed.
 - No confirmation component has been trained or scored.
 - No final model has been fit or packaged.
 - Nothing has been uploaded, assigned, submitted, staked, or changed in the
   Numerai account.
-- The experiment's `receipts/`, `results/`, and `predictions/`
-  directories are absent.
-- All eight new Scout result/prediction destinations and all ten confirmation
-  result/prediction destinations are therefore absent.
+- The eight new Scout result/prediction files and their immutable receipt
+  chains now exist locally and must not be deleted, renamed, overwritten, or
+  rerun.
+- All ten confirmation result/prediction destinations remain absent.
 - The unrelated untracked `.gpu-lgbm-source-build/` directory remains
   protected and is intentionally excluded from Git.
 
@@ -150,30 +153,73 @@ not rerun here:
 - frozen two-seed TabM residual: exact artifacts validated;
 - reused Xerxes depth-8 result/predictions: exact 1,279,658-row validation.
 
+## Sealed Scout run evidence
+
+All four component seals have `state=SEALED` and `passed=true`. No Ender
+blend candidate, calibration, or locked metric was computed while producing
+these receipts.
+
+- Jasper:
+  - pre-run SHA:
+    `71dedcf16b736b6b3291d03c8072f4b1beaf39c9192b09ef316dbc401542792e`
+  - completion SHA:
+    `7da3cdaa0e8bff88b93cf49aad2220c4fe3f84e1cdd99df1314879e20c15f7d3`
+  - seal SHA:
+    `dcbd661be85ff81707e516fe4f4078fc68966344ed601508ef1d40754909ffb8`
+  - result SHA:
+    `f9c5950d42dcb876c138d1cebe2238a8ab74fca76ca1096a31826c64b6a4ea7d`
+  - prediction SHA:
+    `5756b91c405a232a01679123bcb39a0e83577f8a9e86757fc5c8ea0c4c613890`
+- Teager2b:
+  - pre-run SHA:
+    `3bb2ef6f0d46851b268fb2010a44fc479f081bb8aea38fc3e55d2eb8c49584bf`
+  - completion SHA:
+    `14770a461070a5a4e51d061f147f919b74f9ab2da9de414ca0773b932b5ac620`
+  - seal SHA:
+    `85b98e7a41071b79518802e53ec2905b491d2fcbc1ae5582c3e2fb599ab532d7`
+  - result SHA:
+    `2d1fac004726a707825110e008b23ae675168b999726d9f06ca7dfa862716cdd`
+  - prediction SHA:
+    `a414fc5f5815a89284825566d11e4859be00a7ced59253c2c4f6dcef26bd0954`
+- Victor:
+  - pre-run SHA:
+    `fa08fd8541cab0b193150cd53552f8ff58926c03e885edaa677288f10ef5d321`
+  - completion SHA:
+    `c22f25af88a4b431415a540e4e54727cc1c233f88fa64dd05bab93790cc93f85`
+  - seal SHA:
+    `582a5dbd3fdcf9ffa3b7fde4b96f73e010e427fc1cfbe04f0d2fc84e3a3e2658`
+  - result SHA:
+    `a3bffc54934655aaf40578bd813f5e89d7f62d9380a3c8af938c324cd753f2af`
+  - prediction SHA:
+    `3a52d47cb82588cc53221a1c76a171fedf59dfb4cb27f7e18ba01fc35041eec9`
+- Tyler:
+  - pre-run SHA:
+    `2a82c4824a269522971fde606e26048e6c543b8aab2a24f5d423f575438b421f`
+  - completion SHA:
+    `da7a09b1e5539c4a7f72d1c309eceb2a6c232be23bfa57854ba2af2ea194e5a5`
+  - seal SHA:
+    `c9ec868182ba8838dbae1e015869eca57c306612486ca28016f4f220ead0471b`
+  - result SHA:
+    `4831cb591d1b4fbca89b6d601ca49f0887a4d47e7da70f37e1e61b9b4ac243db`
+  - prediction SHA:
+    `3b4903d2c3e5b38bd0a2c6562ebaa168eaa431e671b97174b95cb822819b6c32`
+
 ## Remaining order of operations
 
-There is no known implementation blocker before Scout training. Continue only
-in this order:
+Stop here. On the next authorized resume:
 
-1. Confirm the pushed branch is clean and `HEAD` is the intended full
-   pretraining checkpoint. Keep `.gpu-lgbm-source-build/` untouched.
-2. Create one unique empty external pycache directory and launch every
-   authorized Python process with `-B -X pycache_prefix=<that-directory>`.
-3. For Jasper, create its canonical pre-run absence claim/receipt.
-4. Run Jasper once with its exact Scout component and pre-run receipt
-   path/SHA. Capture the emitted completion receipt path/SHA.
-5. Seal Jasper immediately with the exact pre-run and completion bindings.
-6. Repeat steps 3-5 sequentially for Teager2b, Victor, and Tyler, each binding
-   the immediately preceding finalized seal.
-7. Run Scout calibration from exactly the four seals.
-8. Only if calibration passes, run the locked Scout stage. It must rederive
+1. Revalidate the exact four local seal paths/hashes above. Never retrain or
+   recreate any of the four Scout components.
+2. Create one unique empty external pycache directory and run Scout
+   calibration from exactly the four seals.
+3. Only if calibration passes, run the locked Scout stage. It must rederive
    calibration and score only the selected formula.
-9. Only if Scout locked passes, create the committed confirmation store
+4. Only if Scout locked passes, create the committed confirmation store
    inventory/config checkpoint, then the dynamic confirmation-pretraining
    receipt.
-10. Run and seal the five confirmation components sequentially, then run
+5. Run and seal the five confirmation components sequentially, then run
     confirmation calibration and locked/full gates.
-11. Only if every frozen gate passes, create the offline model package and
+6. Only if every frozen gate passes, create the offline model package and
     stop at `PROMOTION_ELIGIBLE_NOT_UPLOADED`.
 
 Uploading, assigning the model to a Numerai slot, submitting predictions, or
