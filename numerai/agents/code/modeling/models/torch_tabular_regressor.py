@@ -112,6 +112,7 @@ class TorchTabularRegressor:
         loss_mode: str = "mse",
         chronological_blocks: int = 8,
         dro_temperature: float = 2.0,
+        recency_half_life_eras: float | None = None,
         max_epochs: int = 40,
         patience: int = 5,
         val_fraction: float = 0.1,
@@ -184,6 +185,31 @@ class TorchTabularRegressor:
             ) from exc
         if not np.isfinite(self.dro_temperature) or self.dro_temperature <= 0.0:
             raise ValueError("dro_temperature must be finite and positive")
+        if recency_half_life_eras is None:
+            self.recency_half_life_eras = None
+        else:
+            if isinstance(recency_half_life_eras, (bool, np.bool_)):
+                raise ValueError(
+                    "recency_half_life_eras must be finite and positive"
+                )
+            try:
+                self.recency_half_life_eras = float(recency_half_life_eras)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(
+                    "recency_half_life_eras must be finite and positive"
+                ) from exc
+            if (
+                not np.isfinite(self.recency_half_life_eras)
+                or self.recency_half_life_eras <= 0.0
+            ):
+                raise ValueError(
+                    "recency_half_life_eras must be finite and positive"
+                )
+            if self.loss_mode != "chronological_block_dro":
+                raise ValueError(
+                    "recency_half_life_eras is only supported with "
+                    "loss_mode='chronological_block_dro'"
+                )
         self.max_epochs = int(max_epochs)
         self.patience = int(patience)
         self.val_fraction = float(val_fraction)
@@ -299,7 +325,8 @@ class TorchTabularRegressor:
                 )
             else:
                 loss_aux_values = np.zeros(
-                    y_values.shape[0], dtype=train_loss_aux.dtype
+                    (y_values.shape[0], *train_loss_aux.shape[1:]),
+                    dtype=train_loss_aux.dtype,
                 )
                 loss_aux_values[train_indices] = train_loss_aux
                 train_dataset = torch.utils.data.TensorDataset(
@@ -732,15 +759,52 @@ class TorchTabularRegressor:
             weights = loss_aux.to(dtype=row_losses.dtype)
             return (row_losses * weights).mean()
 
-        group_ids = loss_aux.to(dtype=self._torch.long)
-        block_losses = self._torch.stack(
-            [row_losses[group_ids == group_id].mean() for group_id in group_ids.unique()]
-        )
+        if loss_aux.ndim == 1:
+            # Preserve the established chronological-block DRO path when
+            # recency weighting is disabled.
+            group_ids = loss_aux.to(dtype=self._torch.long)
+            block_losses = self._torch.stack(
+                [
+                    row_losses[group_ids == group_id].mean()
+                    for group_id in group_ids.unique()
+                ]
+            )
+        else:
+            if loss_aux.ndim != 2 or loss_aux.shape[1] != 2:
+                raise RuntimeError(
+                    "recency-weighted chronological_block_dro requires "
+                    "N x 2 loss metadata"
+                )
+            group_ids = loss_aux[:, 0].to(dtype=self._torch.long)
+            recency_weights = loss_aux[:, 1].to(dtype=row_losses.dtype)
+            unique_group_ids = group_ids.unique()
+            block_losses = self._torch.stack(
+                [
+                    (
+                        row_losses[group_ids == group_id]
+                        * recency_weights[group_ids == group_id]
+                    ).sum()
+                    / recency_weights[group_ids == group_id].sum()
+                    for group_id in unique_group_ids
+                ]
+            )
+            block_recency_mass = self._torch.stack(
+                [
+                    recency_weights[group_ids == group_id].sum()
+                    for group_id in unique_group_ids
+                ]
+            )
+            block_recency_prior = (
+                block_recency_mass / block_recency_mass.sum()
+            ).detach()
         mean_block_loss = block_losses.mean().clamp_min(
             self._torch.finfo(block_losses.dtype).eps
         )
         logits = self.dro_temperature * (block_losses / mean_block_loss - 1.0)
         block_weights = self._torch.softmax(logits, dim=0).detach()
+        if loss_aux.ndim == 2:
+            block_weights = block_weights * block_recency_prior
+            block_weights = block_weights / block_weights.sum()
         return (block_weights * block_losses).sum()
 
     def _row_squared_error(self, predictions, targets):
@@ -871,10 +935,30 @@ class TorchTabularRegressor:
             )
             for era in block_eras
         }
-        return np.fromiter(
+        block_ids = np.fromiter(
             (era_to_block[era] for era in train_eras),
             dtype=np.int64,
             count=len(train_eras),
+        )
+        if self.recency_half_life_eras is None:
+            return block_ids
+
+        newest_index = len(unique_eras) - 1
+        era_to_age = {
+            era: newest_index - era_index
+            for era_index, era in enumerate(unique_eras)
+        }
+        recency_weights = np.fromiter(
+            (
+                2.0
+                ** (-era_to_age[era] / self.recency_half_life_eras)
+                for era in train_eras
+            ),
+            dtype=np.float32,
+            count=len(train_eras),
+        )
+        return np.ascontiguousarray(
+            np.column_stack((block_ids, recency_weights)), dtype=np.float32
         )
 
     def _select_features(self, X, *, fit: bool):

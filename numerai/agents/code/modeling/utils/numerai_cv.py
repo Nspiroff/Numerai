@@ -97,6 +97,17 @@ def build_oof_predictions(
     cv_embargo = int(cv_config.get("embargo", 13))
     cv_mode = cv_config.get("mode", "expanding")
     cv_min_train_size = int(cv_config.get("min_train_size", 0))
+    raw_max_train_eras = cv_config.get("max_train_eras")
+    if raw_max_train_eras is None:
+        max_train_eras = None
+    elif (
+        isinstance(raw_max_train_eras, (bool, np.bool_))
+        or not isinstance(raw_max_train_eras, (int, np.integer))
+        or int(raw_max_train_eras) <= 0
+    ):
+        raise ValueError("cv.max_train_eras must be a positive integer or null")
+    else:
+        max_train_eras = int(raw_max_train_eras)
 
     splits = era_cv_splits(
         eras,
@@ -112,6 +123,9 @@ def build_oof_predictions(
     for fold_idx, (train_eras, val_eras) in enumerate(splits):
         if not train_eras or not val_eras:
             continue
+        available_train_eras = list(train_eras)
+        if max_train_eras is not None:
+            train_eras = train_eras[-max_train_eras:]
         train_data = _load_data(data_loader, train_eras)
         val_data = _load_data(data_loader, val_eras)
 
@@ -198,16 +212,24 @@ def build_oof_predictions(
         fold_predictions["prediction"] = np.asarray(preds).ravel()
         fold_predictions["cv_fold"] = fold_idx
         predictions.append(pd.DataFrame(fold_predictions))
-        fold_info.append(
-            {
-                "fold": fold_idx,
-                "train_eras": len(train_eras),
-                "val_eras": len(val_eras),
-                "train_rows": int(train_rows),
-                "val_rows": int(val_rows),
-                "model_diagnostics": model_diagnostics or None,
-            }
-        )
+        fold_receipt = {
+            "fold": fold_idx,
+            "train_eras": len(train_eras),
+            "val_eras": len(val_eras),
+            "train_rows": int(train_rows),
+            "val_rows": int(val_rows),
+            "model_diagnostics": model_diagnostics or None,
+        }
+        if max_train_eras is not None:
+            fold_receipt.update(
+                {
+                    "available_train_eras": len(available_train_eras),
+                    "max_train_eras": max_train_eras,
+                    "first_train_era": train_eras[0],
+                    "last_train_era": train_eras[-1],
+                }
+            )
+        fold_info.append(fold_receipt)
 
     if not predictions:
         raise ValueError("No CV folds produced predictions; check CV settings.")
@@ -224,6 +246,8 @@ def build_oof_predictions(
         "folds_used": len(fold_info),
         "folds": fold_info,
     }
+    if max_train_eras is not None:
+        cv_meta["max_train_eras"] = max_train_eras
     return oof, cv_meta
 
 
