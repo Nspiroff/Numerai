@@ -69,56 +69,105 @@ EXPECTED_INPUTS = {
     ),
     "features_json": "numerai/v5.3/features.json",
 }
-EXPECTED_MANIFEST_FILES = frozenset(
+EVALUATION_MANIFEST_NAME = "source_manifest_confirmation_evaluation.json"
+TRAINING_MANIFEST_RELATIVE = (
+    "numerai/agents/experiments/ender21_residual_stability_v53/"
+    "source_manifest_confirmation.json"
+)
+TRAINING_CODE_COMMIT = "dcd3dd10eff7b121d6fff6c285680f527e588207"
+TRAINING_MANIFEST_COMMIT = "2cc2bde920e980806d075266f06c561536c4c202"
+TRAINING_EVIDENCE_COMMIT = "366c1219fcff342efb124068b1690b4c2fb70f99"
+TRAINING_MANIFEST_SHA256 = (
+    "186c5b92eda6400f218c31a301955126fe65a92c550167cd12fa8c31a45325ca"
+)
+TRAINING_MANIFEST_GIT_BLOB = "b6889a09cea85a1b4fb3e3ec90548cd452971679"
+EXPECTED_EVIDENCE_BLOBS = {
+    "numerai/agents/experiments/ender21_residual_stability_v53/"
+    "logs/c1_selected_tabm_k64_block_dro.log": (
+        "ff5836fd54996cd70912cfd325b1ca4f15e52dde"
+    ),
+    "numerai/agents/experiments/ender21_residual_stability_v53/"
+    "models/c1_selected_tabm_k64_block_dro/predictor_spec.json": (
+        "2abcb1a91d003918dddf28d600cb88b3a00166c6"
+    ),
+    "numerai/agents/experiments/ender21_residual_stability_v53/"
+    "models/c1_selected_tabm_k64_block_dro/provenance.json": (
+        "159ee9f4b8113dfa35bbf2a8f63ea738dbc1aa57"
+    ),
+    "numerai/agents/experiments/ender21_residual_stability_v53/"
+    "models/c1_selected_tabm_k64_block_dro/sample_manifest_positions.npy": (
+        "b62a7a1c85789ee4cdb3482ce04ad74904c37473"
+    ),
+    "numerai/agents/experiments/ender21_residual_stability_v53/"
+    "models/c1_selected_tabm_k64_block_dro/weights.npz": (
+        "e452dac30cc214bedf6ce65fe419a59656a65f81"
+    ),
+    "numerai/agents/experiments/ender21_residual_stability_v53/"
+    "predictions/c1_selected_tabm_k64_block_dro.parquet": (
+        "a86fe3d3dce44c53135f1a4a0fdfbebe8138d1f6"
+    ),
+    "numerai/agents/experiments/ender21_residual_stability_v53/"
+    "receipts/c1_selected_tabm_k64_block_dro.completion.json": (
+        "2448d8d776a11cb2afbd1f3700ec55dbe2ce63b0"
+    ),
+    "numerai/agents/experiments/ender21_residual_stability_v53/"
+    "results/c1_selected_tabm_k64_block_dro.json": (
+        "d1ce20d111530358685ecbca036053ee050b902e"
+    ),
+}
+EVIDENCE_LEASE_KEYS = {
+    relative: (
+        "training_log"
+        if "/logs/" in relative
+        else "prediction"
+        if "/predictions/" in relative
+        else "completion"
+        if "/receipts/" in relative
+        else "result"
+        if "/results/" in relative
+        else f"bundle:{Path(relative).name}"
+    )
+    for relative in EXPECTED_EVIDENCE_BLOBS
+}
+EXPECTED_TRAINING_AUTHORITY = {
+    "source_manifest": {
+        "path": TRAINING_MANIFEST_RELATIVE,
+        "sha256": TRAINING_MANIFEST_SHA256,
+        "git_blob": TRAINING_MANIFEST_GIT_BLOB,
+        "git_head": TRAINING_CODE_COMMIT,
+        "manifest_commit": TRAINING_MANIFEST_COMMIT,
+    },
+    "evidence_commit": TRAINING_EVIDENCE_COMMIT,
+    "evidence_blobs": EXPECTED_EVIDENCE_BLOBS,
+}
+EXPECTED_EVALUATION_MANIFEST_FILES = frozenset(
     {
         "numerai/agents/code/analysis/ender21_confirmation_rules.py",
         "numerai/agents/code/metrics/numerai_metrics.py",
-        "numerai/agents/code/modeling/deployment/final_fit_export.py",
-        "numerai/agents/code/modeling/deployment/tabm_export.py",
-        "numerai/agents/code/modeling/deployment/tabm_numpy.py",
-        "numerai/agents/code/modeling/models/torch_tabular_regressor.py",
-        "numerai/agents/code/modeling/utils/config.py",
         "numerai/agents/code/modeling/utils/constants.py",
-        "numerai/agents/code/modeling/utils/data.py",
-        "numerai/agents/code/modeling/utils/model_data.py",
-        "numerai/agents/code/modeling/utils/model_factory.py",
-        "numerai/agents/code/modeling/utils/numerai_cv.py",
-        "numerai/agents/code/modeling/utils/pipeline.py",
-        "numerai/agents/code/modeling/utils/target_transforms.py",
-        "numerai/agents/experiments/ender21_residual_stability_v53/"
-        "configs/base_r1.py",
-        "numerai/agents/experiments/ender21_residual_stability_v53/"
-        "configs/c1_selected_tabm_k64_block_dro.py",
-        "numerai/agents/experiments/ender21_residual_stability_v53/"
-        "configs/r1_tabm_k64_block_dro.py",
-        "numerai/agents/experiments/ender21_residual_stability_v53/"
-        "development_extract_receipt.json",
         "numerai/agents/experiments/ender21_residual_stability_v53/"
         "evaluate_confirmation.py",
-        "numerai/agents/experiments/ender21_residual_stability_v53/experiment.md",
-        "numerai/agents/experiments/ender21_residual_stability_v53/gate.md",
+        "numerai/agents/experiments/ender21_residual_stability_v53/"
+        "protocol/confirmation_train_eras_through_0809.json",
         "numerai/agents/experiments/ender21_residual_stability_v53/"
         "protocol/confirmation_embargo_eras_0813_through_0861.json",
         "numerai/agents/experiments/ender21_residual_stability_v53/"
         "protocol/confirmation_eras_0865_through_1021.json",
-        "numerai/agents/experiments/ender21_residual_stability_v53/"
-        "protocol/confirmation_train_eras_through_0809.json",
-        "numerai/agents/experiments/ender21_residual_stability_v53/"
-        "protocol/feature_columns_all_v53.json",
-        "numerai/agents/experiments/ender21_residual_stability_v53/"
-        "receipts/round1_discovery.json",
-        "numerai/agents/experiments/ender21_residual_stability_v53/"
-        "receipts/round2_seed_replication.json",
-        "numerai/agents/experiments/ender21_residual_stability_v53/"
-        "run_confirmation.py",
-        "numerai/agents/experiments/ender21_residual_stability_v53/"
-        "source_manifest.json",
-        "numerai/agents/experiments/ender21_residual_stability_v53/"
-        "source_manifest_round2.json",
     }
 )
-EXPECTED_EXTERNAL_ARTIFACTS = frozenset(EXPECTED_INPUTS.values())
-EXPECTED_RUNTIME = {
+EXPECTED_EVALUATION_EXTERNAL_ARTIFACTS = {
+    EXPECTED_INPUTS["confirmation_full"]: {
+        "last_era": "1021",
+        "sha256": "952d043bf1673ff525124defd9f24a7e110a92909de1bc2feec35a119c45ae71",
+        "size_bytes": 1_637_635_919,
+    },
+    EXPECTED_INPUTS["confirmation_benchmark"]: {
+        "last_era": "1021",
+        "sha256": "f435b4aed17c759011709ff2d8a8a4f235a7444154a740733fb80b55d7350605",
+        "size_bytes": 29_796_569,
+    },
+}
+EXPECTED_EVALUATION_RUNTIME = {
     "python": "3.13.14",
     "packages": {
         "numpy": "2.5.1",
@@ -126,9 +175,6 @@ EXPECTED_RUNTIME = {
         "pyarrow": "25.0.0",
         "numerai-tools": "0.6.0",
         "numerapi": "2.23.3",
-        "torch": "2.13.0+cu130",
-        "tabm": "0.0.3",
-        "rtdl-num-embeddings": "0.0.12",
     },
 }
 
@@ -312,6 +358,19 @@ class _BootstrapReadOnlyLease:
         self.stream.seek(0)
         return digest.hexdigest()
 
+    def git_blob_oid(self, *, chunk_size: int = 8 * 1024 * 1024) -> str:
+        """Hash the held bytes using this repository's SHA-1 blob format."""
+
+        if self.stream is None:
+            raise RuntimeError(f"Lease is closed: {self.label}")
+        size = os.fstat(self.stream.fileno()).st_size
+        digest = hashlib.sha1(f"blob {size}\0".encode("ascii"))
+        self.stream.seek(0)
+        while chunk := self.stream.read(chunk_size):
+            digest.update(chunk)
+        self.stream.seek(0)
+        return digest.hexdigest()
+
     def stat(self) -> os.stat_result:
         return os.fstat(self.fileno())
 
@@ -352,27 +411,71 @@ def _canonical_repo_file(relative_text: str, label: str) -> Path:
     return absolute
 
 
-def _bootstrap_verify_and_lease_sources(
-    stack: ExitStack,
-    experiment: Path,
-) -> tuple[dict, dict[str, _BootstrapReadOnlyLease]]:
-    """Verify and pin the manifest and all governed source before local imports."""
+def _exact_commit_parent(commit: str) -> str:
+    line = _run_git("rev-list", "--parents", "-n", "1", commit).stdout.strip()
+    parts = line.split()
+    if len(parts) != 2 or parts[0] != commit:
+        raise ValueError(f"Confirmation checkpoint is not a single-parent commit: {commit}")
+    return parts[1]
 
-    expected_experiment = Path(
-        os.path.abspath(
-            REPO_DIR / "numerai/agents/experiments" / EXPERIMENT_NAME
-        )
+
+def _commit_changed_paths(commit: str) -> tuple[str, ...]:
+    return tuple(
+        line
+        for line in _run_git(
+            "diff-tree", "--no-commit-id", "--name-only", "-r", commit
+        ).stdout.splitlines()
+        if line
     )
-    if Path(os.path.abspath(experiment)) != expected_experiment:
-        raise ValueError("Confirmation bootstrap experiment path is not canonical.")
-    manifest_path = experiment / "source_manifest_confirmation.json"
-    manifest_lease = stack.enter_context(
-        _BootstrapReadOnlyLease(manifest_path, "confirmation source manifest")
+
+
+def _require_exact_evaluation_topology(evaluation_code_commit: str) -> None:
+    """Bind the evaluator seal to the immutable training/evidence lineage."""
+
+    for commit in (
+        TRAINING_CODE_COMMIT,
+        TRAINING_MANIFEST_COMMIT,
+        TRAINING_EVIDENCE_COMMIT,
+        evaluation_code_commit,
+    ):
+        resolved = _run_git(
+            "rev-parse", "--verify", f"{commit}^{{commit}}"
+        ).stdout.strip()
+        if resolved != commit:
+            raise ValueError(f"Confirmation checkpoint does not resolve exactly: {commit}")
+    if _exact_commit_parent(TRAINING_MANIFEST_COMMIT) != TRAINING_CODE_COMMIT:
+        raise ValueError("Training-manifest checkpoint topology differs.")
+    if _exact_commit_parent(TRAINING_EVIDENCE_COMMIT) != TRAINING_MANIFEST_COMMIT:
+        raise ValueError("Training-evidence checkpoint topology differs.")
+    if _exact_commit_parent(evaluation_code_commit) != TRAINING_EVIDENCE_COMMIT:
+        raise ValueError("Evaluation-code checkpoint topology differs.")
+    if set(_commit_changed_paths(TRAINING_MANIFEST_COMMIT)) != {
+        TRAINING_MANIFEST_RELATIVE
+    }:
+        raise ValueError("Training-manifest checkpoint path set differs.")
+    if set(_commit_changed_paths(TRAINING_EVIDENCE_COMMIT)) != set(
+        EXPECTED_EVIDENCE_BLOBS
+    ):
+        raise ValueError("Training-evidence checkpoint path set differs.")
+    for relative, expected_blob in EXPECTED_EVIDENCE_BLOBS.items():
+        actual_blob = _run_git(
+            "rev-parse", f"{TRAINING_EVIDENCE_COMMIT}:{relative}"
+        ).stdout.strip()
+        if actual_blob != expected_blob:
+            raise ValueError(f"Training-evidence Git blob differs: {relative}")
+
+    head = _run_git("rev-parse", "HEAD").stdout.strip()
+    if not _is_hex(head, 40) or _exact_commit_parent(head) != evaluation_code_commit:
+        raise ValueError("Evaluation-manifest seal topology differs.")
+    expected_manifest = (
+        "numerai/agents/experiments/ender21_residual_stability_v53/"
+        f"{EVALUATION_MANIFEST_NAME}"
     )
-    try:
-        manifest = json.loads(manifest_lease.read_bytes())
-    except (UnicodeDecodeError, json.JSONDecodeError) as error:
-        raise ValueError("Confirmation source manifest is invalid JSON.") from error
+    if set(_commit_changed_paths(head)) != {expected_manifest}:
+        raise ValueError("Evaluation-manifest seal path set differs.")
+
+
+def _validate_evaluation_manifest_schema(manifest: object) -> dict:
     if not isinstance(manifest, dict) or set(manifest) != {
         "schema_version",
         "frozen_at",
@@ -381,24 +484,54 @@ def _bootstrap_verify_and_lease_sources(
         "files",
         "external_artifacts",
         "runtime",
+        "training_authority",
     }:
-        raise ValueError("Confirmation bootstrap manifest schema differs.")
+        raise ValueError("Confirmation evaluation manifest schema differs.")
     if manifest["schema_version"] != 1 or manifest["hash_algorithm"] != "sha256":
-        raise ValueError("Confirmation bootstrap manifest version differs.")
+        raise ValueError("Confirmation evaluation manifest version differs.")
+    if not _is_hex(manifest["git_head"], 40):
+        raise ValueError("Confirmation evaluation Git checkpoint is malformed.")
+    if (
+        not isinstance(manifest["files"], dict)
+        or set(manifest["files"]) != EXPECTED_EVALUATION_MANIFEST_FILES
+    ):
+        raise ValueError("Confirmation evaluation source set differs.")
+    if manifest["external_artifacts"] != EXPECTED_EVALUATION_EXTERNAL_ARTIFACTS:
+        raise ValueError("Confirmation evaluation external input set differs.")
+    if manifest["runtime"] != EXPECTED_EVALUATION_RUNTIME:
+        raise ValueError("Confirmation evaluation runtime contract differs.")
+    if manifest["training_authority"] != EXPECTED_TRAINING_AUTHORITY:
+        raise ValueError("Confirmation training authority differs.")
+    return manifest
+
+
+def _bootstrap_verify_and_lease_sources(
+    stack: ExitStack,
+    experiment: Path,
+) -> tuple[dict, dict, dict[str, _BootstrapReadOnlyLease]]:
+    """Verify the new evaluator seal and the immutable training authority."""
+
+    expected_experiment = Path(
+        os.path.abspath(
+            REPO_DIR / "numerai/agents/experiments" / EXPERIMENT_NAME
+        )
+    )
+    if Path(os.path.abspath(experiment)) != expected_experiment:
+        raise ValueError("Confirmation bootstrap experiment path is not canonical.")
+    manifest_path = experiment / EVALUATION_MANIFEST_NAME
+    manifest_lease = stack.enter_context(
+        _BootstrapReadOnlyLease(manifest_path, "confirmation evaluation manifest")
+    )
+    try:
+        manifest = json.loads(manifest_lease.read_bytes())
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ValueError("Confirmation evaluation manifest is invalid JSON.") from error
+    manifest = _validate_evaluation_manifest_schema(manifest)
     commit = manifest["git_head"]
-    if not _is_hex(commit, 40):
-        raise ValueError("Confirmation bootstrap Git checkpoint is malformed.")
     files = manifest["files"]
-    external = manifest["external_artifacts"]
-    if not isinstance(files, dict) or set(files) != EXPECTED_MANIFEST_FILES:
-        raise ValueError("Confirmation bootstrap source set differs.")
-    if not isinstance(external, dict) or set(external) != EXPECTED_EXTERNAL_ARTIFACTS:
-        raise ValueError("Confirmation bootstrap external input set differs.")
-    if manifest["runtime"] != EXPECTED_RUNTIME:
-        raise ValueError("Confirmation bootstrap runtime contract differs.")
-    if platform.python_version() != EXPECTED_RUNTIME["python"]:
+    if platform.python_version() != EXPECTED_EVALUATION_RUNTIME["python"]:
         raise ValueError("Confirmation bootstrap Python runtime differs.")
-    for package, expected_version in EXPECTED_RUNTIME["packages"].items():
+    for package, expected_version in EXPECTED_EVALUATION_RUNTIME["packages"].items():
         try:
             actual_version = importlib_metadata.version(package)
         except importlib_metadata.PackageNotFoundError as error:
@@ -410,15 +543,9 @@ def _bootstrap_verify_and_lease_sources(
                 f"Confirmation bootstrap runtime package drifted: {package}"
             )
 
-    resolved = _run_git("rev-parse", "--verify", f"{commit}^{{commit}}").stdout.strip()
-    if resolved != commit:
-        raise ValueError("Confirmation bootstrap checkpoint does not resolve exactly.")
-    if _run_git(
-        "merge-base", "--is-ancestor", commit, "HEAD", allow_one=True
-    ).returncode:
-        raise ValueError("Confirmation bootstrap checkpoint is not an ancestor.")
+    _require_exact_evaluation_topology(commit)
     manifest_relative = manifest_path.relative_to(REPO_DIR).as_posix()
-    _require_committed_clean(manifest_path, "confirmation source manifest")
+    _require_committed_clean(manifest_path, "confirmation evaluation manifest")
     _run_git("cat-file", "-e", f"HEAD:{manifest_relative}")
 
     leases = {"source_manifest": manifest_lease}
@@ -440,7 +567,40 @@ def _bootstrap_verify_and_lease_sources(
                 f"Confirmation source differs from checkpoint: {relative_text}"
             )
         leases[relative_text] = lease
-    return manifest, leases
+
+    training_manifest_path = _canonical_repo_file(
+        TRAINING_MANIFEST_RELATIVE, "training source manifest"
+    )
+    training_manifest_lease = stack.enter_context(
+        _BootstrapReadOnlyLease(
+            training_manifest_path, "immutable training source manifest"
+        )
+    )
+    if training_manifest_lease.sha256() != TRAINING_MANIFEST_SHA256:
+        raise ValueError("Immutable training source-manifest hash differs.")
+    if training_manifest_lease.git_blob_oid() != TRAINING_MANIFEST_GIT_BLOB:
+        raise ValueError("Immutable training source-manifest Git blob differs.")
+    commit_blob = _run_git(
+        "rev-parse", f"{TRAINING_MANIFEST_COMMIT}:{TRAINING_MANIFEST_RELATIVE}"
+    ).stdout.strip()
+    if commit_blob != TRAINING_MANIFEST_GIT_BLOB:
+        raise ValueError("Training source-manifest commit binding differs.")
+    _require_committed_clean(
+        training_manifest_path, "immutable training source manifest"
+    )
+    try:
+        training_manifest = json.loads(training_manifest_lease.read_bytes())
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ValueError("Immutable training source manifest is invalid JSON.") from error
+    if (
+        not isinstance(training_manifest, dict)
+        or training_manifest.get("git_head") != TRAINING_CODE_COMMIT
+        or training_manifest.get("hash_algorithm") != "sha256"
+        or training_manifest.get("schema_version") != 1
+    ):
+        raise ValueError("Immutable training source-manifest envelope differs.")
+    leases[TRAINING_MANIFEST_RELATIVE] = training_manifest_lease
+    return manifest, training_manifest, leases
 
 
 def _require_committed_clean(path: Path, label: str) -> None:
@@ -483,6 +643,7 @@ def _acquire_evaluation_leases(
     ):
         raise ValueError("Confirmation portable-bundle directory differs.")
     paths = {
+        "training_log": experiment / f"logs/{CONFIRMATION_NAME}.log",
         "completion": experiment
         / f"receipts/{CONFIRMATION_NAME}.completion.json",
         "result": experiment / f"results/{CONFIRMATION_NAME}.json",
@@ -502,6 +663,42 @@ def _acquire_evaluation_leases(
             _BootstrapReadOnlyLease(path, f"confirmation evaluation {label}")
         )
     return leases
+
+
+def _validate_evidence_commit_leases(
+    leases: dict[str, _BootstrapReadOnlyLease],
+) -> None:
+    """Require every held evidence file to equal its frozen Git blob and HEAD."""
+
+    for relative, expected_blob in EXPECTED_EVIDENCE_BLOBS.items():
+        lease = leases[EVIDENCE_LEASE_KEYS[relative]]
+        path = _canonical_repo_file(relative, "training evidence")
+        inspected = _require_plain_file(path, f"training evidence {relative}")
+        held = lease.stat()
+        if (
+            int(held.st_dev) != int(inspected.st_dev)
+            or int(held.st_ino) != int(inspected.st_ino)
+            or int(held.st_size) != int(inspected.st_size)
+        ):
+            raise ValueError(f"Training-evidence lease identity differs: {relative}")
+        _require_committed_clean(path, f"training evidence {relative}")
+        head_blob = _run_git("rev-parse", f"HEAD:{relative}").stdout.strip()
+        if head_blob != expected_blob or lease.git_blob_oid() != expected_blob:
+            raise ValueError(f"Live training-evidence Git blob differs: {relative}")
+
+
+def _validate_evaluation_external_leases(
+    leases: dict[str, _BootstrapReadOnlyLease],
+) -> None:
+    for label in ("confirmation_full", "confirmation_benchmark"):
+        relative = EXPECTED_INPUTS[label]
+        expected = EXPECTED_EVALUATION_EXTERNAL_ARTIFACTS[relative]
+        lease = leases[label]
+        if (
+            lease.stat().st_size != expected["size_bytes"]
+            or lease.sha256() != expected["sha256"]
+        ):
+            raise ValueError(f"Confirmation evaluation external drifted: {relative}")
 
 
 def _validate_file_receipt(
@@ -653,17 +850,17 @@ def _validate_training_evidence(
         raise ValueError("Confirmation completion source binding differs.")
 
     expected_era_contract = {
-        "fit_eras": _protocol_binding(
+        "fit": _protocol_binding(
             experiment,
             "confirmation_train_eras_through_0809.json",
             EXPECTED_TRAIN_ERAS,
         ),
-        "embargo_eras": _protocol_binding(
+        "embargo": _protocol_binding(
             experiment,
             "confirmation_embargo_eras_0813_through_0861.json",
             EXPECTED_EMBARGO_ERAS,
         ),
-        "confirmation_eras": _protocol_binding(
+        "confirmation": _protocol_binding(
             experiment,
             "confirmation_eras_0865_through_1021.json",
             EXPECTED_CONFIRMATION_ERAS,
@@ -992,21 +1189,19 @@ def _evaluate_confirmation(
 
     # Independently verify and pin every governed source before running or importing
     # any of it. Pin all evidence and scored inputs before their validation/read.
-    manifest, source_leases = _bootstrap_verify_and_lease_sources(
+    evaluation_manifest, training_manifest, source_leases = (
+        _bootstrap_verify_and_lease_sources(
         custody_stack, experiment
+        )
     )
     evidence_leases = _acquire_evaluation_leases(
         custody_stack, experiment, numerai_dir
     )
-    runner = runpy.run_path(str(experiment / "run_confirmation.py"))
-    runner_manifest = runner["verify_confirmation_manifest"](
-        experiment, numerai_dir
-    )
-    if runner_manifest != manifest:
-        raise ValueError("Runner confirmation manifest verification differs.")
+    _validate_evidence_commit_leases(evidence_leases)
+    _validate_evaluation_external_leases(evidence_leases)
     numerai_metrics_module, confirmation_checks_fn = _load_governed_scoring()
     completion = _validate_training_evidence(
-        experiment, manifest, evidence_leases
+        experiment, training_manifest, evidence_leases
     )
     expected_eras = tuple(
         json.loads(
@@ -1099,6 +1294,13 @@ def _evaluate_confirmation(
         "eras": len(expected_eras),
         "first_era": expected_eras[0],
         "last_era": expected_eras[-1],
+        "evaluation_manifest": {
+            "path": (
+                experiment / EVALUATION_MANIFEST_NAME
+            ).relative_to(REPO_DIR).as_posix(),
+            "sha256": _sha256(experiment / EVALUATION_MANIFEST_NAME),
+            "git_head": evaluation_manifest["git_head"],
+        },
         "training_completion": completion,
         **scoring,
         "per_era": per_era,

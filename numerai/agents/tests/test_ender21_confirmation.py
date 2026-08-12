@@ -617,6 +617,64 @@ class TestEnder21ConfirmationCohort(unittest.TestCase):
 
 
 class TestEnder21ConfirmationEvidenceOrder(unittest.TestCase):
+    def test_evaluation_manifest_contract_is_exact_and_fail_closed(self) -> None:
+        files = {
+            relative: "a" * 64
+            for relative in EVALUATOR.EXPECTED_EVALUATION_MANIFEST_FILES
+        }
+        canonical = {
+            "schema_version": 1,
+            "frozen_at": "2026-08-11",
+            "git_head": "b" * 40,
+            "hash_algorithm": "sha256",
+            "files": files,
+            "external_artifacts": EVALUATOR.EXPECTED_EVALUATION_EXTERNAL_ARTIFACTS,
+            "runtime": EVALUATOR.EXPECTED_EVALUATION_RUNTIME,
+            "training_authority": EVALUATOR.EXPECTED_TRAINING_AUTHORITY,
+        }
+        self.assertIs(
+            EVALUATOR._validate_evaluation_manifest_schema(canonical), canonical
+        )
+        mutations = []
+        wrong_files = deepcopy(canonical)
+        wrong_files["files"].pop(next(iter(wrong_files["files"])))
+        mutations.append(wrong_files)
+        wrong_external = deepcopy(canonical)
+        wrong_external["external_artifacts"] = {}
+        mutations.append(wrong_external)
+        wrong_authority = deepcopy(canonical)
+        wrong_authority["training_authority"]["evidence_commit"] = "c" * 40
+        mutations.append(wrong_authority)
+        wrong_runtime = deepcopy(canonical)
+        wrong_runtime["runtime"]["python"] = "0.0.0"
+        mutations.append(wrong_runtime)
+        for mutated in mutations:
+            with self.subTest(keys=mutated.keys()), self.assertRaises(ValueError):
+                EVALUATOR._validate_evaluation_manifest_schema(mutated)
+
+    def test_actual_sealed_training_evidence_schema_passes_before_target(self) -> None:
+        manifest = json.loads(
+            (EXPERIMENT / "source_manifest_confirmation.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        target_reader = mock.Mock(
+            side_effect=AssertionError("CONFIRMATION_TARGET_OPENED")
+        )
+        with mock.patch.object(
+            EVALUATOR,
+            "_load_confirmation_truth",
+            target_reader,
+        ):
+            completion = EVALUATOR._validate_training_evidence(
+                EXPERIMENT, manifest
+            )
+        self.assertEqual(
+            set(completion["era_contract"]),
+            {"fit", "embargo", "confirmation"},
+        )
+        target_reader.assert_not_called()
+
     def test_evaluator_reserves_receipt_and_holds_data_leases_through_fsync(
         self,
     ) -> None:
@@ -655,6 +713,7 @@ class TestEnder21ConfirmationEvidenceOrder(unittest.TestCase):
             )
             receipts = experiment / "receipts"
             receipts.mkdir(parents=True)
+            (experiment / EVALUATOR.EVALUATION_MANIFEST_NAME).write_bytes(b"{}")
             numerai_dir = root / "numerai"
             output = receipts / "confirmation_research.json"
             expected_eras = ("0865", "0869")
@@ -662,14 +721,15 @@ class TestEnder21ConfirmationEvidenceOrder(unittest.TestCase):
                 "numerai/agents/experiments/ender21_residual_stability_v53/"
                 "protocol/confirmation_eras_0865_through_1021.json"
             )
-            manifest = {"git_head": "a" * 40}
+            evaluation_manifest = {"git_head": "a" * 40}
+            training_manifest = {"git_head": "b" * 40}
 
             def bootstrap(stack, _experiment):
                 events.append("bootstrap_sources")
                 source = stack.enter_context(
                     Lease("source", json.dumps(expected_eras).encode("utf-8"))
                 )
-                return manifest, {protocol_key: source}
+                return evaluation_manifest, training_manifest, {protocol_key: source}
 
             def acquire(stack, _experiment, _numerai_dir):
                 events.append("acquire_evidence_data")
@@ -755,14 +815,6 @@ class TestEnder21ConfirmationEvidenceOrder(unittest.TestCase):
             def fsync(_fileno):
                 require_open("receipt_fsync")
 
-            fake_runner = {
-                "verify_confirmation_manifest": lambda *_args: manifest
-            }
-
-            def load_runner(*_args, **_kwargs):
-                events.append("runpy_runner")
-                return fake_runner
-
             def load_scoring():
                 events.append("governed_scoring")
                 return mock.Mock(), mock.Mock()
@@ -780,7 +832,11 @@ class TestEnder21ConfirmationEvidenceOrder(unittest.TestCase):
                 "_acquire_evaluation_leases",
                 side_effect=acquire,
             ), mock.patch.object(
-                EVALUATOR.runpy, "run_path", side_effect=load_runner
+                EVALUATOR,
+                "_validate_evidence_commit_leases",
+            ), mock.patch.object(
+                EVALUATOR,
+                "_validate_evaluation_external_leases",
             ), mock.patch.object(
                 EVALUATOR,
                 "_load_governed_scoring",
@@ -826,8 +882,7 @@ class TestEnder21ConfirmationEvidenceOrder(unittest.TestCase):
                 self.assertGreater(events.index(f"lease_close:{name}"), fsync_index)
             self.assertLess(events.index("receipt_reserved"), events.index("bootstrap_sources"))
             self.assertLess(events.index("bootstrap_sources"), events.index("acquire_evidence_data"))
-            self.assertLess(events.index("acquire_evidence_data"), events.index("runpy_runner"))
-            self.assertLess(events.index("runpy_runner"), events.index("governed_scoring"))
+            self.assertLess(events.index("acquire_evidence_data"), events.index("governed_scoring"))
             self.assertLess(events.index("governed_scoring"), events.index("evidence_validation"))
             self.assertLess(events.index("evidence_validation"), events.index("target_read"))
             self.assertLess(events.index("target_read"), events.index("scoring"))
@@ -843,25 +898,23 @@ class TestEnder21ConfirmationEvidenceOrder(unittest.TestCase):
             target_reader = mock.Mock(
                 side_effect=AssertionError("CONFIRMATION_TARGET_OPENED")
             )
-            fake_manifest = {"git_head": "a" * 40}
-            fake_runner = {
-                "verify_confirmation_manifest": mock.Mock(
-                    return_value=fake_manifest
-                )
-            }
+            fake_evaluation_manifest = {"git_head": "a" * 40}
+            fake_training_manifest = {"git_head": "b" * 40}
             fake_leases = {"completion": mock.Mock()}
             with mock.patch.object(EVALUATOR, "REPO_DIR", root), mock.patch.object(
                 EVALUATOR,
                 "_bootstrap_verify_and_lease_sources",
-                return_value=(fake_manifest, {}),
+                return_value=(fake_evaluation_manifest, fake_training_manifest, {}),
             ), mock.patch.object(
                 EVALUATOR,
                 "_acquire_evaluation_leases",
                 return_value=fake_leases,
             ), mock.patch.object(
-                EVALUATOR.runpy,
-                "run_path",
-                return_value=fake_runner,
+                EVALUATOR,
+                "_validate_evidence_commit_leases",
+            ), mock.patch.object(
+                EVALUATOR,
+                "_validate_evaluation_external_leases",
             ), mock.patch.object(
                 EVALUATOR,
                 "_load_governed_scoring",
@@ -882,7 +935,7 @@ class TestEnder21ConfirmationEvidenceOrder(unittest.TestCase):
                     )
 
             evidence_validator.assert_called_once_with(
-                experiment, fake_manifest, fake_leases
+                experiment, fake_training_manifest, fake_leases
             )
             target_reader.assert_not_called()
 
