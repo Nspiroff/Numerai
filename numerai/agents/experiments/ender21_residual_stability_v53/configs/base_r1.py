@@ -9,8 +9,10 @@ CONFIG = {
         "feature_set": "all",
         "target_col": "target_ender_20",
         "id_col": "id",
-        "full_data_path": "v5.3/ender21_dev_full_through_1021.parquet",
-        "benchmark_data_path": "v5.3/ender21_dev_benchmark_models_through_1021.parquet",
+        "full_data_path": "v5.3/ender21_discovery_full_through_0861.parquet",
+        "benchmark_data_path": (
+            "v5.3/ender21_discovery_benchmark_models_through_0861.parquet"
+        ),
         "benchmark_model": "v53_lgbm_ender20",
         "require_benchmark_coverage": True,
         "era_allowlist_path": (
@@ -52,7 +54,7 @@ CONFIG = {
             "amp": True,
             "seed": 1337,
             "loss_mode": "mse",
-            "chronological_blocks": 8,
+            "chronological_blocks": 4,
             "dro_temperature": 2.0,
         },
     },

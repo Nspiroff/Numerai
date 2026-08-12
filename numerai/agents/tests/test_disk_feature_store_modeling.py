@@ -1781,6 +1781,204 @@ class TestDiskFeatureStoreModeling(unittest.TestCase):
             self.assertEqual(results.read_bytes(), b"injected result")
             self.assertEqual(predictions.read_bytes(), b"")
 
+    def test_ender21_manifest_follows_reservation_and_precedes_config_and_data(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            experiment = (
+                root
+                / "numerai/agents/experiments/ender21_residual_stability_v53"
+            )
+            configs = experiment / "configs"
+            configs.mkdir(parents=True)
+            config = configs / "r1_control_tabm_k64.py"
+            config.write_text("CONFIG = {}\n", encoding="utf-8")
+
+            events = []
+
+            class Reservation:
+                predictions_path = experiment / "predictions/r1_control_tabm_k64.parquet"
+                results_path = experiment / "results/r1_control_tabm_k64.json"
+
+                def __enter__(self):
+                    events.append("reservation")
+                    return self
+
+                def __exit__(self, *_args):
+                    return None
+
+            def verify_manifest():
+                events.append("manifest")
+                return {}
+
+            def evaluate_config(*_args, **_kwargs):
+                events.append("config")
+                raise AssertionError("CONFIG_EVALUATED")
+
+            def open_data_client(*_args, **_kwargs):
+                events.append("data")
+                raise AssertionError("DATA_CLIENT_OPENED")
+
+            with mock.patch.object(
+                pipeline_module, "REPO_DIR", root
+            ), mock.patch.object(
+                pipeline_module,
+                "_verify_ender21_round1_manifest",
+                side_effect=verify_manifest,
+            ) as manifest_verifier, mock.patch.object(
+                pipeline_module,
+                "_ExclusiveOutputReservations",
+                return_value=Reservation(),
+            ), mock.patch.object(
+                pipeline_module,
+                "load_config",
+                side_effect=evaluate_config,
+            ), mock.patch.object(
+                pipeline_module,
+                "NumerAPI",
+                side_effect=open_data_client,
+            ) as data_client:
+                with self.assertRaisesRegex(AssertionError, "CONFIG_EVALUATED"):
+                    run_training(config)
+
+            manifest_verifier.assert_called_once_with()
+            data_client.assert_not_called()
+            self.assertEqual(events, ["reservation", "manifest", "config"])
+
+    def test_ender21_existing_output_stops_before_manifest_config_or_data(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            experiment = (
+                root
+                / "numerai/agents/experiments/ender21_residual_stability_v53"
+            )
+            configs = experiment / "configs"
+            configs.mkdir(parents=True)
+            config = configs / "r1_control_tabm_k64.py"
+            config.write_text("CONFIG = {}\n", encoding="utf-8")
+            (experiment / "predictions").mkdir()
+            (experiment / "results").mkdir()
+            prediction = experiment / "predictions/r1_control_tabm_k64.parquet"
+            prediction.write_bytes(b"existing")
+
+            with mock.patch.object(
+                pipeline_module, "REPO_DIR", root
+            ), mock.patch.object(
+                pipeline_module, "_verify_ender21_round1_manifest"
+            ) as manifest_verifier, mock.patch.object(
+                pipeline_module,
+                "load_config",
+                side_effect=AssertionError("CONFIG_EVALUATED"),
+            ) as config_loader, mock.patch.object(
+                pipeline_module,
+                "NumerAPI",
+                side_effect=AssertionError("DATA_CLIENT_OPENED"),
+            ) as data_client:
+                with self.assertRaisesRegex(
+                    ValueError, "Cannot reserve exclusive prediction output"
+                ):
+                    run_training(config)
+
+            manifest_verifier.assert_not_called()
+            config_loader.assert_not_called()
+            data_client.assert_not_called()
+            self.assertEqual(prediction.read_bytes(), b"existing")
+            self.assertFalse(
+                (experiment / "results/r1_control_tabm_k64.json").exists()
+            )
+
+    def test_ender21_manifest_failure_is_terminal_after_empty_reservations(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            experiment = (
+                root
+                / "numerai/agents/experiments/ender21_residual_stability_v53"
+            )
+            configs = experiment / "configs"
+            configs.mkdir(parents=True)
+            config = configs / "r1_control_tabm_k64.py"
+            config.write_text("CONFIG = {}\n", encoding="utf-8")
+
+            with mock.patch.object(
+                pipeline_module, "REPO_DIR", root
+            ), mock.patch.object(
+                pipeline_module,
+                "_verify_ender21_round1_manifest",
+                side_effect=ValueError("MANIFEST_REJECTED"),
+            ) as manifest_verifier, mock.patch.object(
+                pipeline_module,
+                "load_config",
+                side_effect=AssertionError("CONFIG_EVALUATED"),
+            ) as config_loader, mock.patch.object(
+                pipeline_module,
+                "NumerAPI",
+                side_effect=AssertionError("DATA_CLIENT_OPENED"),
+            ) as data_client:
+                with self.assertRaisesRegex(ValueError, "MANIFEST_REJECTED"):
+                    run_training(config)
+
+            manifest_verifier.assert_called_once_with()
+            config_loader.assert_not_called()
+            data_client.assert_not_called()
+            predictions = experiment / "predictions/r1_control_tabm_k64.parquet"
+            results = experiment / "results/r1_control_tabm_k64.json"
+            self.assertTrue(predictions.is_file())
+            self.assertTrue(results.is_file())
+            self.assertEqual(predictions.stat().st_size, 0)
+            self.assertEqual(results.stat().st_size, 0)
+
+    def test_ender21_round_one_requires_exact_named_python_config(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            configs = (
+                root
+                / "numerai/agents/experiments/ender21_residual_stability_v53/configs"
+            )
+            configs.mkdir(parents=True)
+            cases = (
+                ("r1_control_tabm_k64.json", "Only frozen named"),
+                ("renamed_control.py", "Only frozen named"),
+            )
+            for filename, message in cases:
+                with self.subTest(filename=filename):
+                    path = configs / filename
+                    path.write_text("CONFIG = {}\n", encoding="utf-8")
+                    with mock.patch.object(
+                        pipeline_module, "REPO_DIR", root
+                    ), mock.patch.object(
+                        pipeline_module, "_verify_ender21_round1_manifest"
+                    ) as manifest_verifier, mock.patch.object(
+                        pipeline_module, "load_config"
+                    ) as config_loader:
+                        with self.assertRaisesRegex(ValueError, message):
+                            run_training(path)
+                    manifest_verifier.assert_not_called()
+                    config_loader.assert_not_called()
+
+    def test_copied_ender21_config_cannot_target_governed_outputs(self):
+        source = (
+            Path(__file__).resolve().parents[1]
+            / "experiments/ender21_residual_stability_v53/configs"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            copied = Path(tmp)
+            (copied / "base_r1.py").write_bytes((source / "base_r1.py").read_bytes())
+            copied_config = copied / "r1_control_tabm_k64.py"
+            copied_config.write_bytes(
+                (source / "r1_control_tabm_k64.py").read_bytes()
+            )
+
+            with mock.patch.object(
+                pipeline_module,
+                "NumerAPI",
+                side_effect=AssertionError("DATA_CLIENT_OPENED"),
+            ) as data_client:
+                with self.assertRaisesRegex(
+                    ValueError,
+                    "Governed experiment outputs require an authorized exclusive run",
+                ):
+                    run_training(copied_config)
+            data_client.assert_not_called()
+
     def test_generic_config_cannot_overwrite_governed_ender20_outputs(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

@@ -351,7 +351,7 @@ class TestTorchTabularRegressor(unittest.TestCase):
             self.assertEqual(config["output"]["results_name"], path.stem)
 
             if contract[1] == "chronological_block_dro":
-                self.assertEqual(params["chronological_blocks"], 8)
+                self.assertEqual(params["chronological_blocks"], 4)
                 self.assertEqual(params["dro_temperature"], 2.0)
 
         control = loaded["r1_control_tabm_k64.py"]
@@ -382,8 +382,11 @@ class TestTorchTabularRegressor(unittest.TestCase):
         self.assertEqual(len(eras), len(set(eras)))
         self.assertTrue(all(isinstance(era, str) for era in eras))
         self.assertEqual(eras[-1], "0861")
-        self.assertIn("through_1021", data["full_data_path"])
-        self.assertIn("through_1021", data["benchmark_data_path"])
+        self.assertIn("discovery_full_through_0861", data["full_data_path"])
+        self.assertIn(
+            "discovery_benchmark_models_through_0861",
+            data["benchmark_data_path"],
+        )
 
 
 if __name__ == "__main__":

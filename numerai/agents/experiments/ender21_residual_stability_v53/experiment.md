@@ -46,11 +46,14 @@ protocol. Ender21 does not invoke that evaluator or inspect its locked receipt.
 - Inputs: all 3,555 Numerai features; era and benchmark are metadata only.
 - Objective label: era-wise linear residual of Ender20 to the benchmark, with
   intercept and proportion 1.0.
-- Development data: physically isolated `v5.3/ender21_dev_full_through_1021.parquet`
-  and `v5.3/ender21_dev_benchmark_models_through_1021.parquet`, plus the exact
-  committed era allowlist ending at `1021`. The source row group containing
-  era `1025` also contains protected era `1029`, so the entire row group is
-  excluded. Eras `1025`-`1225` remain unavailable to Ender21.
+- Round-1 data: physically isolated
+  `v5.3/ender21_discovery_full_through_0861.parquet` and
+  `v5.3/ender21_discovery_benchmark_models_through_0861.parquet`, plus the exact
+  committed discovery allowlist. No later target row is opened by Round 1.
+- A separate custody extract through `1021` exists for a future authorized
+  Ender21 confirmation, but Round-1 configs do not reference or read it. The
+  source row group containing era `1025` also contains protected era `1029`, so
+  that entire group remains excluded.
 - Discovery eras: exact retained eras `0161`-`0861` from the committed discovery
   allowlist. Ender21 confirmation eras `0865`-`1021` are excluded from discovery.
 - Outer validation: five expanding splits; 13 retained-era embargo. The first
@@ -77,7 +80,7 @@ residual target. Only the named factors change.
 | `r1_tabm_mini_k64_block_dro` | TabM-mini | chronological block DRO | combine both regularizers |
 
 Chronological block DRO is frozen as follows. After the inner split and embargo,
-the sorted training eras are divided into eight contiguous, near-equal blocks.
+the sorted training eras are divided into four contiguous, near-equal blocks.
 For each minibatch, member MSE is averaged to a per-row loss, then to one loss
 per represented block. Detached weights are
 `softmax(2 * (block_loss / mean_block_loss - 1))`; the differentiable objective
@@ -95,7 +98,7 @@ guardrail, not the optimizer.
 
 A Round-1 challenger is eligible only if all are true:
 
-1. full BMC and retained-last-200 BMC are positive;
+1. full BMC and most-recent-fold BMC are positive;
 2. Corr is at least 0.005 and below 0.04;
 3. full and most-recent-fold BMC each retain at least 90% of the freshly run
    Round-1 control;
@@ -167,6 +170,21 @@ user decision regardless of any research result.
 
 ## Status
 
-`PROTOCOL_FROZEN_IMPLEMENTATION_PENDING`
+`PRE_SCORE_VALIDATION_COMPLETE`
 
 No Ender21 model has been scored at this point.
+
+An initial control process was stopped before producing predictions, results, or
+metrics when review found that runtime allowlist filtering still materialized
+later confirmation rows from a shared extract. The input contract was tightened
+to discovery-only physical Parquets before any Ender21 score became visible.
+Pre-score review also showed that eight DRO blocks exceeded the earliest inner
+training split's seven eras. The block count was therefore reduced to four
+before any scored output existed.
+
+The final launcher reserves both canonical outputs with create-new semantics,
+then verifies the committed source, runtime, config, allowlist, and physical
+input hashes before evaluating config code or opening modeling data. The
+Round-1 evaluator independently requires exact OOF row/fold coverage, expanding
+CV geometry, sampling settings, prediction semantics, and stored config/data
+bindings before it computes the predeclared metrics.

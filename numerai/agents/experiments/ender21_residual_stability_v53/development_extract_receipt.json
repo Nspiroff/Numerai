@@ -1,16 +1,27 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "created_at": "2026-08-11",
-  "cutoff_era": "1021",
   "protected_mixed_source_row_group_excluded": true,
-  "join_validation": {
-    "benchmark_ids": 1220917,
-    "unique_benchmark_ids": true,
-    "missing_from_full": 0,
-    "era_mismatches": 0
-  },
   "artifacts": {
-    "full": {
+    "discovery_full": {
+      "path": "numerai/v5.3/ender21_discovery_full_through_0861.parquet",
+      "rows": 1113496,
+      "row_groups": 68,
+      "first_era": "0001",
+      "last_era": "0861",
+      "size_bytes": 1302848771,
+      "sha256": "476d561ba8515a0066e892c5489a5ae1db6443587e9d5d06a9a6280400a701b9"
+    },
+    "discovery_benchmark_models": {
+      "path": "numerai/v5.3/ender21_discovery_benchmark_models_through_0861.parquet",
+      "rows": 957366,
+      "row_groups": 59,
+      "first_era": "0161",
+      "last_era": "0861",
+      "size_bytes": 23325224,
+      "sha256": "c2db9a77811390e9b9c47926b62fbfb7a6c7af24bb9c4db63137798e61b955b6"
+    },
+    "future_confirmation_full": {
       "path": "numerai/v5.3/ender21_dev_full_through_1021.parquet",
       "rows": 1377047,
       "row_groups": 84,
@@ -19,7 +30,7 @@
       "size_bytes": 1637635919,
       "sha256": "952d043bf1673ff525124defd9f24a7e110a92909de1bc2feec35a119c45ae71"
     },
-    "benchmark_models": {
+    "future_confirmation_benchmark_models": {
       "path": "numerai/v5.3/ender21_dev_benchmark_models_through_1021.parquet",
       "rows": 1220917,
       "row_groups": 75,
@@ -27,6 +38,20 @@
       "last_era": "1021",
       "size_bytes": 29796569,
       "sha256": "f435b4aed17c759011709ff2d8a8a4f235a7444154a740733fb80b55d7350605"
+    }
+  },
+  "join_validation": {
+    "discovery": {
+      "benchmark_ids": 957366,
+      "unique_benchmark_ids": true,
+      "missing_from_full": 0,
+      "era_mismatches": 0
+    },
+    "future_confirmation_custody": {
+      "benchmark_ids": 1220917,
+      "unique_benchmark_ids": true,
+      "missing_from_full": 0,
+      "era_mismatches": 0
     }
   }
 }

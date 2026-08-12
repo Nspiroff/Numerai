@@ -5,9 +5,11 @@ from dataclasses import dataclass
 import hashlib
 import importlib
 import importlib.util
+from importlib import metadata as importlib_metadata
 import json
 import os
 from pathlib import Path
+import platform
 import stat
 import subprocess
 import sys
@@ -72,6 +74,70 @@ _CONFIRMATION_COMPONENTS = (
 _CONFIRMATION_RESULTS_NAMES = (
     *(f"confirmation_{component}_d8_t6000" for component in _CONFIRMATION_COMPONENTS),
 )
+_ENDER21_EXPERIMENT_NAME = "ender21_residual_stability_v53"
+_ENDER21_ROUND1_NAMES = (
+    "r1_control_tabm_k64",
+    "r1_tabm_mini_k64",
+    "r1_tabm_k64_era_balanced",
+    "r1_tabm_k64_block_dro",
+    "r1_tabm_mini_k64_block_dro",
+)
+_ENDER21_MANIFEST_FILES = frozenset(
+    {
+        "numerai/agents/code/modeling/models/torch_tabular_regressor.py",
+        "numerai/agents/code/modeling/utils/config.py",
+        "numerai/agents/code/modeling/utils/constants.py",
+        "numerai/agents/code/modeling/utils/data.py",
+        "numerai/agents/code/modeling/utils/model_data.py",
+        "numerai/agents/code/modeling/utils/model_factory.py",
+        "numerai/agents/code/modeling/utils/pipeline.py",
+        "numerai/agents/code/modeling/utils/target_transforms.py",
+        "numerai/agents/code/modeling/utils/numerai_cv.py",
+        "numerai/agents/code/metrics/numerai_metrics.py",
+        "numerai/agents/experiments/ender21_residual_stability_v53/experiment.md",
+        "numerai/agents/experiments/ender21_residual_stability_v53/gate.md",
+        (
+            "numerai/agents/experiments/ender21_residual_stability_v53/"
+            "development_extract_receipt.json"
+        ),
+        (
+            "numerai/agents/experiments/ender21_residual_stability_v53/"
+            "protocol/discovery_eras_through_0861.json"
+        ),
+        (
+            "numerai/agents/experiments/ender21_residual_stability_v53/"
+            "protocol/confirmation_eras_0865_through_1021.json"
+        ),
+        (
+            "numerai/agents/experiments/ender21_residual_stability_v53/"
+            "configs/base_r1.py"
+        ),
+        *(
+            (
+                "numerai/agents/experiments/ender21_residual_stability_v53/"
+                f"configs/{name}.py"
+            )
+            for name in _ENDER21_ROUND1_NAMES
+        ),
+        (
+            "numerai/agents/experiments/ender21_residual_stability_v53/"
+            "evaluate_round1.py"
+        ),
+        (
+            "numerai/agents/experiments/ender21_residual_stability_v53/"
+            "tools/build_development_extract.py"
+        ),
+    }
+)
+_ENDER21_EXTERNAL_ARTIFACTS = frozenset(
+    {
+        "numerai/v5.3/ender21_discovery_full_through_0861.parquet",
+        (
+            "numerai/v5.3/"
+            "ender21_discovery_benchmark_models_through_0861.parquet"
+        ),
+    }
+)
 
 
 def _governed_output_paths() -> set[Path]:
@@ -118,6 +184,25 @@ def _governed_output_paths() -> set[Path]:
         {
             *(tabm_experiment / "predictions" / f"{name}.parquet" for name in tabm_names),
             *(tabm_experiment / "results" / f"{name}.json" for name in tabm_names),
+        }
+    )
+    ender21_experiment = Path(
+        os.path.abspath(
+            REPO_DIR
+            / "numerai/agents/experiments"
+            / _ENDER21_EXPERIMENT_NAME
+        )
+    )
+    governed.update(
+        {
+            *(
+                ender21_experiment / "predictions" / f"{name}.parquet"
+                for name in _ENDER21_ROUND1_NAMES
+            ),
+            *(
+                ender21_experiment / "results" / f"{name}.json"
+                for name in _ENDER21_ROUND1_NAMES
+            ),
         }
     )
     return governed
@@ -328,6 +413,44 @@ class _ExclusiveOutputReservations:
         return values
 
 
+def _ender21_output_reservations(
+    config_path: Path,
+    output_dir_override: Path | None,
+) -> _ExclusiveOutputReservations | None:
+    """Reserve each frozen Ender21 output once, before config or data access."""
+
+    experiment = Path(
+        os.path.abspath(
+            REPO_DIR / "numerai/agents/experiments" / _ENDER21_EXPERIMENT_NAME
+        )
+    )
+    configs = experiment / "configs"
+    supplied = Path(config_path)
+    if any(part in {".", ".."} for part in supplied.parts):
+        raise ValueError("Ender21 Round-1 config paths must be canonical.")
+    lexical = Path(os.path.abspath(supplied))
+    if lexical.parent != configs:
+        return None
+    if lexical.suffix != ".py" or lexical.stem not in _ENDER21_ROUND1_NAMES:
+        raise ValueError("Only frozen named Ender21 Round-1 configs may execute.")
+    if lexical != configs / f"{lexical.stem}.py":
+        raise ValueError("Ender21 Round-1 config path is not canonical.")
+    if output_dir_override is not None:
+        raise ValueError("Ender21 Round-1 outputs may not be redirected.")
+    _bootstrap_require_plain_directory_chain(experiment)
+    _bootstrap_require_plain_file(lexical, "Ender21 Round-1 config")
+    predictions_dir = experiment / "predictions"
+    results_dir = experiment / "results"
+    predictions_dir.mkdir(exist_ok=True)
+    results_dir.mkdir(exist_ok=True)
+    _bootstrap_require_plain_directory_chain(predictions_dir)
+    _bootstrap_require_plain_directory_chain(results_dir)
+    return _ExclusiveOutputReservations(
+        predictions_dir / f"{lexical.stem}.parquet",
+        results_dir / f"{lexical.stem}.json",
+    )
+
+
 def _bootstrap_require_plain_directory_chain(path: Path) -> None:
     absolute = Path(os.path.abspath(path))
     for directory in reversed([absolute, *absolute.parents]):
@@ -505,6 +628,161 @@ class _BootstrapReadOnlyFileLease:
         self.stream = None
         if stream is not None:
             stream.close()
+
+
+def _verify_ender21_round1_manifest() -> dict:
+    """Fail closed unless Round-1 source and physical inputs match the freeze."""
+
+    experiment_relative = Path(
+        "numerai/agents/experiments/ender21_residual_stability_v53"
+    )
+    manifest_relative = experiment_relative / "source_manifest.json"
+    manifest_path = Path(os.path.abspath(REPO_DIR / manifest_relative))
+    _bootstrap_require_plain_directory_chain(manifest_path.parent)
+    _bootstrap_require_plain_file(manifest_path, "Ender21 source manifest")
+    manifest_lease = _BootstrapReadOnlyFileLease(
+        manifest_path, "Ender21 source manifest"
+    )
+    try:
+        manifest_bytes = manifest_lease.read_bytes()
+    finally:
+        manifest_lease.close()
+    try:
+        manifest = json.loads(manifest_bytes)
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ValueError("Ender21 source manifest is not valid UTF-8 JSON.") from error
+    if not isinstance(manifest, dict) or set(manifest) != {
+        "schema_version",
+        "frozen_at",
+        "git_head",
+        "hash_algorithm",
+        "files",
+        "external_artifacts",
+        "runtime",
+    }:
+        raise ValueError("Ender21 source manifest schema differs from the freeze.")
+    if manifest["schema_version"] != 1 or manifest["hash_algorithm"] != "sha256":
+        raise ValueError("Ender21 source manifest version or hash differs.")
+    commit = manifest["git_head"]
+    if not _is_lower_hex(commit, 40):
+        raise ValueError("Ender21 source manifest git_head is not a commit SHA.")
+    files = manifest["files"]
+    external = manifest["external_artifacts"]
+    runtime = manifest["runtime"]
+    if not isinstance(files, dict) or set(files) != _ENDER21_MANIFEST_FILES:
+        raise ValueError("Ender21 source manifest file set differs from the freeze.")
+    if not isinstance(external, dict) or set(external) != _ENDER21_EXTERNAL_ARTIFACTS:
+        raise ValueError("Ender21 source manifest artifact set differs from the freeze.")
+    expected_runtime = {
+        "python": "3.13.14",
+        "packages": {
+            "numpy": "2.5.1",
+            "pandas": "3.0.5",
+            "pyarrow": "25.0.0",
+            "numerai-tools": "0.6.0",
+            "numerapi": "2.23.3",
+            "torch": "2.13.0+cu130",
+            "tabm": "0.0.3",
+            "rtdl-num-embeddings": "0.0.12",
+        },
+    }
+    if runtime != expected_runtime or platform.python_version() != runtime["python"]:
+        raise ValueError("Ender21 Python runtime differs from the freeze.")
+    for package, expected_version in runtime["packages"].items():
+        try:
+            actual_version = importlib_metadata.version(package)
+        except importlib_metadata.PackageNotFoundError as error:
+            raise ValueError(f"Ender21 runtime package is absent: {package}") from error
+        if actual_version != expected_version:
+            raise ValueError(f"Ender21 runtime package drifted: {package}")
+
+    def git(*arguments: str, allow_one: bool = False) -> subprocess.CompletedProcess:
+        result = subprocess.run(
+            ["git", *arguments],
+            cwd=REPO_DIR,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        allowed = {0, 1} if allow_one else {0}
+        if result.returncode not in allowed:
+            detail = result.stderr.strip() or result.stdout.strip()
+            raise ValueError(
+                f"Ender21 Git verification failed for {arguments}: {detail}"
+            )
+        return result
+
+    resolved = git("rev-parse", "--verify", f"{commit}^{{commit}}").stdout.strip()
+    if resolved != commit:
+        raise ValueError("Ender21 frozen git_head does not resolve exactly.")
+    if git("merge-base", "--is-ancestor", commit, "HEAD", allow_one=True).returncode:
+        raise ValueError("Ender21 frozen git_head is not an ancestor of HEAD.")
+    status = git(
+        "status",
+        "--porcelain=v1",
+        "--untracked-files=all",
+        "--",
+        manifest_relative.as_posix(),
+    ).stdout
+    if status:
+        raise ValueError("Ender21 source manifest is not committed and clean.")
+    git("cat-file", "-e", f"HEAD:{manifest_relative.as_posix()}")
+
+    for relative_text in sorted(files):
+        expected = files[relative_text]
+        if not _is_lower_hex(expected, 64):
+            raise ValueError(f"Invalid Ender21 source digest: {relative_text}")
+        relative = Path(relative_text)
+        path = Path(os.path.abspath(REPO_DIR / relative))
+        _bootstrap_require_plain_directory_chain(path.parent)
+        _bootstrap_require_plain_file(path, f"Ender21 source {relative_text}")
+        lease = _BootstrapReadOnlyFileLease(path, f"Ender21 source {relative_text}")
+        try:
+            actual = lease.sha256()
+        finally:
+            lease.close()
+        if actual != expected:
+            raise ValueError(f"Ender21 source hash drifted: {relative_text}")
+        git("cat-file", "-e", f"{commit}:{relative.as_posix()}")
+        if git(
+            "diff",
+            "--quiet",
+            commit,
+            "--",
+            relative.as_posix(),
+            allow_one=True,
+        ).returncode:
+            raise ValueError(f"Ender21 source differs from git_head: {relative_text}")
+
+    for relative_text in sorted(external):
+        receipt = external[relative_text]
+        if not isinstance(receipt, dict) or set(receipt) != {
+            "size_bytes",
+            "sha256",
+            "last_era",
+        }:
+            raise ValueError(f"Invalid Ender21 artifact receipt: {relative_text}")
+        if (
+            isinstance(receipt["size_bytes"], bool)
+            or not isinstance(receipt["size_bytes"], int)
+            or receipt["size_bytes"] <= 0
+            or not _is_lower_hex(receipt["sha256"], 64)
+            or receipt["last_era"] != "0861"
+        ):
+            raise ValueError(f"Malformed Ender21 artifact receipt: {relative_text}")
+        path = Path(os.path.abspath(REPO_DIR / relative_text))
+        _bootstrap_require_plain_directory_chain(path.parent)
+        _bootstrap_require_plain_file(path, f"Ender21 artifact {relative_text}")
+        lease = _BootstrapReadOnlyFileLease(path, f"Ender21 artifact {relative_text}")
+        try:
+            if lease.size_bytes() != receipt["size_bytes"]:
+                raise ValueError(f"Ender21 artifact size drifted: {relative_text}")
+            actual = lease.sha256()
+        finally:
+            lease.close()
+        if actual != receipt["sha256"]:
+            raise ValueError(f"Ender21 artifact hash drifted: {relative_text}")
+    return manifest
 
 
 def _canonical_json(value: object) -> str:
@@ -1835,6 +2113,9 @@ def run_training(
             "An Ender20 Scout config requires its finalized pre-run receipt "
             "authority before config evaluation."
         )
+    ender21_reservations = _ender21_output_reservations(
+        Path(config_path), output_dir_override
+    )
     authority = None
     authority_checkpoint = None
     receipt_leases = ()
@@ -1900,7 +2181,7 @@ def run_training(
             )
         if authority is not None and authority.checkpoint != authority_checkpoint:
             raise ValueError("Training authority checkpoint changed after leasing.")
-        reservations = None
+        reservations = ender21_reservations
         if authority is not None:
             reservations = _ExclusiveOutputReservations(
                 authority.component.predictions,
@@ -1910,6 +2191,8 @@ def run_training(
             reservations if reservations is not None else nullcontext(None)
         )
         with reservation_scope as reserved_outputs:
+            if ender21_reservations is not None:
+                _verify_ender21_round1_manifest()
             marker_lease = None
             completion_claim_lease = None
             completion_receipt_lease = None
@@ -2131,7 +2414,7 @@ def _run_training_impl(
             configured_results,
         } & _governed_output_paths():
             raise ValueError(
-                "Governed Ender20 outputs require a consumed receipt authorization."
+                "Governed experiment outputs require an authorized exclusive run."
             )
 
     napi = NumerAPI()

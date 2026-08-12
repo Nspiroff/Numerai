@@ -14,8 +14,10 @@ This file is the concise fail-closed contract for
   from this gate is `SHADOW_READY`.
 - Candidate definitions, seeds, split rules, losses, ranking, blend formula, and
   thresholds freeze before the first Ender21 score is read.
-- Real-data inputs must be newly isolated Parquets whose selected source row
-  groups have maximum era <=1021. The mixed 1025/1029 row group is forbidden.
+- Round-1 inputs must be physically isolated Parquets whose selected source row
+  groups have maximum era <=0861. Runtime filtering of a later target-bearing
+  file is insufficient. The mixed 1025/1029 row group remains forbidden from
+  any later Ender21 confirmation extract.
 - Round-1 `data.era_allowlist_path` must bind the exact committed discovery list
   through 0861 and filter the CV universe before any fit. The separate 0865-1021
   confirmation list remains closed until both discovery rounds pass.
@@ -26,8 +28,10 @@ This file is the concise fail-closed contract for
 2. Implement loss support and tests.
 3. Create the five exact Round-1 configs and a content-hashed source manifest.
 4. Commit that pre-scoring checkpoint.
-5. Run all Round-1 candidates once; never overwrite an existing result or
-   prediction.
+5. For each named config, create-new reserve its two canonical outputs, then
+   verify the exact committed source/runtime/data manifest before config or
+   modeling-data access. Run each candidate once; never overwrite, delete,
+   rename, or retry an existing result or prediction.
 6. Evaluate and write the Round-1 decision.
 7. Run Round 2 only after a Round-1 challenger passes.
 8. Open the exact Ender21-only 0865-1021 confirmation once only after Round 2.
@@ -41,7 +45,7 @@ This file is the concise fail-closed contract for
 Against the fresh matched control, a challenger must retain >=90% of full and
 most-recent-fold BMC, reduce full BMC max drawdown by >=15%, keep BMC Sharpe within 0.05,
 have positive BMC in every outer fold, and keep Corr in [0.005, 0.04). Ranking is
-recent BMC, full BMC, then lower drawdown.
+full BMC, most-recent-fold BMC, then lower drawdown.
 
 ## Ender21 confirmation eligibility
 

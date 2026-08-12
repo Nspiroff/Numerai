@@ -96,18 +96,21 @@ def _copy_prefix(source: Path, destination: Path, cutoff: int) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--numerai-dir", type=Path, required=True)
-    parser.add_argument("--cutoff", type=int, default=1021)
+    parser.add_argument("--cutoff", type=int, default=861)
     args = parser.parse_args()
+    if args.cutoff != 861:
+        raise ValueError("This Round-1 discovery builder requires cutoff era 0861.")
     numerai = args.numerai_dir.resolve()
     version = numerai / "v5.3"
     pairs = (
         (
             version / "downsampled_full.parquet",
-            version / "ender21_dev_full_through_1021.parquet",
+            version / f"ender21_discovery_full_through_{args.cutoff:04d}.parquet",
         ),
         (
             version / "downsampled_full_benchmark_models.parquet",
-            version / "ender21_dev_benchmark_models_through_1021.parquet",
+            version
+            / f"ender21_discovery_benchmark_models_through_{args.cutoff:04d}.parquet",
         ),
     )
     receipts = [_copy_prefix(source, destination, args.cutoff) for source, destination in pairs]
