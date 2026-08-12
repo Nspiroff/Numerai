@@ -88,6 +88,7 @@ _ENDER21_ROUND2_NAMES = (
     "r2_selected_tabm_k64_block_dro_model_seed2027",
     "r2_selected_tabm_k64_block_dro_sample_seed2027",
 )
+_ENDER21_CONFIRMATION_NAME = "c1_selected_tabm_k64_block_dro"
 _ENDER21_TRAINING_NAMES = _ENDER21_ROUND1_NAMES + _ENDER21_ROUND2_NAMES
 _ENDER21_MANIFEST_FILES = frozenset(
     {
@@ -246,6 +247,16 @@ def _governed_output_paths() -> set[Path]:
                 ender21_experiment / "receipts" / f"{name}.completion.json"
                 for name in _ENDER21_ROUND2_NAMES
             ),
+            ender21_experiment
+            / "predictions"
+            / f"{_ENDER21_CONFIRMATION_NAME}.parquet",
+            ender21_experiment
+            / "results"
+            / f"{_ENDER21_CONFIRMATION_NAME}.json",
+            ender21_experiment
+            / "receipts"
+            / f"{_ENDER21_CONFIRMATION_NAME}.completion.json",
+            ender21_experiment / "models" / _ENDER21_CONFIRMATION_NAME,
         }
     )
     return governed

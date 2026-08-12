@@ -132,13 +132,39 @@ source manifest committed before any replication score is read.
 
 ## Ender21 family-locked confirmation
 
-If Round 2 passes, the selected family is refit using discovery eras only, with
-the 13-retained-era embargo preserved, and scores the exact 40 retained eras
-`0865`-`1021` once. Those eras are locked within Ender21 but are not described as
-globally unseen. The candidate passes this research gate only if BMC >=0.0020,
-BMC Sharpe >0.25, drawdown <0.10, Corr >=0.008, benchmark correlation <0.25,
-three of four chronological 10-era blocks have positive BMC, the worst block is
-above -0.001, and confirmation BMC retains at least 60% of discovery BMC.
+Round 2 passed exactly two of its three matched realizations, so the family-locked
+confirmation is authorized. Only `c1_selected_tabm_k64_block_dro` may run; a
+matched control, another seed, another blend, and any retry are not authorized.
+Its config is mechanically derived from `r1_tabm_k64_block_dro` and changes only
+`output.results_name`. Model seed 1337, row-sample seed 1337, the 500,000-row
+cap, target transform, Block-DRO loss, and all model parameters remain exact.
+
+The outer 13-retained-era embargo is preserved at the confirmation boundary.
+Training may use only the 163 exact eras `0161`-`0809`; eras `0813`-`0861` are
+embargoed. The model's distinct recent-era internal validation and its own
+13-era embargo remain unchanged. The deterministic eligible training cohort is
+880,075 benchmark-covered rows before the exact 500,000-row sample. Confirmation
+prediction covers exactly 263,551 unique IDs across the 40 retained eras
+`0865`-`1021`.
+
+Training and prediction are target-isolated. Before training, a third source
+manifest binds the exact source, runtime, feature order, prior pass receipt, and
+four physical Parquets. The runner reads discovery targets only. Its confirmation
+projection includes ID, era, and the exact 3,555 frozen feature columns but does
+not open `target_ender_20`. It writes one unscored prediction, one training
+result, one completion receipt, and one portable local bundle with create-new
+semantics. The result and completion must then be committed cleanly before the
+one-shot evaluator may open confirmation targets. The completion hash-binds the
+ignored large prediction and all bundle files.
+
+The evaluator independently validates exact IDs, eras, rows, benchmarks,
+prediction bytes, config/manifest/receipt provenance, and the target-free result
+before its first target-bearing read. It then scores the exact 40-era cohort
+once. The candidate passes this research gate only if BMC >=0.0020, BMC Sharpe
+>0.25, drawdown <0.10, Corr >=0.008, benchmark correlation <0.25, three of four
+fixed consecutive 10-era blocks have positive mean BMC, the worst block is above
+-0.001, and confirmation BMC is at least 60% of the frozen Round-1 discovery BMC
+`0.006876950492356912`.
 
 Passing ends at `HISTORICAL_RESEARCH_PASS_FORWARD_VALIDATION_REQUIRED`. True
 promotion requires an unchanged predictor to collect at least 52 newly resolved
@@ -183,13 +209,16 @@ user decision regardless of any research result.
 
 ## Status
 
-`ROUND1_SCOUT_WINNER_ROUND2_FROZEN`
+`SEED_REPLICATION_PASS_CONFIRMATION_PROTOCOL_FROZEN`
 
 Round 1 selected `r1_tabm_k64_block_dro`. Against the fresh matched control,
 full BMC improved from 0.005390 to 0.006877, BMC Sharpe from 0.4512 to 0.6444,
 and max drawdown fell from 0.090385 to 0.043614. Recent-fold BMC was 0.007541
 versus 0.008177 for control, Corr was 0.011474, and every frozen eligibility
-check passed. No Ender21 confirmation era has been opened.
+check passed. Round 2 then passed the exact base-seed and row-sample-seed
+realizations, two of three as required; the model-seed realization failed and is
+retained as negative evidence. That result authorizes only the frozen one-model
+confirmation protocol above. No confirmation target has yet been scored.
 
 An initial control process was stopped before producing predictions, results, or
 metrics when review found that runtime allowlist filtering still materialized

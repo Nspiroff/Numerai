@@ -36,10 +36,18 @@ This file is the concise fail-closed contract for
 7. If and only if Round 1 passes, commit the four exact seed-replication configs,
    evaluator, and a second source manifest; then run the two matched control /
    selected pairs exactly once.
-8. Open the exact Ender21-only 0865-1021 confirmation once only after Round 2.
-9. Do not open the later full-consecutive gate while Ender20's locked period is
+8. Round 2 passed 2/3. Commit the exact one-model confirmation config, runner,
+   evaluator, rules, protocol lists, and third source manifest before prediction.
+9. Reserve every canonical confirmation output once. Fit only the selected
+   seed-1337 family on exact eras 0161-0809; preserve eras 0813-0861 as the
+   outer embargo. Predict the exact 263,551 rows in eras 0865-1021 without
+   reading their target, then commit the completion and unscored result.
+10. Only after that evidence is committed and clean, evaluate the exact
+    Ender21-only 0865-1021 confirmation once and write
+    `receipts/confirmation_research.json` with create-new semantics.
+11. Do not open the later full-consecutive gate while Ender20's locked period is
    protected.
-10. Stop at `NEGATIVE`, `SCOUT_WINNER`, or
+12. Stop at `NEGATIVE`, `SCOUT_WINNER`, or
    `SEED_REPLICATION_PASS`, or
    `HISTORICAL_RESEARCH_PASS_FORWARD_VALIDATION_REQUIRED`; do not upload.
    Only `SEED_REPLICATION_PASS` from the exact three-realization Round-2 receipt
@@ -62,10 +70,22 @@ threshold comparison is allowed.
 
 ## Ender21 confirmation eligibility
 
-The exact 0865-1021 confirmation opens once after Round 2. Required: BMC
+The exact 0865-1021 confirmation opens once after Round 2. Only
+`c1_selected_tabm_k64_block_dro` is authorized. Its config may differ from the
+selected Round-1 config only in `output.results_name`; no confirmation control,
+new seed, retry, or blend is allowed. The fit era list is exactly 0161-0809 and
+the outer embargo list is exactly 0813-0861. The confirmation cohort is exactly
+263,551 unique IDs over 40 eras 0865-1021. Training/prediction must not read the
+confirmation target. A committed-clean completion and unscored result, with an
+exact prediction hash binding, are prerequisites to the target-bearing evaluator.
+
+Required: BMC
 >=0.0020, Sharpe >0.25, drawdown <0.10, Corr >=0.008, benchmark correlation
 <0.25, at least 3/4 chronological blocks positive, worst block >-0.001, and at
-least 60% discovery-BMC retention. A pass still requires 52 future resolved eras.
+least 60% of the frozen discovery BMC `0.006876950492356912`. A pass stops at
+`HISTORICAL_RESEARCH_PASS_FORWARD_VALIDATION_REQUIRED` and still requires an
+unchanged predictor to collect 52 future resolved eras. It does not authorize
+upload, assignment, staking, or the deferred full-consecutive gate.
 
 ## Deferred full-consecutive eligibility
 
