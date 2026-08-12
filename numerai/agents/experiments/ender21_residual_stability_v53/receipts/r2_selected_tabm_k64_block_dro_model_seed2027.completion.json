@@ -1,0 +1,31 @@
+{
+  "component": "r2_selected_tabm_k64_block_dro_model_seed2027",
+  "config": {
+    "path": "numerai/agents/experiments/ender21_residual_stability_v53/configs/r2_selected_tabm_k64_block_dro_model_seed2027.py",
+    "sha256": "5b71a4aeeeb1c6f69c144661715e593b75df00d22c0d8619afcdf54bcfb15daf"
+  },
+  "manifest": {
+    "git_head": "7f93585477af8b395a991845cadf17995d9b867b",
+    "path": "numerai/agents/experiments/ender21_residual_stability_v53/source_manifest_round2.json",
+    "sha256": "2cf0a50468b0b8bd4a7e860c707cb5294bd31c66ff1d34c7cc286406a5dfdb17"
+  },
+  "outputs": {
+    "predictions": {
+      "device": 6109702118523114368,
+      "inode": 29273397577934590,
+      "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender21_residual_stability_v53\\predictions\\r2_selected_tabm_k64_block_dro_model_seed2027.parquet",
+      "sha256": "30b047d3a6f022fa0f3a0aedcfa7017ca8cf717e9f2c8ef59fe25b8c88fb9d27",
+      "size_bytes": 15786218
+    },
+    "result": {
+      "device": 6109702118523114368,
+      "inode": 3659174697267809,
+      "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender21_residual_stability_v53\\results\\r2_selected_tabm_k64_block_dro_model_seed2027.json",
+      "sha256": "5d8194339b2daf442bd2ae4d9977a051401cf5b68614cc4f5f88cad9e64786f2",
+      "size_bytes": 5581
+    }
+  },
+  "schema_version": 1,
+  "stage": "ender21-round2-training-completion",
+  "state": "OUTPUTS_FINALIZED"
+}
