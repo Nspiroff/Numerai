@@ -1974,7 +1974,10 @@ class TestDiskFeatureStoreModeling(unittest.TestCase):
             ) as data_client:
                 with self.assertRaisesRegex(
                     ValueError,
-                    "Governed experiment outputs require an authorized exclusive run",
+                    (
+                        "Governed experiment outputs require an authorized exclusive run"
+                        "|aliases a governed artifact"
+                    ),
                 ):
                     run_training(copied_config)
             data_client.assert_not_called()

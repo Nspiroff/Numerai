@@ -40,7 +40,10 @@ This file is the concise fail-closed contract for
 9. Do not open the later full-consecutive gate while Ender20's locked period is
    protected.
 10. Stop at `NEGATIVE`, `SCOUT_WINNER`, or
+   `SEED_REPLICATION_PASS`, or
    `HISTORICAL_RESEARCH_PASS_FORWARD_VALIDATION_REQUIRED`; do not upload.
+   Only `SEED_REPLICATION_PASS` from the exact three-realization Round-2 receipt
+   authorizes the Ender21 family-locked confirmation.
 
 ## Round-1 eligibility
 
@@ -48,6 +51,14 @@ Against the fresh matched control, a challenger must retain >=90% of full and
 most-recent-fold BMC, reduce full BMC max drawdown by >=15%, keep BMC Sharpe within 0.05,
 have positive BMC in every outer fold, and keep Corr in [0.005, 0.04). Ranking is
 full BMC, most-recent-fold BMC, then lower drawdown.
+
+## Round-2 eligibility
+
+Round 2 contains exactly three matched realizations: the reused base-seed-1337
+pair, the model-seed-2027 pair, and the row-sample-seed-2027 pair. The selected
+family advances only if at least two of the three pass every exact Round-1
+eligibility check against their matched control. No relaxed or approximate
+threshold comparison is allowed.
 
 ## Ender21 confirmation eligibility
 

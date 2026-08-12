@@ -3,14 +3,15 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
-import math
 import os
 from pathlib import Path
 import runpy
 
 from agents.code.modeling.utils.constants import REPO_DIR
 from agents.code.modeling.utils.pipeline import _verify_ender21_round2_manifest
+from agents.code.analysis.ender21_round_rules import matched_eligibility_checks
 
 
 EXPERIMENT_NAME = "ender21_residual_stability_v53"
@@ -31,41 +32,7 @@ REALIZATIONS = {
 
 
 def _matched_checks(selected_metrics: dict, control_metrics: dict) -> dict:
-    def at_least(actual: float, threshold: float) -> bool:
-        return actual > threshold or math.isclose(
-            actual, threshold, rel_tol=1e-12, abs_tol=1e-15
-        )
-
-    def at_most(actual: float, threshold: float) -> bool:
-        return actual < threshold or math.isclose(
-            actual, threshold, rel_tol=1e-12, abs_tol=1e-15
-        )
-
-    return {
-        "positive_full_bmc": selected_metrics["bmc"]["mean"] > 0.0,
-        "positive_recent_fold_bmc": selected_metrics["recent_fold_bmc_mean"] > 0.0,
-        "corr_guardrail": 0.005 <= selected_metrics["corr"]["mean"] < 0.04,
-        "full_bmc_retention": at_least(
-            selected_metrics["bmc"]["mean"],
-            0.90 * control_metrics["bmc"]["mean"],
-        ),
-        "recent_bmc_retention": at_least(
-            selected_metrics["recent_fold_bmc_mean"],
-            0.90 * control_metrics["recent_fold_bmc_mean"],
-        ),
-        "drawdown_improvement": at_most(
-            selected_metrics["bmc"]["max_drawdown"],
-            0.85 * control_metrics["bmc"]["max_drawdown"],
-        ),
-        "sharpe_retention": at_least(
-            selected_metrics["bmc"]["sharpe"],
-            control_metrics["bmc"]["sharpe"] - 0.05,
-        ),
-        "all_folds_positive": all(
-            value > 0.0
-            for value in selected_metrics["fold_bmc_mean"].values()
-        ),
-    }
+    return matched_eligibility_checks(selected_metrics, control_metrics)
 
 
 def _decide(realizations: dict) -> dict:
@@ -146,6 +113,81 @@ def _validate_config_pair(experiment: Path, realization: str) -> None:
         raise ValueError(f"{realization} seeds differ from the frozen pairing")
 
 
+def _validate_completion(
+    experiment: Path,
+    name: str,
+    manifest: dict,
+) -> dict:
+    path = experiment / f"receipts/{name}.completion.json"
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    expected_keys = {
+        "schema_version",
+        "stage",
+        "state",
+        "component",
+        "manifest",
+        "config",
+        "outputs",
+    }
+    if not isinstance(payload, dict) or set(payload) != expected_keys:
+        raise ValueError(f"{name} completion schema differs")
+    if (
+        payload["schema_version"] != 1
+        or payload["stage"] != "ender21-round2-training-completion"
+        or payload["state"] != "OUTPUTS_FINALIZED"
+        or payload["component"] != name
+    ):
+        raise ValueError(f"{name} completion envelope differs")
+    manifest_path = experiment / "source_manifest_round2.json"
+    expected_manifest = {
+        "path": manifest_path.relative_to(REPO_DIR).as_posix(),
+        "sha256": hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
+        "git_head": manifest["git_head"],
+    }
+    config_relative = (
+        experiment / f"configs/{name}.py"
+    ).relative_to(REPO_DIR).as_posix()
+    if payload["manifest"] != expected_manifest or payload["config"] != {
+        "path": config_relative,
+        "sha256": manifest["files"][config_relative],
+    }:
+        raise ValueError(f"{name} completion provenance differs")
+    outputs = payload["outputs"]
+    if not isinstance(outputs, dict) or set(outputs) != {"predictions", "result"}:
+        raise ValueError(f"{name} completion output set differs")
+    for label, expected_path in (
+        ("predictions", experiment / f"predictions/{name}.parquet"),
+        ("result", experiment / f"results/{name}.json"),
+    ):
+        receipt = outputs[label]
+        if not isinstance(receipt, dict) or set(receipt) != {
+            "path",
+            "device",
+            "inode",
+            "size_bytes",
+            "sha256",
+        }:
+            raise ValueError(f"{name} completion {label} schema differs")
+        inspected = expected_path.lstat()
+        if (
+            receipt["path"] != str(expected_path)
+            or int(receipt["device"]) != int(inspected.st_dev)
+            or int(receipt["inode"]) != int(inspected.st_ino)
+            or int(receipt["size_bytes"]) != int(inspected.st_size)
+            or receipt["sha256"] != _sha256_file(expected_path)
+        ):
+            raise ValueError(f"{name} completion {label} differs from its artifact")
+    return payload
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        while chunk := stream.read(8 * 1024 * 1024):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--experiment", type=Path, required=True)
@@ -168,7 +210,7 @@ def main() -> None:
     if os.path.lexists(output):
         raise FileExistsError(f"Refusing to overwrite Round-2 receipt: {output}")
 
-    _verify_ender21_round2_manifest()
+    manifest = _verify_ender21_round2_manifest()
     round1 = json.loads(
         (experiment / "receipts/round1_discovery.json").read_text(encoding="utf-8")
     )
@@ -207,16 +249,26 @@ def main() -> None:
     realizations = {}
     for realization, (control_name, selected_name) in REALIZATIONS.items():
         _validate_config_pair(experiment, realization)
+        control_completion = None
+        selected_completion = None
         if realization == "base_seed1337":
             control = round1["candidates"][control_name]
             selected = round1["candidates"][selected_name]
         else:
+            control_completion = _validate_completion(
+                experiment, control_name, manifest
+            )
+            selected_completion = _validate_completion(
+                experiment, selected_name, manifest
+            )
             control = score_candidate(experiment, control_name, allowed, truth)
             selected = score_candidate(experiment, selected_name, allowed, truth)
         checks = _matched_checks(selected["metrics"], control["metrics"])
         realizations[realization] = {
             "control": control,
             "selected": selected,
+            "control_completion": control_completion,
+            "selected_completion": selected_completion,
             "checks": checks,
             "passed": all(checks.values()),
         }

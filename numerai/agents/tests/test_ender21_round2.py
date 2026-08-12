@@ -131,10 +131,10 @@ class TestEnder21Round2Evaluator(unittest.TestCase):
             corr=0.020,
         )
         selected = self._metrics(
-            bmc=0.009,
-            recent=0.0072,
-            drawdown=0.085,
-            sharpe=0.45,
+            bmc=0.009001,
+            recent=0.007201,
+            drawdown=0.08499,
+            sharpe=0.4501,
             corr=0.005,
         )
         checks = self.evaluator._matched_checks(selected, control)

@@ -113,9 +113,10 @@ Ender21 confirmation opens.
 
 Round 2 changes randomness only: selected and control each run once with model
 seed 2027 and once with row-sample seed 2027. The selected family advances only
-if at least two of its three realizations satisfy the Round-1 retention and
-drawdown-improvement rules against the matched control evidence. Two consecutive
-rounds without an eligible improvement end the search.
+if at least two of exactly three realizations (the reused base seed 1337 plus
+the two new matched pairs) satisfy **all seven exact Round-1 eligibility
+requirements** against their matched control evidence. Two consecutive rounds
+without an eligible improvement end the search.
 
 The four mechanically derived Round-2 configs are:
 

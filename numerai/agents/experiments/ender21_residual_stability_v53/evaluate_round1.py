@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 
 from agents.code.metrics import numerai_metrics
+from agents.code.analysis.ender21_round_rules import matched_eligibility_checks
 from agents.code.modeling.utils.numerai_cv import era_cv_splits
 from agents.code.modeling.utils.constants import REPO_DIR
 from agents.code.modeling.utils.pipeline import (
@@ -385,21 +386,7 @@ def main() -> None:
     decisions = {}
     for name in CANDIDATES[1:]:
         metrics = results[name]["metrics"]
-        checks = {
-            "positive_full_bmc": metrics["bmc"]["mean"] > 0.0,
-            "positive_recent_fold_bmc": metrics["recent_fold_bmc_mean"] > 0.0,
-            "corr_guardrail": 0.005 <= metrics["corr"]["mean"] < 0.04,
-            "full_bmc_retention": metrics["bmc"]["mean"] >= 0.90 * control["bmc"]["mean"],
-            "recent_bmc_retention": metrics["recent_fold_bmc_mean"]
-            >= 0.90 * control["recent_fold_bmc_mean"],
-            "drawdown_improvement": metrics["bmc"]["max_drawdown"]
-            <= 0.85 * control["bmc"]["max_drawdown"],
-            "sharpe_retention": metrics["bmc"]["sharpe"]
-            >= control["bmc"]["sharpe"] - 0.05,
-            "all_folds_positive": all(
-                value > 0.0 for value in metrics["fold_bmc_mean"].values()
-            ),
-        }
+        checks = matched_eligibility_checks(metrics, control)
         decisions[name] = {"eligible": all(checks.values()), "checks": checks}
     eligible = [name for name, item in decisions.items() if item["eligible"]]
     eligible.sort(

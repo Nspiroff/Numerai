@@ -155,6 +155,7 @@ _ENDER21_ROUND2_MANIFEST_FILES = frozenset(
             _ENDER21_MANIFEST_FILES
             - {_ENDER21_CONFIRMATION_ALLOWLIST_PATH}
         ),
+        "numerai/agents/code/analysis/ender21_round_rules.py",
         *(
             (
                 "numerai/agents/experiments/ender21_residual_stability_v53/"
@@ -241,6 +242,10 @@ def _governed_output_paths() -> set[Path]:
                 ender21_experiment / "results" / f"{name}.json"
                 for name in _ENDER21_TRAINING_NAMES
             ),
+            *(
+                ender21_experiment / "receipts" / f"{name}.completion.json"
+                for name in _ENDER21_ROUND2_NAMES
+            ),
         }
     )
     return governed
@@ -315,13 +320,24 @@ class _TrainingAuthority:
 
 
 class _ExclusiveOutputReservations:
-    """Create and hold both authorized output paths without overwrite sharing."""
+    """Create and hold authorized output paths without overwrite sharing."""
 
-    def __init__(self, predictions_path: Path, results_path: Path) -> None:
+    def __init__(
+        self,
+        predictions_path: Path,
+        results_path: Path,
+        completion_path: Path | None = None,
+    ) -> None:
         self.predictions_path = Path(os.path.abspath(predictions_path))
         self.results_path = Path(os.path.abspath(results_path))
+        self.completion_path = (
+            Path(os.path.abspath(completion_path))
+            if completion_path is not None
+            else None
+        )
         self.predictions_stream = None
         self.results_stream = None
+        self.completion_stream = None
 
     @staticmethod
     def _open(path: Path, label: str):
@@ -387,10 +403,25 @@ class _ExclusiveOutputReservations:
             self.predictions_stream.close()
             self.predictions_stream = None
             raise
+        if self.completion_path is not None:
+            try:
+                self.completion_stream = self._open(
+                    self.completion_path, "completion receipt"
+                )
+            except BaseException:
+                self.results_stream.close()
+                self.results_stream = None
+                self.predictions_stream.close()
+                self.predictions_stream = None
+                raise
         return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
-        for name in ("results_stream", "predictions_stream"):
+        for name in (
+            "completion_stream",
+            "results_stream",
+            "predictions_stream",
+        ):
             stream = getattr(self, name)
             setattr(self, name, None)
             if stream is not None:
@@ -413,6 +444,20 @@ class _ExclusiveOutputReservations:
                 "inode": int(inspected.st_ino),
             }
         return values
+
+    def write_completion(self, payload: dict) -> bytes:
+        if self.completion_path is None or self.completion_stream is None:
+            raise RuntimeError("Exclusive completion reservation is not open.")
+        if os.fstat(self.completion_stream.fileno()).st_size != 0:
+            raise ValueError("Reserved completion receipt is no longer empty.")
+        payload_bytes = (
+            json.dumps(payload, indent=2, sort_keys=True).encode("utf-8") + b"\n"
+        )
+        self.completion_stream.seek(0)
+        self.completion_stream.write(payload_bytes)
+        self.completion_stream.flush()
+        os.fsync(self.completion_stream.fileno())
+        return payload_bytes
 
     def completion_identities(self) -> dict[str, dict[str, object]]:
         """Hash final bytes through the same CREATE_NEW handles used to write them."""
@@ -479,13 +524,21 @@ def _ender21_output_reservations(
     _bootstrap_require_plain_file(lexical, "Ender21 Round-1 config")
     predictions_dir = experiment / "predictions"
     results_dir = experiment / "results"
+    receipts_dir = experiment / "receipts"
     predictions_dir.mkdir(exist_ok=True)
     results_dir.mkdir(exist_ok=True)
+    receipts_dir.mkdir(exist_ok=True)
     _bootstrap_require_plain_directory_chain(predictions_dir)
     _bootstrap_require_plain_directory_chain(results_dir)
+    _bootstrap_require_plain_directory_chain(receipts_dir)
     return _ExclusiveOutputReservations(
         predictions_dir / f"{lexical.stem}.parquet",
         results_dir / f"{lexical.stem}.json",
+        (
+            receipts_dir / f"{lexical.stem}.completion.json"
+            if lexical.stem in _ENDER21_ROUND2_NAMES
+            else None
+        ),
     )
 
 
@@ -838,6 +891,49 @@ def _verify_ender21_round2_manifest() -> dict:
     return _verify_ender21_manifest(
         "source_manifest_round2.json", _ENDER21_ROUND2_MANIFEST_FILES
     )
+
+
+def _write_ender21_round2_completion(
+    config_path: Path,
+    manifest: dict,
+    reservations: _ExclusiveOutputReservations,
+) -> tuple[Path, dict]:
+    """Bind one completed replication to the exact frozen manifest and handles."""
+
+    name = Path(config_path).stem
+    if name not in _ENDER21_ROUND2_NAMES:
+        raise ValueError("Round-2 completion requires a frozen replication config.")
+    experiment = Path(
+        os.path.abspath(
+            REPO_DIR / "numerai/agents/experiments" / _ENDER21_EXPERIMENT_NAME
+        )
+    )
+    completion_path = experiment / f"receipts/{name}.completion.json"
+    if reservations.completion_path != completion_path:
+        raise ValueError("Round-2 completion reservation path differs.")
+    config_absolute = Path(os.path.abspath(config_path))
+    config_relative = config_absolute.relative_to(REPO_DIR).as_posix()
+    manifest_path = experiment / "source_manifest_round2.json"
+    manifest_bytes = manifest_path.read_bytes()
+    outputs = reservations.completion_identities()
+    payload = {
+        "schema_version": 1,
+        "stage": "ender21-round2-training-completion",
+        "state": "OUTPUTS_FINALIZED",
+        "component": name,
+        "manifest": {
+            "path": manifest_path.relative_to(REPO_DIR).as_posix(),
+            "sha256": hashlib.sha256(manifest_bytes).hexdigest(),
+            "git_head": manifest["git_head"],
+        },
+        "config": {
+            "path": config_relative,
+            "sha256": manifest["files"][config_relative],
+        },
+        "outputs": outputs,
+    }
+    payload_bytes = reservations.write_completion(payload)
+    return completion_path, payload, payload_bytes
 
 
 def _canonical_json(value: object) -> str:
@@ -2246,11 +2342,12 @@ def run_training(
             reservations if reservations is not None else nullcontext(None)
         )
         with reservation_scope as reserved_outputs:
+            ender21_manifest = None
             if ender21_reservations is not None:
                 if Path(config_path).stem in _ENDER21_ROUND1_NAMES:
-                    _verify_ender21_round1_manifest()
+                    ender21_manifest = _verify_ender21_round1_manifest()
                 else:
-                    _verify_ender21_round2_manifest()
+                    ender21_manifest = _verify_ender21_round2_manifest()
             marker_lease = None
             completion_claim_lease = None
             completion_receipt_lease = None
@@ -2322,6 +2419,33 @@ def run_training(
                         ),
                         reserved_outputs=reserved_outputs,
                     )
+                    if (
+                        ender21_reservations is not None
+                        and Path(config_path).stem in _ENDER21_ROUND2_NAMES
+                    ):
+                        assert ender21_manifest is not None
+                        completion_path, completion_payload, completion_bytes = (
+                            _write_ender21_round2_completion(
+                                Path(config_path),
+                                ender21_manifest,
+                                reserved_outputs,
+                            )
+                        )
+                        print(
+                            json.dumps(
+                                {
+                                    "training_completion_receipt": str(
+                                        completion_path
+                                    ),
+                                    "training_completion_receipt_sha256": (
+                                        hashlib.sha256(
+                                            completion_bytes
+                                        ).hexdigest()
+                                    ),
+                                },
+                                sort_keys=True,
+                            )
+                        )
                     if authority is not None:
                         completion_path, completion_payload = (
                             evaluator.complete_component_training_consumption(
