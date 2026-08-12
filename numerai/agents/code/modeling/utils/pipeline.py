@@ -145,9 +145,16 @@ _ENDER21_EXTERNAL_ARTIFACTS = frozenset(
         ),
     }
 )
+_ENDER21_CONFIRMATION_ALLOWLIST_PATH = (
+    "numerai/agents/experiments/ender21_residual_stability_v53/"
+    "protocol/confirmation_eras_0865_through_1021.json"
+)
 _ENDER21_ROUND2_MANIFEST_FILES = frozenset(
     {
-        *_ENDER21_MANIFEST_FILES,
+        *(
+            _ENDER21_MANIFEST_FILES
+            - {_ENDER21_CONFIRMATION_ALLOWLIST_PATH}
+        ),
         *(
             (
                 "numerai/agents/experiments/ender21_residual_stability_v53/"
