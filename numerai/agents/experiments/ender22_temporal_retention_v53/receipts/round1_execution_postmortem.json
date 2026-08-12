@@ -1,0 +1,89 @@
+{
+  "authority": "informational_only",
+  "authorizes_round2": false,
+  "evaluator_executed": false,
+  "experiment": "ender22_temporal_retention_v53",
+  "manifest": {
+    "git_head": "c08fc77dc4f28ae61d402eea4aaf9e01c4191512",
+    "path": "numerai/agents/experiments/ender22_temporal_retention_v53/source_manifest_round1.json",
+    "seal_commit": "211e70ab716b95f319e1d7df4eed864d6ec4768c",
+    "sha256": "c90428ead39286251b66f6c94287197a774d8da68882021c14d2e23f6ac59845"
+  },
+  "round1_decision_receipt_absent": true,
+  "runs": {
+    "r1_control_block_dro": {
+      "completion": {
+        "path": "numerai/agents/experiments/ender22_temporal_retention_v53/receipts/r1_control_block_dro.completion.json",
+        "sha256": "d98cf6ad51e1d9b1ff1a6377fd5db2bc1230b1619c386b69a9b9e5a567c26cf8",
+        "size_bytes": 1371
+      },
+      "predictions": {
+        "path": "numerai/agents/experiments/ender22_temporal_retention_v53/predictions/r1_control_block_dro.parquet",
+        "sha256": "a7f3a4bb717a02bcc49331a02ef44fd8525c01354b37dc1a6e192c533b10373b",
+        "size_bytes": 15779944
+      },
+      "result": {
+        "path": "numerai/agents/experiments/ender22_temporal_retention_v53/results/r1_control_block_dro.json",
+        "sha256": "e7acd3715c287173720aad54d4faf431e49d0ed715b71674cb5fa5b182e02fdf",
+        "size_bytes": 5556
+      },
+      "state": "OUTPUTS_FINALIZED"
+    },
+    "r1_recent_half_life52": {
+      "error": {
+        "allocation_bytes_requested": 3403436130,
+        "array_dtype": "int8",
+        "array_shape": [
+          3555,
+          957366
+        ],
+        "exception": "numpy._core._exceptions._ArrayMemoryError",
+        "phase": "benchmark_coverage_filter_before_first_model_fit"
+      },
+      "failure_log": {
+        "path": "numerai/agents/experiments/ender22_temporal_retention_v53/logs/r1_recent_half_life52.failure.log",
+        "sha256": "23c937f1935f5ab26d26afdbd3d45882cc59a07762ef7d37c64e149eaba92e5e",
+        "size_bytes": 1922
+      },
+      "outputs": {
+        "completion": {
+          "path": "numerai/agents/experiments/ender22_temporal_retention_v53/receipts/r1_recent_half_life52.completion.json",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "size_bytes": 0
+        },
+        "predictions": {
+          "path": "numerai/agents/experiments/ender22_temporal_retention_v53/predictions/r1_recent_half_life52.parquet",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "size_bytes": 0
+        },
+        "result": {
+          "path": "numerai/agents/experiments/ender22_temporal_retention_v53/results/r1_recent_half_life52.json",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "size_bytes": 0
+        }
+      },
+      "retried": false,
+      "state": "TERMINAL_PRE_FIT_INFRASTRUCTURE_FAILURE"
+    },
+    "r1_recent_window78": {
+      "completion": {
+        "path": "numerai/agents/experiments/ender22_temporal_retention_v53/receipts/r1_recent_window78.completion.json",
+        "sha256": "9fcaa4efdb1b5fa2013bab8dab2a5a22f38eade13927ebef6f9199a7e0cdb37e",
+        "size_bytes": 1363
+      },
+      "predictions": {
+        "path": "numerai/agents/experiments/ender22_temporal_retention_v53/predictions/r1_recent_window78.parquet",
+        "sha256": "3e5285e3d5b9e3dea7df8da3d121a0157fa83e91bbec371c30526a8539aced73",
+        "size_bytes": 15779944
+      },
+      "result": {
+        "path": "numerai/agents/experiments/ender22_temporal_retention_v53/results/r1_recent_window78.json",
+        "sha256": "4e3a7daa7ccfb376c9272b77b5e6e5f6a381b86b2c4925de26092090e387c601",
+        "size_bytes": 6147
+      },
+      "state": "OUTPUTS_FINALIZED"
+    }
+  },
+  "schema_version": 1,
+  "state": "NO_DECISION_INFRASTRUCTURE_FAILURE"
+}
