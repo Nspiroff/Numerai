@@ -1,0 +1,56 @@
+# Ender21 Gate Contract
+
+This file is the concise fail-closed contract for
+`ender21_residual_stability_v53`. The detailed rationale and formulas live in
+`experiment.md` and are part of this contract.
+
+## Authority and prohibited actions
+
+- Ender20 experiment directories and their results are read-only evidence.
+- The protected repository residue `.gpu-lgbm-source-build/` is out of scope.
+- No Numerai upload, model assignment, staking, social connection, key display,
+  or other account mutation is authorized.
+- Historical v5.3 validation is not called unseen. The strongest possible state
+  from this gate is `SHADOW_READY`.
+- Candidate definitions, seeds, split rules, losses, ranking, blend formula, and
+  thresholds freeze before the first Ender21 score is read.
+
+## Required run order
+
+1. Commit the protocol.
+2. Implement loss support and tests.
+3. Create the five exact Round-1 configs and a content-hashed source manifest.
+4. Commit that pre-scoring checkpoint.
+5. Run all Round-1 candidates once; never overwrite an existing result or
+   prediction.
+6. Evaluate and write the Round-1 decision.
+7. Run Round 2 only after a Round-1 challenger passes.
+8. Do not open historical confirmation while Ender20's locked period is
+   protected, even if Round 2 passes.
+9. Stop at `NEGATIVE`, `SCOUT_WINNER`, or `SHADOW_READY`; do not upload.
+
+## Round-1 eligibility
+
+Against the fresh matched control, a challenger must retain >=90% of full and
+recent BMC, reduce full BMC max drawdown by >=15%, keep BMC Sharpe within 0.05,
+have positive BMC in every outer fold, and keep Corr in [0.005, 0.04). Ranking is
+recent BMC, full BMC, then lower drawdown.
+
+## Deferred confirmation eligibility
+
+The frozen two-seed 50/50 within-era-rank ensemble must meet:
+
+`BMC >= 0.0055`, `last200 BMC >= 0.0035`, `Corr in [0.0075, 0.04)`,
+`BMC Sharpe >= 0.50`, `max drawdown <= 0.225`, benchmark correlation <=0.15,
+positive BMC in all four chronological quartiles, and positive full/recent BMC
+for both component seeds.
+
+These rules are inert until a separate explicit decision releases the protected
+period. They are recorded now so that a later decision cannot tune them after
+seeing those eras.
+
+## No post-hoc rescue
+
+An ineligible candidate cannot be repaired on the same scored eras by changing
+weights, blocks, temperatures, seeds, target mixtures, neutralization, or
+thresholds. Such a change is a new named experiment with a new protocol.
