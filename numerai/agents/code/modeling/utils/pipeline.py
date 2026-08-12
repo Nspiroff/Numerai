@@ -897,7 +897,7 @@ def _write_ender21_round2_completion(
     config_path: Path,
     manifest: dict,
     reservations: _ExclusiveOutputReservations,
-) -> tuple[Path, dict]:
+) -> tuple[Path, dict, bytes]:
     """Bind one completed replication to the exact frozen manifest and handles."""
 
     name = Path(config_path).stem

@@ -1,11 +1,18 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import hashlib
 import importlib.util
+import json
+import os
 from pathlib import Path
 import runpy
 import tempfile
 import unittest
+from unittest import mock
+
+from agents.code.modeling.utils import pipeline as pipeline_module
+from agents.code.modeling.utils.pipeline import run_training
 
 
 EXPERIMENT = (
@@ -300,6 +307,292 @@ class TestEnder21Round2Evaluator(unittest.TestCase):
             self._write_model_seed_pair(root, uncovered)
             with self.assertRaisesRegex(ValueError, "coverage|data"):
                 self.evaluator._validate_config_pair(root, "model_seed2027")
+
+
+class TestEnder21Round2Completion(unittest.TestCase):
+    NAME = "r2_control_tabm_k64_model_seed2027"
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.evaluator = _load_evaluator()
+
+    @staticmethod
+    def _experiment(root: Path) -> Path:
+        return (
+            root
+            / "numerai/agents/experiments/ender21_residual_stability_v53"
+        )
+
+    def _write_completion_fixture(
+        self,
+        root: Path,
+    ) -> tuple[Path, dict, dict, Path]:
+        experiment = self._experiment(root)
+        for relative in ("configs", "predictions", "results", "receipts"):
+            (experiment / relative).mkdir(parents=True, exist_ok=True)
+
+        config_path = experiment / f"configs/{self.NAME}.py"
+        config_bytes = b"CONFIG = {'synthetic': True}\n"
+        config_path.write_bytes(config_bytes)
+        config_relative = config_path.relative_to(root).as_posix()
+        manifest = {
+            "git_head": "a" * 40,
+            "files": {
+                config_relative: hashlib.sha256(config_bytes).hexdigest(),
+            },
+        }
+        manifest_path = experiment / "source_manifest_round2.json"
+        manifest_path.write_bytes(
+            json.dumps(manifest, indent=2, sort_keys=True).encode("utf-8") + b"\n"
+        )
+
+        output_paths = {
+            "predictions": experiment / f"predictions/{self.NAME}.parquet",
+            "result": experiment / f"results/{self.NAME}.json",
+        }
+        output_paths["predictions"].write_bytes(b"synthetic parquet bytes")
+        output_paths["result"].write_bytes(b'{"synthetic": true}\n')
+        outputs = {}
+        for label, path in output_paths.items():
+            inspected = path.lstat()
+            outputs[label] = {
+                "path": str(path),
+                "device": int(inspected.st_dev),
+                "inode": int(inspected.st_ino),
+                "size_bytes": int(inspected.st_size),
+                "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            }
+
+        payload = {
+            "schema_version": 1,
+            "stage": "ender21-round2-training-completion",
+            "state": "OUTPUTS_FINALIZED",
+            "component": self.NAME,
+            "manifest": {
+                "path": manifest_path.relative_to(root).as_posix(),
+                "sha256": hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
+                "git_head": manifest["git_head"],
+            },
+            "config": {
+                "path": config_relative,
+                "sha256": manifest["files"][config_relative],
+            },
+            "outputs": outputs,
+        }
+        completion_path = experiment / f"receipts/{self.NAME}.completion.json"
+        completion_path.write_bytes(
+            json.dumps(payload, indent=2, sort_keys=True).encode("utf-8") + b"\n"
+        )
+        return experiment, manifest, payload, completion_path
+
+    def test_writer_accepts_relative_config_and_hashes_actual_pretty_manifest(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            experiment = self._experiment(root)
+            for relative in ("configs", "predictions", "results", "receipts"):
+                (experiment / relative).mkdir(parents=True, exist_ok=True)
+            config_path = experiment / f"configs/{self.NAME}.py"
+            config_bytes = b"CONFIG = {'synthetic': True}\n"
+            config_path.write_bytes(config_bytes)
+            relative_config = config_path.relative_to(root)
+            config_relative = relative_config.as_posix()
+            manifest = {
+                "git_head": "a" * 40,
+                "files": {
+                    config_relative: hashlib.sha256(config_bytes).hexdigest(),
+                },
+            }
+            manifest_path = experiment / "source_manifest_round2.json"
+            pretty_manifest = (
+                json.dumps(manifest, indent=4, sort_keys=True).encode("utf-8")
+                + b"\n"
+            )
+            manifest_path.write_bytes(pretty_manifest)
+            predictions = experiment / f"predictions/{self.NAME}.parquet"
+            result = experiment / f"results/{self.NAME}.json"
+            completion = experiment / f"receipts/{self.NAME}.completion.json"
+
+            previous_cwd = Path.cwd()
+            prediction_bytes = b"prediction bytes"
+            result_bytes = b"result bytes"
+            try:
+                os.chdir(root)
+                with mock.patch.object(pipeline_module, "REPO_DIR", root):
+                    with pipeline_module._ExclusiveOutputReservations(
+                        predictions,
+                        result,
+                        completion,
+                    ) as reservations:
+                        reservations.predictions_stream.write(prediction_bytes)
+                        reservations.results_stream.write(result_bytes)
+                        path, payload, payload_bytes = (
+                            pipeline_module._write_ender21_round2_completion(
+                                relative_config,
+                                manifest,
+                                reservations,
+                            )
+                        )
+            finally:
+                os.chdir(previous_cwd)
+
+            self.assertEqual(path, completion)
+            self.assertEqual(completion.read_bytes(), payload_bytes)
+            self.assertEqual(
+                payload_bytes,
+                json.dumps(payload, indent=2, sort_keys=True).encode("utf-8")
+                + b"\n",
+            )
+            self.assertEqual(
+                payload["outputs"]["predictions"]["sha256"],
+                hashlib.sha256(prediction_bytes).hexdigest(),
+            )
+            self.assertEqual(
+                payload["outputs"]["predictions"]["size_bytes"],
+                len(prediction_bytes),
+            )
+            self.assertEqual(
+                payload["outputs"]["result"]["sha256"],
+                hashlib.sha256(result_bytes).hexdigest(),
+            )
+            self.assertEqual(
+                payload["outputs"]["result"]["size_bytes"],
+                len(result_bytes),
+            )
+            self.assertEqual(
+                payload["manifest"]["sha256"],
+                hashlib.sha256(pretty_manifest).hexdigest(),
+            )
+            canonical_manifest = json.dumps(
+                manifest,
+                separators=(",", ":"),
+                sort_keys=True,
+            ).encode("utf-8")
+            self.assertNotEqual(
+                payload["manifest"]["sha256"],
+                hashlib.sha256(canonical_manifest).hexdigest(),
+            )
+            self.assertEqual(payload["config"]["path"], config_relative)
+
+    def test_preexisting_completion_stops_third_reservation_before_inputs(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            experiment = self._experiment(root)
+            configs = experiment / "configs"
+            receipts = experiment / "receipts"
+            configs.mkdir(parents=True)
+            receipts.mkdir()
+            config = configs / f"{self.NAME}.py"
+            config.write_text("CONFIG = {}\n", encoding="utf-8")
+            completion = receipts / f"{self.NAME}.completion.json"
+            original_completion = b"existing completion receipt"
+            completion.write_bytes(original_completion)
+
+            with mock.patch.object(
+                pipeline_module, "REPO_DIR", root
+            ), mock.patch.object(
+                pipeline_module, "_verify_ender21_round2_manifest"
+            ) as manifest_verifier, mock.patch.object(
+                pipeline_module,
+                "load_config",
+                side_effect=AssertionError("CONFIG_EVALUATED"),
+            ) as config_loader, mock.patch.object(
+                pipeline_module,
+                "NumerAPI",
+                side_effect=AssertionError("DATA_CLIENT_OPENED"),
+            ) as data_client:
+                with self.assertRaisesRegex(
+                    ValueError,
+                    "Cannot reserve exclusive completion receipt output",
+                ):
+                    run_training(config)
+
+            manifest_verifier.assert_not_called()
+            config_loader.assert_not_called()
+            data_client.assert_not_called()
+            self.assertEqual(completion.read_bytes(), original_completion)
+            prediction = experiment / f"predictions/{self.NAME}.parquet"
+            result = experiment / f"results/{self.NAME}.json"
+            self.assertTrue(prediction.is_file())
+            self.assertTrue(result.is_file())
+            self.assertEqual(prediction.stat().st_size, 0)
+            self.assertEqual(result.stat().st_size, 0)
+
+    def test_validator_rejects_cross_manifest_and_payload_tampering(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            experiment, manifest, payload, completion = (
+                self._write_completion_fixture(root)
+            )
+            with mock.patch.object(self.evaluator, "REPO_DIR", root):
+                self.assertEqual(
+                    self.evaluator._validate_completion(
+                        experiment,
+                        self.NAME,
+                        manifest,
+                    ),
+                    payload,
+                )
+
+                cross_manifest = deepcopy(manifest)
+                cross_manifest["git_head"] = "b" * 40
+                with self.assertRaisesRegex(ValueError, "provenance differs"):
+                    self.evaluator._validate_completion(
+                        experiment,
+                        self.NAME,
+                        cross_manifest,
+                    )
+
+                cases = (
+                    (
+                        "manifest_hash",
+                        lambda value: value["manifest"].__setitem__(
+                            "sha256", "0" * 64
+                        ),
+                        "provenance differs",
+                    ),
+                    (
+                        "config_hash",
+                        lambda value: value["config"].__setitem__(
+                            "sha256", "1" * 64
+                        ),
+                        "provenance differs",
+                    ),
+                    (
+                        "prediction_hash",
+                        lambda value: value["outputs"]["predictions"].__setitem__(
+                            "sha256", "2" * 64
+                        ),
+                        "predictions differs from its artifact",
+                    ),
+                    (
+                        "result_size",
+                        lambda value: value["outputs"]["result"].__setitem__(
+                            "size_bytes",
+                            value["outputs"]["result"]["size_bytes"] + 1,
+                        ),
+                        "result differs from its artifact",
+                    ),
+                )
+                for label, mutate, message in cases:
+                    with self.subTest(label=label):
+                        tampered = deepcopy(payload)
+                        mutate(tampered)
+                        completion.write_bytes(
+                            json.dumps(tampered, indent=2, sort_keys=True).encode(
+                                "utf-8"
+                            )
+                            + b"\n"
+                        )
+                        with self.assertRaisesRegex(ValueError, message):
+                            self.evaluator._validate_completion(
+                                experiment,
+                                self.NAME,
+                                manifest,
+                            )
 
 
 if __name__ == "__main__":
