@@ -1,0 +1,31 @@
+{
+  "component": "r1_recent_window78",
+  "config": {
+    "path": "numerai/agents/experiments/ender23_temporal_retention_v53/configs/r1_recent_window78.py",
+    "sha256": "b4f7070ec28c13609b9f1b2935996b960b2214ffe76b4e7af25caa0bdda379cf"
+  },
+  "manifest": {
+    "git_head": "967cd78546c2d431759bea85a034750760d35775",
+    "path": "numerai/agents/experiments/ender23_temporal_retention_v53/source_manifest_round1.json",
+    "sha256": "3e96b4b80a1ae4f877c6418bd6655a055710641e7d5e10677d32478af6ae8952"
+  },
+  "outputs": {
+    "predictions": {
+      "device": 6109702118523114368,
+      "inode": 7318349395499382,
+      "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender23_temporal_retention_v53\\predictions\\r1_recent_window78.parquet",
+      "sha256": "3e5285e3d5b9e3dea7df8da3d121a0157fa83e91bbec371c30526a8539aced73",
+      "size_bytes": 15779944
+    },
+    "result": {
+      "device": 6109702118523114368,
+      "inode": 3096224744839543,
+      "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender23_temporal_retention_v53\\results\\r1_recent_window78.json",
+      "sha256": "399d3bf16c9efae734a13653ee4b7f744080350fd774a4c94e8e6e02c2012d1c",
+      "size_bytes": 6147
+    }
+  },
+  "schema_version": 1,
+  "stage": "ender23-round1-training-completion",
+  "state": "OUTPUTS_FINALIZED"
+}
