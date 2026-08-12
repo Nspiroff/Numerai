@@ -34,6 +34,12 @@ CANDIDATES = (
     "r1_tabm_k64_block_dro",
     "r1_tabm_mini_k64_block_dro",
 )
+ROUND2_CANDIDATES = {
+    "r2_control_tabm_k64_model_seed2027": {"model_seed": 2027, "sample_seed": 1337, "loss_mode": "mse"},
+    "r2_selected_tabm_k64_block_dro_model_seed2027": {"model_seed": 2027, "sample_seed": 1337, "loss_mode": "chronological_block_dro"},
+    "r2_control_tabm_k64_sample_seed2027": {"model_seed": 1337, "sample_seed": 2027, "loss_mode": "mse"},
+    "r2_selected_tabm_k64_block_dro_sample_seed2027": {"model_seed": 1337, "sample_seed": 2027, "loss_mode": "chronological_block_dro"},
+}
 
 
 def _sha256(path: Path) -> str:
@@ -191,12 +197,27 @@ def _score_candidate(
     config = __import__("runpy").run_path(
         str(experiment / "configs" / f"{name}.py")
     )["CONFIG"]
+    round2_contract = ROUND2_CANDIDATES.get(name)
+    if name not in CANDIDATES and round2_contract is None:
+        raise ValueError(f"Unknown frozen Ender21 candidate: {name}")
+    if round2_contract is not None and (
+        config["model"]["params"]["seed"] != round2_contract["model_seed"]
+        or config["model"]["params"]["loss_mode"] != round2_contract["loss_mode"]
+        or config["training"]["sample_seed"] != round2_contract["sample_seed"]
+    ):
+        raise ValueError(f"{name} seed/loss contract differs from Round 2")
+    expected_sample_seed = (
+        round2_contract["sample_seed"] if round2_contract is not None else 1337
+    )
     if stored["model"] != config["model"]:
         raise ValueError(f"{name} stored model contract differs from its frozen config")
     if stored["preprocessing"] != config["preprocessing"]:
         raise ValueError(f"{name} stored preprocessing contract differs")
     expected_training = {
-        "data_sampling": {"max_train_samples": 500_000, "sample_seed": 1337},
+        "data_sampling": {
+            "max_train_samples": 500_000,
+            "sample_seed": expected_sample_seed,
+        },
         "data_mode": "eager",
         "cv": config["training"]["cv"],
     }

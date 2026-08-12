@@ -117,6 +117,18 @@ if at least two of its three realizations satisfy the Round-1 retention and
 drawdown-improvement rules against the matched control evidence. Two consecutive
 rounds without an eligible improvement end the search.
 
+The four mechanically derived Round-2 configs are:
+
+- `r2_control_tabm_k64_model_seed2027` and
+  `r2_selected_tabm_k64_block_dro_model_seed2027`, both with model seed 2027
+  and row-sample seed 1337;
+- `r2_control_tabm_k64_sample_seed2027` and
+  `r2_selected_tabm_k64_block_dro_sample_seed2027`, both with model seed 1337
+  and row-sample seed 2027.
+
+All other fields remain byte-bound to their Round-1 family. Round 2 uses a new
+source manifest committed before any replication score is read.
+
 ## Ender21 family-locked confirmation
 
 If Round 2 passes, the selected family is refit using discovery eras only, with
@@ -170,9 +182,13 @@ user decision regardless of any research result.
 
 ## Status
 
-`PRE_SCORE_VALIDATION_COMPLETE`
+`ROUND1_SCOUT_WINNER_ROUND2_FROZEN`
 
-No Ender21 model has been scored at this point.
+Round 1 selected `r1_tabm_k64_block_dro`. Against the fresh matched control,
+full BMC improved from 0.005390 to 0.006877, BMC Sharpe from 0.4512 to 0.6444,
+and max drawdown fell from 0.090385 to 0.043614. Recent-fold BMC was 0.007541
+versus 0.008177 for control, Corr was 0.011474, and every frozen eligibility
+check passed. No Ender21 confirmation era has been opened.
 
 An initial control process was stopped before producing predictions, results, or
 metrics when review found that runtime allowlist filtering still materialized

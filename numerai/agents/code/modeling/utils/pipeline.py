@@ -82,6 +82,13 @@ _ENDER21_ROUND1_NAMES = (
     "r1_tabm_k64_block_dro",
     "r1_tabm_mini_k64_block_dro",
 )
+_ENDER21_ROUND2_NAMES = (
+    "r2_control_tabm_k64_model_seed2027",
+    "r2_control_tabm_k64_sample_seed2027",
+    "r2_selected_tabm_k64_block_dro_model_seed2027",
+    "r2_selected_tabm_k64_block_dro_sample_seed2027",
+)
+_ENDER21_TRAINING_NAMES = _ENDER21_ROUND1_NAMES + _ENDER21_ROUND2_NAMES
 _ENDER21_MANIFEST_FILES = frozenset(
     {
         "numerai/agents/code/modeling/models/torch_tabular_regressor.py",
@@ -135,6 +142,30 @@ _ENDER21_EXTERNAL_ARTIFACTS = frozenset(
         (
             "numerai/v5.3/"
             "ender21_discovery_benchmark_models_through_0861.parquet"
+        ),
+    }
+)
+_ENDER21_ROUND2_MANIFEST_FILES = frozenset(
+    {
+        *_ENDER21_MANIFEST_FILES,
+        *(
+            (
+                "numerai/agents/experiments/ender21_residual_stability_v53/"
+                f"configs/{name}.py"
+            )
+            for name in _ENDER21_ROUND2_NAMES
+        ),
+        (
+            "numerai/agents/experiments/ender21_residual_stability_v53/"
+            "evaluate_round2.py"
+        ),
+        (
+            "numerai/agents/experiments/ender21_residual_stability_v53/"
+            "receipts/round1_discovery.json"
+        ),
+        (
+            "numerai/agents/experiments/ender21_residual_stability_v53/"
+            "source_manifest.json"
         ),
     }
 )
@@ -197,11 +228,11 @@ def _governed_output_paths() -> set[Path]:
         {
             *(
                 ender21_experiment / "predictions" / f"{name}.parquet"
-                for name in _ENDER21_ROUND1_NAMES
+                for name in _ENDER21_TRAINING_NAMES
             ),
             *(
                 ender21_experiment / "results" / f"{name}.json"
-                for name in _ENDER21_ROUND1_NAMES
+                for name in _ENDER21_TRAINING_NAMES
             ),
         }
     )
@@ -431,8 +462,8 @@ def _ender21_output_reservations(
     lexical = Path(os.path.abspath(supplied))
     if lexical.parent != configs:
         return None
-    if lexical.suffix != ".py" or lexical.stem not in _ENDER21_ROUND1_NAMES:
-        raise ValueError("Only frozen named Ender21 Round-1 configs may execute.")
+    if lexical.suffix != ".py" or lexical.stem not in _ENDER21_TRAINING_NAMES:
+        raise ValueError("Only frozen named Ender21 configs may execute.")
     if lexical != configs / f"{lexical.stem}.py":
         raise ValueError("Ender21 Round-1 config path is not canonical.")
     if output_dir_override is not None:
@@ -630,13 +661,18 @@ class _BootstrapReadOnlyFileLease:
             stream.close()
 
 
-def _verify_ender21_round1_manifest() -> dict:
-    """Fail closed unless Round-1 source and physical inputs match the freeze."""
+def _verify_ender21_manifest(
+    manifest_filename: str,
+    expected_files: frozenset[str],
+) -> dict:
+    """Fail closed unless frozen source and physical inputs match exactly."""
 
     experiment_relative = Path(
         "numerai/agents/experiments/ender21_residual_stability_v53"
     )
-    manifest_relative = experiment_relative / "source_manifest.json"
+    if manifest_filename not in {"source_manifest.json", "source_manifest_round2.json"}:
+        raise ValueError("Unknown Ender21 source manifest.")
+    manifest_relative = experiment_relative / manifest_filename
     manifest_path = Path(os.path.abspath(REPO_DIR / manifest_relative))
     _bootstrap_require_plain_directory_chain(manifest_path.parent)
     _bootstrap_require_plain_file(manifest_path, "Ender21 source manifest")
@@ -669,7 +705,7 @@ def _verify_ender21_round1_manifest() -> dict:
     files = manifest["files"]
     external = manifest["external_artifacts"]
     runtime = manifest["runtime"]
-    if not isinstance(files, dict) or set(files) != _ENDER21_MANIFEST_FILES:
+    if not isinstance(files, dict) or set(files) != expected_files:
         raise ValueError("Ender21 source manifest file set differs from the freeze.")
     if not isinstance(external, dict) or set(external) != _ENDER21_EXTERNAL_ARTIFACTS:
         raise ValueError("Ender21 source manifest artifact set differs from the freeze.")
@@ -783,6 +819,18 @@ def _verify_ender21_round1_manifest() -> dict:
         if actual != receipt["sha256"]:
             raise ValueError(f"Ender21 artifact hash drifted: {relative_text}")
     return manifest
+
+
+def _verify_ender21_round1_manifest() -> dict:
+    return _verify_ender21_manifest(
+        "source_manifest.json", _ENDER21_MANIFEST_FILES
+    )
+
+
+def _verify_ender21_round2_manifest() -> dict:
+    return _verify_ender21_manifest(
+        "source_manifest_round2.json", _ENDER21_ROUND2_MANIFEST_FILES
+    )
 
 
 def _canonical_json(value: object) -> str:
@@ -2192,7 +2240,10 @@ def run_training(
         )
         with reservation_scope as reserved_outputs:
             if ender21_reservations is not None:
-                _verify_ender21_round1_manifest()
+                if Path(config_path).stem in _ENDER21_ROUND1_NAMES:
+                    _verify_ender21_round1_manifest()
+                else:
+                    _verify_ender21_round2_manifest()
             marker_lease = None
             completion_claim_lease = None
             completion_receipt_lease = None

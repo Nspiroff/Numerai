@@ -33,7 +33,9 @@ This file is the concise fail-closed contract for
    modeling-data access. Run each candidate once; never overwrite, delete,
    rename, or retry an existing result or prediction.
 6. Evaluate and write the Round-1 decision.
-7. Run Round 2 only after a Round-1 challenger passes.
+7. If and only if Round 1 passes, commit the four exact seed-replication configs,
+   evaluator, and a second source manifest; then run the two matched control /
+   selected pairs exactly once.
 8. Open the exact Ender21-only 0865-1021 confirmation once only after Round 2.
 9. Do not open the later full-consecutive gate while Ender20's locked period is
    protected.
