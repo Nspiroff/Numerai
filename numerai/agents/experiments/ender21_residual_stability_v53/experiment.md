@@ -46,11 +46,13 @@ protocol. Ender21 does not invoke that evaluator or inspect its locked receipt.
 - Inputs: all 3,555 Numerai features; era and benchmark are metadata only.
 - Objective label: era-wise linear residual of Ender20 to the benchmark, with
   intercept and proportion 1.0.
-- Scout data: physically isolated `v5.3/ender21_dev_full_through_1021.parquet`
+- Development data: physically isolated `v5.3/ender21_dev_full_through_1021.parquet`
   and `v5.3/ender21_dev_benchmark_models_through_1021.parquet`, plus the exact
   committed era allowlist ending at `1021`. The source row group containing
   era `1025` also contains protected era `1029`, so the entire row group is
   excluded. Eras `1025`-`1225` remain unavailable to Ender21.
+- Discovery eras: exact retained eras `0161`-`0861` from the committed discovery
+  allowlist. Ender21 confirmation eras `0865`-`1021` are excluded from discovery.
 - Outer validation: five expanding splits; 13 retained-era embargo. The first
   empty-training fold is skipped exactly as in the shared pipeline.
 - Inner early stopping: most recent 10% of training eras with a separate
@@ -86,23 +88,25 @@ comparable. Era-balanced MSE gives every training era equal total weight.
 ## Selection and stopping rules
 
 Exact metrics use the repository Numerai implementation. Primary selection is
-`bmc_last_200_eras.mean`; tie-breaker is full `bmc.mean`. Corr is a guardrail,
-not the optimizer.
+full `bmc.mean`; tie-breaker is mean BMC in the most recent outer fold, then
+lower drawdown. `bmc_last_200_eras` is recorded but is not a separate selection
+window because discovery contains fewer than 200 retained OOF eras. Corr is a
+guardrail, not the optimizer.
 
 A Round-1 challenger is eligible only if all are true:
 
 1. full BMC and retained-last-200 BMC are positive;
 2. Corr is at least 0.005 and below 0.04;
-3. full and retained-last-200 BMC each retain at least 90% of the freshly run
+3. full and most-recent-fold BMC each retain at least 90% of the freshly run
    Round-1 control;
 4. full BMC max drawdown improves by at least 15% relative to the control;
 5. BMC Sharpe is no worse than 0.05 below the control;
 6. every outer fold has positive mean BMC; and
 7. predictions, IDs, eras, folds, targets, and benchmark joins validate exactly.
 
-Eligible challengers are ranked by retained-last-200 BMC, then full BMC, then
+Eligible challengers are ranked by full BMC, then most-recent-fold BMC, then
 lower drawdown. If none is eligible, the round is a terminal negative and no
-full-data confirmation opens.
+Ender21 confirmation opens.
 
 Round 2 changes randomness only: selected and control each run once with model
 seed 2027 and once with row-sample seed 2027. The selected family advances only
@@ -110,7 +114,21 @@ if at least two of its three realizations satisfy the Round-1 retention and
 drawdown-improvement rules against the matched control evidence. Two consecutive
 rounds without an eligible improvement end the search.
 
-## Deferred historical confirmation gate
+## Ender21 family-locked confirmation
+
+If Round 2 passes, the selected family is refit using discovery eras only, with
+the 13-retained-era embargo preserved, and scores the exact 40 retained eras
+`0865`-`1021` once. Those eras are locked within Ender21 but are not described as
+globally unseen. The candidate passes this research gate only if BMC >=0.0020,
+BMC Sharpe >0.25, drawdown <0.10, Corr >=0.008, benchmark correlation <0.25,
+three of four chronological 10-era blocks have positive BMC, the worst block is
+above -0.001, and confirmation BMC retains at least 60% of discovery BMC.
+
+Passing ends at `HISTORICAL_RESEARCH_PASS_FORWARD_VALIDATION_REQUIRED`. True
+promotion requires an unchanged predictor to collect at least 52 newly resolved
+future eras.
+
+## Deferred full-consecutive confirmation gate
 
 This gate is frozen now but **may not run while the Ender20 locked period remains
 protected**. A later explicit authorization would allow the selected seed-1337
@@ -131,10 +149,9 @@ The historical candidate is `SHADOW_READY` only if all are true:
 - both individual seeds have positive full and last-200 BMC.
 
 Failure is recorded without trying another blend on the confirmation eras.
-Until that authorization exists, a passing Round 2 stops at `SCOUT_WINNER` and
-the only honest out-of-sample confirmation is future live data. Passing the
-deferred gate would create a shadow-live research artifact only; Numerai upload
-and account changes require a separate explicit user decision.
+Until that authorization exists, Ender21 cannot claim a full-consecutive
+historical pass. Numerai upload and account changes require a separate explicit
+user decision regardless of any research result.
 
 ## Research basis
 

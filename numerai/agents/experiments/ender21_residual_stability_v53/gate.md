@@ -16,8 +16,9 @@ This file is the concise fail-closed contract for
   thresholds freeze before the first Ender21 score is read.
 - Real-data inputs must be newly isolated Parquets whose selected source row
   groups have maximum era <=1021. The mixed 1025/1029 row group is forbidden.
-- `data.era_allowlist_path` must bind the committed exact list through 1021 and
-  the trainer must filter its CV universe before any model fit.
+- Round-1 `data.era_allowlist_path` must bind the exact committed discovery list
+  through 0861 and filter the CV universe before any fit. The separate 0865-1021
+  confirmation list remains closed until both discovery rounds pass.
 
 ## Required run order
 
@@ -29,18 +30,27 @@ This file is the concise fail-closed contract for
    prediction.
 6. Evaluate and write the Round-1 decision.
 7. Run Round 2 only after a Round-1 challenger passes.
-8. Do not open historical confirmation while Ender20's locked period is
-   protected, even if Round 2 passes.
-9. Stop at `NEGATIVE`, `SCOUT_WINNER`, or `SHADOW_READY`; do not upload.
+8. Open the exact Ender21-only 0865-1021 confirmation once only after Round 2.
+9. Do not open the later full-consecutive gate while Ender20's locked period is
+   protected.
+10. Stop at `NEGATIVE`, `SCOUT_WINNER`, or
+   `HISTORICAL_RESEARCH_PASS_FORWARD_VALIDATION_REQUIRED`; do not upload.
 
 ## Round-1 eligibility
 
 Against the fresh matched control, a challenger must retain >=90% of full and
-recent BMC, reduce full BMC max drawdown by >=15%, keep BMC Sharpe within 0.05,
+most-recent-fold BMC, reduce full BMC max drawdown by >=15%, keep BMC Sharpe within 0.05,
 have positive BMC in every outer fold, and keep Corr in [0.005, 0.04). Ranking is
 recent BMC, full BMC, then lower drawdown.
 
-## Deferred confirmation eligibility
+## Ender21 confirmation eligibility
+
+The exact 0865-1021 confirmation opens once after Round 2. Required: BMC
+>=0.0020, Sharpe >0.25, drawdown <0.10, Corr >=0.008, benchmark correlation
+<0.25, at least 3/4 chronological blocks positive, worst block >-0.001, and at
+least 60% discovery-BMC retention. A pass still requires 52 future resolved eras.
+
+## Deferred full-consecutive eligibility
 
 The frozen two-seed 50/50 within-era-rank ensemble must meet:
 
