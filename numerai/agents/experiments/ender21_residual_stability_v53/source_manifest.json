@@ -19,7 +19,8 @@
     "numerai/agents/experiments/ender21_residual_stability_v53/configs/r1_tabm_mini_k64.py": "4ed205ef898ad05f1c1eee87da38e13ed87f9fac180a61ca306b12e51581d10c",
     "numerai/agents/experiments/ender21_residual_stability_v53/configs/r1_tabm_k64_era_balanced.py": "a7b20b8bddf8c87865bf16792daa745db802dd57c8b78b342456e6736df0067c",
     "numerai/agents/experiments/ender21_residual_stability_v53/configs/r1_tabm_k64_block_dro.py": "a08ef8c09d3a1f1dbcda59d3c3621df9507baf12d9058bdf4c20f7d3ff22c1f7",
-    "numerai/agents/experiments/ender21_residual_stability_v53/configs/r1_tabm_mini_k64_block_dro.py": "e23115a9b8de48b3131709a4922c9317737441a8ad6827fd7a9fb9b6583117f5"
+    "numerai/agents/experiments/ender21_residual_stability_v53/configs/r1_tabm_mini_k64_block_dro.py": "e23115a9b8de48b3131709a4922c9317737441a8ad6827fd7a9fb9b6583117f5",
+    "numerai/agents/experiments/ender21_residual_stability_v53/evaluate_round1.py": "646eaaf47798e8e347b6992d076f0c50748964b38b1560ba15021ac38411a750"
   },
   "external_artifacts": {
     "numerai/v5.3/ender21_dev_full_through_1021.parquet": {
