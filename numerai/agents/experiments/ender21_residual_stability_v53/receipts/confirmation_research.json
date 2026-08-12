@@ -1,0 +1,381 @@
+{
+  "checks": {
+    "benchmark_corr_ceiling": true,
+    "bmc_floor": true,
+    "corr_floor": true,
+    "discovery_bmc_retention": false,
+    "drawdown_ceiling": true,
+    "positive_block_count": true,
+    "sharpe_floor": true,
+    "worst_block_floor": true
+  },
+  "component": "c1_selected_tabm_k64_block_dro",
+  "discovery_bmc_baseline": 0.006876950492356912,
+  "eras": 40,
+  "evaluation_manifest": {
+    "git_head": "5a82483cfdf963a1e43cddf2c6f8e4d1a3ccad0c",
+    "path": "numerai/agents/experiments/ender21_residual_stability_v53/source_manifest_confirmation_evaluation.json",
+    "sha256": "dd397d5f5ff2ee5eadcca04d15683c8ddb69abda9a112392306123da8a61c4ab"
+  },
+  "first_era": "0865",
+  "last_era": "1021",
+  "metrics": {
+    "avg_corr_with_benchmark": 0.14474081574679185,
+    "bmc": {
+      "max_drawdown": 0.02876904013140101,
+      "mean": 0.002802025598542858,
+      "sharpe": 0.3348890722386652,
+      "std": 0.008367026071683641
+    },
+    "chronological_block_bmc": {
+      "0": 0.002722686450006509,
+      "1": 0.002498666599686354,
+      "2": 0.002266788966731736,
+      "3": 0.003719960377746833
+    },
+    "corr": {
+      "max_drawdown": 0.017284633580102127,
+      "mean": 0.008273206199214764,
+      "sharpe": 0.8757577236255962,
+      "std": 0.009446912058010834
+    }
+  },
+  "passed": false,
+  "per_era": {
+    "0865": {
+      "bmc": 0.011330488538730237,
+      "corr": 0.013921022844286072,
+      "corr_with_benchmark": 0.13927500790785555
+    },
+    "0869": {
+      "bmc": -0.0035723086097603353,
+      "corr": 0.003965646389435925,
+      "corr_with_benchmark": 0.12837027569757536
+    },
+    "0873": {
+      "bmc": -0.006851136429759356,
+      "corr": -0.004818691047222689,
+      "corr_with_benchmark": 0.16525171961863788
+    },
+    "0877": {
+      "bmc": 0.003597963114056954,
+      "corr": 0.0066522592321717755,
+      "corr_with_benchmark": 0.15601610778307257
+    },
+    "0881": {
+      "bmc": -0.007357163942781133,
+      "corr": -0.00957169751240958,
+      "corr_with_benchmark": 0.1833799981821454
+    },
+    "0885": {
+      "bmc": 0.01094782054358389,
+      "corr": 0.015542705353591162,
+      "corr_with_benchmark": 0.15452199829216431
+    },
+    "0889": {
+      "bmc": 0.007287184363951359,
+      "corr": 0.020552237993065395,
+      "corr_with_benchmark": 0.17925421766610533
+    },
+    "0893": {
+      "bmc": -0.001876043805006828,
+      "corr": 0.002245015041028259,
+      "corr_with_benchmark": 0.1423694979690397
+    },
+    "0897": {
+      "bmc": 0.006547578282826117,
+      "corr": 0.02179120245782613,
+      "corr_with_benchmark": 0.12733692758587495
+    },
+    "0901": {
+      "bmc": 0.007172482444224188,
+      "corr": 0.0058122087305474595,
+      "corr_with_benchmark": 0.11322262264171468
+    },
+    "0905": {
+      "bmc": -0.00833698255682395,
+      "corr": -0.0032272108184184132,
+      "corr_with_benchmark": 0.11220149359404687
+    },
+    "0909": {
+      "bmc": 0.004286913316622197,
+      "corr": 0.016937590120565886,
+      "corr_with_benchmark": 0.15531537843416748
+    },
+    "0913": {
+      "bmc": 0.004293087021463798,
+      "corr": 0.004408241323209417,
+      "corr_with_benchmark": 0.14500604568152722
+    },
+    "0917": {
+      "bmc": 0.013213114205174202,
+      "corr": 0.0199800331944494,
+      "corr_with_benchmark": 0.13583429857970805
+    },
+    "0921": {
+      "bmc": -0.002769663707535005,
+      "corr": -0.0005242795942680334,
+      "corr_with_benchmark": 0.1661207622437807
+    },
+    "0925": {
+      "bmc": 0.00309532724952062,
+      "corr": 0.008884546509151532,
+      "corr_with_benchmark": 0.16006721247694106
+    },
+    "0929": {
+      "bmc": 0.00041327377350179216,
+      "corr": 0.00508569118377192,
+      "corr_with_benchmark": 0.14117417865755724
+    },
+    "0933": {
+      "bmc": 0.007392789557434633,
+      "corr": 0.017621221906858393,
+      "corr_with_benchmark": 0.17668722532333855
+    },
+    "0937": {
+      "bmc": 0.0025577552250618638,
+      "corr": 0.011557936291616293,
+      "corr_with_benchmark": 0.18170717782600426
+    },
+    "0941": {
+      "bmc": 0.00084105191244339,
+      "corr": 0.008526750522965773,
+      "corr_with_benchmark": 0.19488585310920473
+    },
+    "0945": {
+      "bmc": 0.002636354486033405,
+      "corr": 0.00667264523503621,
+      "corr_with_benchmark": 0.141205142393252
+    },
+    "0949": {
+      "bmc": 0.00272841468535107,
+      "corr": 0.013762095533278526,
+      "corr_with_benchmark": 0.14520923044390566
+    },
+    "0953": {
+      "bmc": 0.003351223007377706,
+      "corr": 0.0175995254326862,
+      "corr_with_benchmark": 0.19941130071032495
+    },
+    "0957": {
+      "bmc": 0.0077884139848669095,
+      "corr": 0.017375618078648986,
+      "corr_with_benchmark": 0.1903363980938647
+    },
+    "0961": {
+      "bmc": 0.0022995690658275127,
+      "corr": 0.011405951139425894,
+      "corr_with_benchmark": 0.14500580243631722
+    },
+    "0965": {
+      "bmc": 0.015480711347835,
+      "corr": 0.01687345601931792,
+      "corr_with_benchmark": 0.14156560944510943
+    },
+    "0969": {
+      "bmc": -0.0022120806717577605,
+      "corr": 0.008487415660411904,
+      "corr_with_benchmark": 0.14592485686253617
+    },
+    "0973": {
+      "bmc": 0.009107581176883914,
+      "corr": 0.019218452497809117,
+      "corr_with_benchmark": 0.1436034724373772
+    },
+    "0977": {
+      "bmc": -0.00748016366627327,
+      "corr": -0.004735563275399487,
+      "corr_with_benchmark": 0.1264892549744267
+    },
+    "0981": {
+      "bmc": -0.011032133748827125,
+      "corr": -0.00954369871654133,
+      "corr_with_benchmark": 0.10194329905232058
+    },
+    "0985": {
+      "bmc": 0.006448079587971167,
+      "corr": 0.008267426704282396,
+      "corr_with_benchmark": 0.09327629902237407
+    },
+    "0989": {
+      "bmc": -0.01670482230427179,
+      "corr": -0.011272798292443719,
+      "corr_with_benchmark": 0.10652177125873667
+    },
+    "0993": {
+      "bmc": 0.009875943721526552,
+      "corr": 0.014272478466401823,
+      "corr_with_benchmark": 0.14332169336961373
+    },
+    "0997": {
+      "bmc": 0.015124107658133705,
+      "corr": 0.01387491348207666,
+      "corr_with_benchmark": 0.10680639217676839
+    },
+    "1001": {
+      "bmc": -0.005641278545509622,
+      "corr": -0.0009687134413395268,
+      "corr_with_benchmark": 0.14459266719312877
+    },
+    "1005": {
+      "bmc": -0.0115288542114356,
+      "corr": -0.004021092374680807,
+      "corr_with_benchmark": 0.15914035784255734
+    },
+    "1009": {
+      "bmc": -0.00043392723472723984,
+      "corr": 0.003196146874403253,
+      "corr_with_benchmark": 0.13830955994888947
+    },
+    "1013": {
+      "bmc": 0.02341964942922585,
+      "corr": 0.02406479645381051,
+      "corr_with_benchmark": 0.11952928905856765
+    },
+    "1017": {
+      "bmc": 0.016465157972789274,
+      "corr": 0.020236330675066288,
+      "corr_with_benchmark": 0.1047469535322668
+    },
+    "1021": {
+      "bmc": 0.00017554770376603773,
+      "corr": 0.0008204316941176321,
+      "corr_with_benchmark": 0.1346952803488748
+    }
+  },
+  "rows": 263551,
+  "schema_version": 1,
+  "stage": "ender21-family-locked-confirmation",
+  "state": "NEGATIVE",
+  "training_completion": {
+    "component": "c1_selected_tabm_k64_block_dro",
+    "config": {
+      "path": "numerai/agents/experiments/ender21_residual_stability_v53/configs/c1_selected_tabm_k64_block_dro.py",
+      "sha256": "1c1724c10a8bc8f5ac9d844f530b99d80cd2749def8e86a2f55c3c0f8487c0a6"
+    },
+    "era_contract": {
+      "confirmation": {
+        "era_count": 40,
+        "first_era": "0865",
+        "last_era": "1021",
+        "path": "numerai/agents/experiments/ender21_residual_stability_v53/protocol/confirmation_eras_0865_through_1021.json",
+        "sha256": "832b402e1fe754a469b492ee4c4157c0cc3dcd0818dbb254598d99e518c92f46",
+        "size_bytes": 403
+      },
+      "embargo": {
+        "era_count": 13,
+        "first_era": "0813",
+        "last_era": "0861",
+        "path": "numerai/agents/experiments/ender21_residual_stability_v53/protocol/confirmation_embargo_eras_0813_through_0861.json",
+        "sha256": "1a40980c2dd47a4f49da0b34bc4e33a0bd290ff0b53b07604340654326258c66",
+        "size_bytes": 133
+      },
+      "fit": {
+        "era_count": 163,
+        "first_era": "0161",
+        "last_era": "0809",
+        "path": "numerai/agents/experiments/ender21_residual_stability_v53/protocol/confirmation_train_eras_through_0809.json",
+        "sha256": "b7630d3943ca939622283a5f2671dc2071fb183a8e9f838cefdf4a8564c3f406",
+        "size_bytes": 1633
+      }
+    },
+    "inputs": {
+      "confirmation_benchmark": {
+        "last_era": "1021",
+        "path": "numerai/v5.3/ender21_dev_benchmark_models_through_1021.parquet",
+        "sha256": "f435b4aed17c759011709ff2d8a8a4f235a7444154a740733fb80b55d7350605",
+        "size_bytes": 29796569
+      },
+      "confirmation_full": {
+        "last_era": "1021",
+        "path": "numerai/v5.3/ender21_dev_full_through_1021.parquet",
+        "sha256": "952d043bf1673ff525124defd9f24a7e110a92909de1bc2feec35a119c45ae71",
+        "size_bytes": 1637635919
+      },
+      "discovery_benchmark": {
+        "last_era": "0861",
+        "path": "numerai/v5.3/ender21_discovery_benchmark_models_through_0861.parquet",
+        "sha256": "c2db9a77811390e9b9c47926b62fbfb7a6c7af24bb9c4db63137798e61b955b6",
+        "size_bytes": 23325224
+      },
+      "discovery_full": {
+        "last_era": "0861",
+        "path": "numerai/v5.3/ender21_discovery_full_through_0861.parquet",
+        "sha256": "476d561ba8515a0066e892c5489a5ae1db6443587e9d5d06a9a6280400a701b9",
+        "size_bytes": 1302848771
+      },
+      "features_json": {
+        "path": "numerai/v5.3/features.json",
+        "sha256": "27de6b598b0d479415dba8062d050fc190469776f9c905feea9ee3f2bdda3631",
+        "size_bytes": 387149
+      }
+    },
+    "outputs": {
+      "portable_bundle": {
+        "files": {
+          "predictor_spec.json": {
+            "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender21_residual_stability_v53\\models\\c1_selected_tabm_k64_block_dro\\predictor_spec.json",
+            "sha256": "d8db39ecd68106295a1cb5d47c75b48513e436b78050ccfcea05ea3867bb9198",
+            "size_bytes": 139947
+          },
+          "provenance.json": {
+            "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender21_residual_stability_v53\\models\\c1_selected_tabm_k64_block_dro\\provenance.json",
+            "sha256": "3d8237b5503fc894cbeca7aa6bf3b65bada1783ec215a1e2daacb1981ccfea0f",
+            "size_bytes": 1220
+          },
+          "sample_manifest_positions.npy": {
+            "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender21_residual_stability_v53\\models\\c1_selected_tabm_k64_block_dro\\sample_manifest_positions.npy",
+            "sha256": "686a260edb36741c6b7d1ad20d798c8b6ba2ba64d2c853534f9995d0f6bb7075",
+            "size_bytes": 4000128
+          },
+          "weights.npz": {
+            "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender21_residual_stability_v53\\models\\c1_selected_tabm_k64_block_dro\\weights.npz",
+            "sha256": "c6d1cb9ae905f09241be6a727e01365e4abfd75f7f0a99b097451b6448f1e1be",
+            "size_bytes": 11471358
+          }
+        },
+        "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender21_residual_stability_v53\\models\\c1_selected_tabm_k64_block_dro"
+      },
+      "predictions": {
+        "device": 6109702118523114368,
+        "inode": 8162774325654930,
+        "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender21_residual_stability_v53\\predictions\\c1_selected_tabm_k64_block_dro.parquet",
+        "sha256": "26d4f3a6f2843b324124f70f0f1023f80136da14536b79cd7c5143be9d0fb2dc",
+        "size_bytes": 5669066
+      },
+      "result": {
+        "device": 6109702118523114368,
+        "inode": 6755399442101651,
+        "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender21_residual_stability_v53\\results\\c1_selected_tabm_k64_block_dro.json",
+        "sha256": "beb42b3971cbc0fdd715f7e42e62e57036aec4a2f3e75ac3d786677056fd8df4",
+        "size_bytes": 5280
+      }
+    },
+    "sample": {
+      "method": "numpy.default_rng.choice_without_replacement",
+      "positions_sha256": "a3a985613515c80e9a4d8d4c1c201ea497c7307786e0a0181730e5e0b69e0732",
+      "row_count": 500000,
+      "seed": 1337,
+      "source_rows": 880075
+    },
+    "schema_version": 1,
+    "source_manifest": {
+      "git_head": "dcd3dd10eff7b121d6fff6c285680f527e588207",
+      "path": "numerai/agents/experiments/ender21_residual_stability_v53/source_manifest_confirmation.json",
+      "sha256": "186c5b92eda6400f218c31a301955126fe65a92c550167cd12fa8c31a45325ca"
+    },
+    "stage": "ender21-confirmation-training-completion",
+    "state": "OUTPUTS_FINALIZED",
+    "training": {
+      "best_epoch": 10,
+      "inner_validation": {
+        "embargo": 13,
+        "fraction": 0.1,
+        "type": "recent_eras"
+      },
+      "loss_mode": "chronological_block_dro",
+      "model_seed": 1337,
+      "sample_seed": 1337
+    }
+  }
+}

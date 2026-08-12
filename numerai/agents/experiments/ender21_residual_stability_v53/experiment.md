@@ -209,7 +209,7 @@ user decision regardless of any research result.
 
 ## Status
 
-`SEED_REPLICATION_PASS_CONFIRMATION_PROTOCOL_FROZEN`
+`NEGATIVE_CONFIRMATION_TERMINAL`
 
 Round 1 selected `r1_tabm_k64_block_dro`. Against the fresh matched control,
 full BMC improved from 0.005390 to 0.006877, BMC Sharpe from 0.4512 to 0.6444,
@@ -218,7 +218,17 @@ versus 0.008177 for control, Corr was 0.011474, and every frozen eligibility
 check passed. Round 2 then passed the exact base-seed and row-sample-seed
 realizations, two of three as required; the model-seed realization failed and is
 retained as negative evidence. That result authorizes only the frozen one-model
-confirmation protocol above. No confirmation target has yet been scored.
+confirmation protocol above.
+
+The one permitted family-locked confirmation then scored all 263,551 rows in
+the 40 eras `0865`-`1021` exactly once. It passed seven of eight frozen checks:
+BMC `0.00280203`, BMC Sharpe `0.33489`, max drawdown `0.02877`, Corr
+`0.00827321`, benchmark correlation `0.14474`, and positive BMC in all four
+chronological blocks. It failed only the discovery-retention check: the result
+retained `40.745%` of the frozen Round-1 BMC, below the required `60%`
+(`0.00412617`). Per the no-rescue rule, this is a terminal negative. No upload,
+assignment, staking, blend search, retry, or deferred full-consecutive gate is
+authorized.
 
 An initial control process was stopped before producing predictions, results, or
 metrics when review found that runtime allowlist filtering still materialized
