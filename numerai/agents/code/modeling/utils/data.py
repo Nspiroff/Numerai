@@ -5,6 +5,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pyarrow.parquet as pq
 from numerapi import NumerAPI
 
 from agents.code.metrics import numerai_metrics
@@ -68,6 +69,7 @@ def load_full_data(
     id_col: str | None,
     full_data_path: str | Path | None = None,
     extra_cols: list[str] | None = None,
+    allowed_eras: tuple[str, ...] | None = None,
 ) -> pd.DataFrame:
     if full_data_path:
         full_path = _resolve_data_path(full_data_path)
@@ -79,14 +81,22 @@ def load_full_data(
     columns = [era_col, target_col] + features + extra_cols
     seen = set()
     columns = [col for col in columns if not (col in seen or seen.add(col))]
-    if id_col:
+    schema_columns = set(pq.ParquetFile(full_path).schema_arrow.names)
+    if id_col and id_col in schema_columns:
         columns.append(id_col)
-    try:
-        df = pd.read_parquet(full_path, columns=columns)
-    except Exception:
-        df = pd.read_parquet(full_path, columns=[era_col, target_col] + features)
-        if id_col and id_col not in df.columns:
-            df[id_col] = df.index
+    elif id_col and allowed_eras is not None:
+        raise ValueError(
+            "Era-filtered Parquet input must contain the requested id column; "
+            "filtered row positions cannot be used as stable ids."
+        )
+    filters = None
+    if allowed_eras is not None:
+        if not allowed_eras:
+            raise ValueError("allowed_eras must be non-empty when provided.")
+        filters = [(era_col, "in", list(allowed_eras))]
+    df = pd.read_parquet(full_path, columns=columns, filters=filters)
+    if id_col and id_col not in df.columns:
+        df[id_col] = df.index
     return df
 
 
@@ -137,6 +147,7 @@ def attach_benchmark_models(
     benchmark_data_path: str | Path | None,
     era_col: str,
     id_col: str,
+    required_benchmark_model: str | None = None,
 ) -> tuple[pd.DataFrame, list[str]]:
     if id_col not in full.columns:
         raise ValueError(f"Full data missing id column '{id_col}'.")
@@ -165,12 +176,35 @@ def attach_benchmark_models(
     ]
     if not benchmark_cols:
         raise ValueError("Benchmark models file contains no model columns.")
+    if (
+        required_benchmark_model is not None
+        and required_benchmark_model not in benchmark_cols
+    ):
+        raise ValueError(
+            f"Required benchmark '{required_benchmark_model}' is not present in "
+            f"the benchmark file. Available: {benchmark_cols}"
+        )
     overlap = set(benchmark_cols) & set(full_indexed.columns)
     if overlap:
         raise ValueError(
             f"Benchmark columns already exist in full data: {sorted(overlap)}"
         )
-    full_indexed = full_indexed.join(benchmark[benchmark_cols], how="left")
+    benchmark_values = benchmark[benchmark_cols]
+    join_how = "left"
+    if required_benchmark_model is not None:
+        # Apply the coverage restriction as part of the only wide join.  The
+        # former left-join-then-filter path deep-copied every feature column and
+        # could require another multi-GiB allocation for all-feature neural
+        # experiments.
+        benchmark_values = benchmark_values.loc[
+            benchmark_values[required_benchmark_model].notna()
+        ]
+        join_how = "inner"
+    full_indexed = full_indexed.join(
+        benchmark_values,
+        how=join_how,
+        sort=False,
+    )
     return full_indexed.reset_index(), benchmark_cols
 
 

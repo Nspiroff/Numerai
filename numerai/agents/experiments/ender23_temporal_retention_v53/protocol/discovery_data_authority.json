@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "authority": "ender23-discovery-only",
+  "data_version": "v5.3",
+  "full": {
+    "path": "numerai/v5.3/ender21_discovery_full_through_0861.parquet",
+    "rows": 1113496,
+    "row_groups": 68,
+    "first_era": "0001",
+    "last_era": "0861",
+    "size_bytes": 1302848771,
+    "sha256": "476d561ba8515a0066e892c5489a5ae1db6443587e9d5d06a9a6280400a701b9"
+  },
+  "benchmark": {
+    "path": "numerai/v5.3/ender21_discovery_benchmark_models_through_0861.parquet",
+    "rows": 957366,
+    "row_groups": 59,
+    "first_era": "0161",
+    "last_era": "0861",
+    "size_bytes": 23325224,
+    "sha256": "c2db9a77811390e9b9c47926b62fbfb7a6c7af24bb9c4db63137798e61b955b6"
+  },
+  "era_allowlist": {
+    "path": "numerai/agents/experiments/ender21_residual_stability_v53/protocol/discovery_eras_through_0861.json",
+    "count": 176,
+    "first_era": "0161",
+    "last_era": "0861",
+    "size_bytes": 1763,
+    "sha256": "be0c212a8e910f56dbdae4e1e134fa36ce7e5e1a95e43faa1ccc9e6330f544ca"
+  },
+  "feature_columns": {
+    "path": "numerai/agents/experiments/ender21_residual_stability_v53/protocol/feature_columns_all_v53.json",
+    "count": 3555,
+    "size_bytes": 148179,
+    "sha256": "663184191e17d2fa4fac6dae017890f0e762368e638d46cfaa489297b9b2049b"
+  },
+  "oof": {
+    "first_era": "0301",
+    "last_era": "0861",
+    "era_count": 141,
+    "recent40_first_era": "0705",
+    "recent40_last_era": "0861"
+  },
+  "forbidden_historical_confirmation": {
+    "first_era": "0865",
+    "last_era": "1021",
+    "rule": "never read, score, select, tune, or report in Ender23"
+  },
+  "prospective_confirmation": {
+    "first_era": "1231",
+    "last_era": "1282",
+    "era_count": 52,
+    "rule": "future resolved eras only; no local historical substitute"
+  }
+}
