@@ -16,6 +16,7 @@ BOOTSTRAP_PATH = (
     Path(__file__).parents[1]
     / "experiments/ender22_temporal_retention_v53/training_bootstrap.py"
 )
+EXPERIMENT_DIR = BOOTSTRAP_PATH.parent
 SPEC = importlib.util.spec_from_file_location("ender22_training_bootstrap_test", BOOTSTRAP_PATH)
 bootstrap = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
@@ -23,6 +24,35 @@ SPEC.loader.exec_module(bootstrap)
 
 
 class TestEnder22TrainingBootstrap(unittest.TestCase):
+    def test_windows_launchers_wait_and_propagate_bootstrap_failure(self) -> None:
+        for filename in (
+            "run_round1.py",
+            "run_round2.py",
+            "evaluate_round1.py",
+            "evaluate_round2.py",
+        ):
+            source = (EXPERIMENT_DIR / filename).read_text(encoding="utf-8")
+            self.assertIn("subprocess.run", source)
+            self.assertNotIn("os.execv", source)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    "-I",
+                    "-B",
+                    "-X",
+                    f"pycache_prefix={tmp}",
+                    str(EXPERIMENT_DIR / "run_round1.py"),
+                    "__invalid_config__",
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn("invalid choice", completed.stderr)
+
     def test_rejects_poisoned_preimport_before_manifest(self) -> None:
         modules = dict(bootstrap.sys.modules)
         modules["agents.code.modeling.utils.pipeline"] = object()
