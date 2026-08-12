@@ -14,6 +14,10 @@ This file is the concise fail-closed contract for
   from this gate is `SHADOW_READY`.
 - Candidate definitions, seeds, split rules, losses, ranking, blend formula, and
   thresholds freeze before the first Ender21 score is read.
+- Real-data inputs must be newly isolated Parquets whose selected source row
+  groups have maximum era <=1021. The mixed 1025/1029 row group is forbidden.
+- `data.era_allowlist_path` must bind the committed exact list through 1021 and
+  the trainer must filter its CV universe before any model fit.
 
 ## Required run order
 

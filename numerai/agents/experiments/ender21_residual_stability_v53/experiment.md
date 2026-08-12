@@ -46,10 +46,11 @@ protocol. Ender21 does not invoke that evaluator or inspect its locked receipt.
 - Inputs: all 3,555 Numerai features; era and benchmark are metadata only.
 - Objective label: era-wise linear residual of Ender20 to the benchmark, with
   intercept and proportion 1.0.
-- Scout data: `v5.3/downsampled_full.parquet` plus its benchmark file, restricted
-  to benchmark-covered rows and the exact committed era allowlist ending at
-  `1025`. Eras `1026`-`1225` remain unavailable to Ender21 because they are the
-  protected Ender20 confirmation/locked period.
+- Scout data: physically isolated `v5.3/ender21_dev_full_through_1021.parquet`
+  and `v5.3/ender21_dev_benchmark_models_through_1021.parquet`, plus the exact
+  committed era allowlist ending at `1021`. The source row group containing
+  era `1025` also contains protected era `1029`, so the entire row group is
+  excluded. Eras `1025`-`1225` remain unavailable to Ender21.
 - Outer validation: five expanding splits; 13 retained-era embargo. The first
   empty-training fold is skipped exactly as in the shared pipeline.
 - Inner early stopping: most recent 10% of training eras with a separate
