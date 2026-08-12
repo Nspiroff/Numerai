@@ -1,0 +1,208 @@
+{
+  "benchmark": {
+    "file": "v5.3/ender21_discovery_benchmark_models_through_0861.parquet",
+    "model": "v53_lgbm_ender20"
+  },
+  "cv": {
+    "embargo": 13,
+    "folds": [
+      {
+        "fold": 1,
+        "model_diagnostics": {
+          "best_epoch": 1,
+          "best_val_loss": 0.04998814821916727,
+          "epochs_ran": 5,
+          "final_train_loss": 0.048179913011907716,
+          "n_parameters": 2866944
+        },
+        "train_eras": 22,
+        "train_rows": 117820,
+        "val_eras": 35,
+        "val_rows": 168788
+      },
+      {
+        "fold": 2,
+        "model_diagnostics": {
+          "best_epoch": 1,
+          "best_val_loss": 0.04989713379157752,
+          "epochs_ran": 5,
+          "final_train_loss": 0.04988368103304768,
+          "n_parameters": 2866944
+        },
+        "train_eras": 57,
+        "train_rows": 290284,
+        "val_eras": 35,
+        "val_rows": 179935
+      },
+      {
+        "fold": 3,
+        "model_diagnostics": {
+          "best_epoch": 7,
+          "best_val_loss": 0.04993055756867141,
+          "epochs_ran": 11,
+          "final_train_loss": 0.049635949666635926,
+          "n_parameters": 2866944
+        },
+        "train_eras": 92,
+        "train_rows": 466881,
+        "val_eras": 35,
+        "val_rows": 202101
+      },
+      {
+        "fold": 4,
+        "model_diagnostics": {
+          "best_epoch": 10,
+          "best_val_loss": 0.04960880453463384,
+          "epochs_ran": 14,
+          "final_train_loss": 0.04952193139190271,
+          "n_parameters": 2866944
+        },
+        "train_eras": 127,
+        "train_rows": 500000,
+        "val_eras": 36,
+        "val_rows": 217538
+      }
+    ],
+    "folds_used": 4,
+    "min_train_size": 0,
+    "mode": "expanding",
+    "n_splits": 5
+  },
+  "data": {
+    "data_mode": "eager",
+    "data_version": "v5.3",
+    "embargo_eras": 13,
+    "era_allowlist": {
+      "era_count": 176,
+      "first_era": "0161",
+      "last_era": "0861",
+      "path": "numerai/agents/experiments/ender21_residual_stability_v53/protocol/discovery_eras_through_0861.json",
+      "sha256": "be0c212a8e910f56dbdae4e1e134fa36ce7e5e1a95e43faa1ccc9e6330f544ca",
+      "size_bytes": 1763
+    },
+    "feature_set": "all",
+    "full_data_path": "v5.3/ender21_discovery_full_through_0861.parquet",
+    "full_eras": 176,
+    "full_rows": 957366,
+    "oof_eras": 141,
+    "oof_rows": 768362,
+    "require_benchmark_coverage": true,
+    "target": "target_ender_20"
+  },
+  "metrics": {
+    "bmc": {
+      "avg_corr_with_benchmark": 0.12969154096649388,
+      "max_drawdown": 0.07377449305721485,
+      "mean": 0.005374116654370171,
+      "sharpe": 0.511571871935715,
+      "std": 0.010505105830067005
+    },
+    "bmc_last_200_eras": {
+      "avg_corr_with_benchmark": 0.12969154096649388,
+      "max_drawdown": 0.07377449305721485,
+      "mean": 0.005374116654370171,
+      "sharpe": 0.511571871935715,
+      "std": 0.010505105830067005
+    },
+    "corr": {
+      "max_drawdown": 0.03226211478670431,
+      "mean": 0.011022173621393348,
+      "sharpe": 0.8639364408890243,
+      "std": 0.01275808392808515
+    }
+  },
+  "model": {
+    "params": {
+      "activation": "relu",
+      "amp": true,
+      "architecture": "tabm",
+      "batch_size": 1024,
+      "chronological_blocks": 4,
+      "device": "cuda",
+      "dro_temperature": 2.0,
+      "dropout": 0.1,
+      "feature_center": 2.0,
+      "feature_scale": 2.0,
+      "internal_val_embargo": 13,
+      "learning_rate": 0.002,
+      "loss_mode": "era_balanced_mse",
+      "max_epochs": 30,
+      "patience": 4,
+      "prediction_batch_size": 2048,
+      "seed": 1337,
+      "tabm_arch_type": "tabm",
+      "tabm_blocks": 3,
+      "tabm_k": 64,
+      "tabm_width": 512,
+      "val_fraction": 0.1,
+      "val_split": "recent_eras",
+      "weight_decay": 0.0003
+    },
+    "target_transform": {
+      "benchmark_col": "v53_lgbm_ender20",
+      "era_col": "era",
+      "fit_intercept": true,
+      "per_era": true,
+      "proportion": 1.0,
+      "type": "residual_to_benchmark"
+    },
+    "type": "TorchTabularRegressor",
+    "x_groups": [
+      "features",
+      "era",
+      "benchmark_models"
+    ]
+  },
+  "output": {
+    "output_dir": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender21_residual_stability_v53",
+    "prediction_semantics": {
+      "artifact_kind": "out_of_fold_validation",
+      "column": "prediction",
+      "era_column": "era",
+      "fold_column": "cv_fold",
+      "fold_index_base": 0,
+      "inverse_target_transform_applied": false,
+      "pipeline_postprocess": {
+        "type": "identity"
+      },
+      "producer": "model.predict",
+      "schema_version": 1,
+      "stored_target": {
+        "column": "target_ender_20",
+        "transform": {
+          "type": "identity"
+        }
+      },
+      "training_target": {
+        "column": "target_ender_20",
+        "transform": {
+          "benchmark_col": "v53_lgbm_ender20",
+          "era_col": "era",
+          "fit_intercept": true,
+          "per_era": true,
+          "proportion": 1.0,
+          "type": "residual_to_benchmark"
+        }
+      }
+    },
+    "predictions_file": "predictions\\r1_tabm_k64_era_balanced.parquet"
+  },
+  "preprocessing": {
+    "missing_value": 2.0,
+    "nan_missing_all_twos": false
+  },
+  "training": {
+    "cv": {
+      "embargo": 13,
+      "enabled": true,
+      "min_train_size": 0,
+      "mode": "expanding",
+      "n_splits": 5
+    },
+    "data_mode": "eager",
+    "data_sampling": {
+      "max_train_samples": 500000,
+      "sample_seed": 1337
+    }
+  }
+}
