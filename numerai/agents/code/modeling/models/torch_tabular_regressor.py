@@ -109,6 +109,9 @@ class TorchTabularRegressor:
         prediction_batch_size: int | None = None,
         learning_rate: float = 1e-3,
         weight_decay: float = 1e-4,
+        loss_mode: str = "mse",
+        chronological_blocks: int = 8,
+        dro_temperature: float = 2.0,
         max_epochs: int = 40,
         patience: int = 5,
         val_fraction: float = 0.1,
@@ -154,6 +157,33 @@ class TorchTabularRegressor:
         self.prediction_batch_size = int(prediction_batch_size or batch_size)
         self.learning_rate = float(learning_rate)
         self.weight_decay = float(weight_decay)
+        self.loss_mode = str(loss_mode).lower()
+        if self.loss_mode not in {
+            "mse",
+            "era_balanced_mse",
+            "chronological_block_dro",
+        }:
+            raise ValueError(
+                "loss_mode must be one of: mse, era_balanced_mse, "
+                "chronological_block_dro"
+            )
+        if isinstance(chronological_blocks, (bool, np.bool_)) or not isinstance(
+            chronological_blocks, (int, np.integer)
+        ):
+            raise TypeError("chronological_blocks must be an integer of at least 2")
+        self.chronological_blocks = int(chronological_blocks)
+        if self.chronological_blocks < 2:
+            raise ValueError("chronological_blocks must be at least 2")
+        if isinstance(dro_temperature, (bool, np.bool_)):
+            raise ValueError("dro_temperature must be finite and positive")
+        try:
+            self.dro_temperature = float(dro_temperature)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                "dro_temperature must be finite and positive"
+            ) from exc
+        if not np.isfinite(self.dro_temperature) or self.dro_temperature <= 0.0:
+            raise ValueError("dro_temperature must be finite and positive")
         self.max_epochs = int(max_epochs)
         self.patience = int(patience)
         self.val_fraction = float(val_fraction)
@@ -227,6 +257,7 @@ class TorchTabularRegressor:
         train_indices, val_indices = self._split_indices(
             X, valid_indices, y_values.shape[0]
         )
+        train_loss_aux = self._training_loss_aux(X, train_indices)
         has_validation = bool(val_indices.size)
         is_disk = getattr(X_features, "is_disk_feature_view", False)
         self.data_mode_ = "disk_feature_store" if is_disk else "eager"
@@ -262,9 +293,26 @@ class TorchTabularRegressor:
             dataset = torch.utils.data.TensorDataset(
                 torch.from_numpy(X_values), torch.from_numpy(y_values)
             )
-            train_loader = self._make_loader(
-                dataset, train_indices, batch_size=self.batch_size, shuffle=True
-            )
+            if train_loss_aux is None:
+                train_loader = self._make_loader(
+                    dataset, train_indices, batch_size=self.batch_size, shuffle=True
+                )
+            else:
+                loss_aux_values = np.zeros(
+                    y_values.shape[0], dtype=train_loss_aux.dtype
+                )
+                loss_aux_values[train_indices] = train_loss_aux
+                train_dataset = torch.utils.data.TensorDataset(
+                    torch.from_numpy(X_values),
+                    torch.from_numpy(y_values),
+                    torch.from_numpy(loss_aux_values),
+                )
+                train_loader = self._make_loader(
+                    train_dataset,
+                    train_indices,
+                    batch_size=self.batch_size,
+                    shuffle=True,
+                )
             val_loader = (
                 self._make_loader(
                     dataset,
@@ -304,13 +352,27 @@ class TorchTabularRegressor:
 
         for epoch in range(1, self.max_epochs + 1):
             if is_disk:
-                train_loss, epoch_rows, epoch_batches = self._train_epoch_disk(
-                    train_view,
-                    train_targets,
-                    optimizer,
-                    scaler,
-                    epoch=epoch,
-                )
+                if train_loss_aux is None:
+                    train_loss, epoch_rows, epoch_batches = (
+                        self._train_epoch_disk(
+                            train_view,
+                            train_targets,
+                            optimizer,
+                            scaler,
+                            epoch=epoch,
+                        )
+                    )
+                else:
+                    train_loss, epoch_rows, epoch_batches = (
+                        self._train_epoch_disk(
+                            train_view,
+                            train_targets,
+                            optimizer,
+                            scaler,
+                            epoch=epoch,
+                            loss_aux=train_loss_aux,
+                        )
+                    )
                 self.disk_rows_per_epoch_.append(epoch_rows)
                 self.disk_batches_per_epoch_.append(epoch_batches)
                 val_loss = (
@@ -492,16 +554,24 @@ class TorchTabularRegressor:
         self._model.train()
         total_loss = torch.zeros((), device=self._device)
         total_rows = 0
-        for batch_x, batch_y in loader:
+        for batch in loader:
+            batch_x, batch_y = batch[:2]
+            batch_loss_aux = batch[2] if len(batch) == 3 else None
             batch_x = self._prepare_batch(batch_x)
             batch_y = batch_y.to(self._device, non_blocking=True)
+            if batch_loss_aux is not None:
+                batch_loss_aux = batch_loss_aux.to(
+                    self._device, non_blocking=True
+                )
             optimizer.zero_grad(set_to_none=True)
             with torch.amp.autocast(
                 self._device.type,
                 enabled=self.amp and self._device.type == "cuda",
             ):
                 predictions = self._model(batch_x)
-                loss = self._independent_mse(predictions, batch_y)
+                loss = self._training_loss(
+                    predictions, batch_y, batch_loss_aux
+                )
             if not torch.isfinite(loss):
                 raise FloatingPointError(
                     "TorchTabularRegressor encountered a non-finite training loss."
@@ -544,7 +614,16 @@ class TorchTabularRegressor:
                 total_rows += rows
         return float(total_loss) / max(total_rows, 1)
 
-    def _train_epoch_disk(self, view, targets, optimizer, scaler, *, epoch: int):
+    def _train_epoch_disk(
+        self,
+        view,
+        targets,
+        optimizer,
+        scaler,
+        *,
+        epoch: int,
+        loss_aux=None,
+    ):
         torch = self._torch
         self._model.train()
         total_loss = torch.zeros((), device=self._device)
@@ -563,13 +642,23 @@ class TorchTabularRegressor:
             batch_y = self._tensor_from_numpy(batch_targets).to(
                 self._device, non_blocking=True
             )
+            batch_loss_aux = None
+            if loss_aux is not None:
+                batch_loss_aux_values = np.ascontiguousarray(
+                    loss_aux[local_positions]
+                )
+                batch_loss_aux = self._tensor_from_numpy(
+                    batch_loss_aux_values
+                ).to(self._device, non_blocking=True)
             optimizer.zero_grad(set_to_none=True)
             with torch.amp.autocast(
                 self._device.type,
                 enabled=self.amp and self._device.type == "cuda",
             ):
                 batch_predictions = self._model(batch_x)
-                loss = self._independent_mse(batch_predictions, batch_y)
+                loss = self._training_loss(
+                    batch_predictions, batch_y, batch_loss_aux
+                )
             if not torch.isfinite(loss):
                 raise FloatingPointError(
                     "TorchTabularRegressor encountered a non-finite training loss."
@@ -628,6 +717,37 @@ class TorchTabularRegressor:
         if self.architecture == "tabm":
             return ((predictions.squeeze(-1) - targets[:, None]) ** 2).mean()
         return self._torch.nn.functional.mse_loss(predictions.squeeze(-1), targets)
+
+    def _training_loss(self, predictions, targets, loss_aux=None):
+        if self.loss_mode == "mse":
+            # Keep the established default path byte-for-byte equivalent.
+            return self._independent_mse(predictions, targets)
+        if loss_aux is None:
+            raise RuntimeError(
+                f"{self.loss_mode} requires era-derived training metadata"
+            )
+
+        row_losses = self._row_squared_error(predictions, targets)
+        if self.loss_mode == "era_balanced_mse":
+            weights = loss_aux.to(dtype=row_losses.dtype)
+            return (row_losses * weights).mean()
+
+        group_ids = loss_aux.to(dtype=self._torch.long)
+        block_losses = self._torch.stack(
+            [row_losses[group_ids == group_id].mean() for group_id in group_ids.unique()]
+        )
+        mean_block_loss = block_losses.mean().clamp_min(
+            self._torch.finfo(block_losses.dtype).eps
+        )
+        logits = self.dro_temperature * (block_losses / mean_block_loss - 1.0)
+        block_weights = self._torch.softmax(logits, dim=0).detach()
+        return (block_weights * block_losses).sum()
+
+    def _row_squared_error(self, predictions, targets):
+        if self.architecture == "tabm":
+            member_errors = predictions.squeeze(-1) - targets[:, None]
+            return member_errors.square().mean(dim=1)
+        return (predictions.squeeze(-1) - targets).square()
 
     def _ensemble_mean(self, predictions):
         if self.architecture == "tabm":
@@ -697,6 +817,66 @@ class TorchTabularRegressor:
             )
         return train_indices, val_indices
 
+    def _training_loss_aux(self, X, train_indices):
+        if self.loss_mode == "mse":
+            return None
+        if not hasattr(X, "columns") or self.era_col not in X.columns:
+            raise ValueError(
+                f"{self.loss_mode} requires era column '{self.era_col}'."
+            )
+
+        eras = np.asarray(X[self.era_col])
+        train_eras = eras[train_indices]
+        if any(self._is_missing_era(era) for era in train_eras):
+            raise ValueError(
+                f"{self.loss_mode} requires non-missing training era labels."
+            )
+        unique_eras = sorted(set(train_eras), key=self._era_sort_key)
+        if len(unique_eras) < 2:
+            raise ValueError(
+                f"{self.loss_mode} requires at least two training era groups."
+            )
+
+        if self.loss_mode == "era_balanced_mse":
+            era_counts = {
+                era: int(np.count_nonzero(train_eras == era))
+                for era in unique_eras
+            }
+            weights = np.fromiter(
+                (
+                    len(train_eras) / (len(unique_eras) * era_counts[era])
+                    for era in train_eras
+                ),
+                dtype=np.float32,
+                count=len(train_eras),
+            )
+            # The formula above is exact in real arithmetic; normalize once in
+            # float32 so its stored mean is exactly the training convention.
+            weights /= weights.mean(dtype=np.float64)
+            return np.ascontiguousarray(weights, dtype=np.float32)
+
+        if len(unique_eras) < self.chronological_blocks:
+            raise ValueError(
+                "chronological_block_dro requires at least "
+                f"{self.chronological_blocks} distinct training eras; got "
+                f"{len(unique_eras)}."
+            )
+        era_to_block = {
+            era: block_id
+            for block_id, block_eras in enumerate(
+                np.array_split(
+                    np.asarray(unique_eras, dtype=object),
+                    self.chronological_blocks,
+                )
+            )
+            for era in block_eras
+        }
+        return np.fromiter(
+            (era_to_block[era] for era in train_eras),
+            dtype=np.int64,
+            count=len(train_eras),
+        )
+
     def _select_features(self, X, *, fit: bool):
         if not hasattr(X, "columns"):
             raise TypeError(
@@ -752,6 +932,15 @@ class TorchTabularRegressor:
             return int(era)
         except (TypeError, ValueError):
             return str(era)
+
+    @staticmethod
+    def _is_missing_era(era):
+        if era is None:
+            return True
+        try:
+            return bool(np.isnan(era))
+        except (TypeError, ValueError):
+            return False
 
     def __getattr__(self, name: str):
         model = self.__dict__.get("_model")

@@ -354,6 +354,78 @@ def _bootstrap_require_plain_file(path: Path, label: str) -> None:
         raise ValueError(f"Bootstrap {label} is not a unique regular file: {path}")
 
 
+def _load_era_allowlist(value: object) -> tuple[tuple[str, ...] | None, dict | None]:
+    """Load an exact, repo-bound era universe before any modeling data access."""
+
+    if value is None:
+        return None, None
+    if not isinstance(value, str) or not value:
+        raise ValueError("data.era_allowlist_path must be a non-empty repo-relative path.")
+    relative = Path(value)
+    if relative.is_absolute() or any(part in {"", ".", ".."} for part in relative.parts):
+        raise ValueError("data.era_allowlist_path must be canonical and repo-relative.")
+    path = Path(os.path.abspath(REPO_DIR / relative))
+    try:
+        path.relative_to(REPO_DIR)
+    except ValueError as error:
+        raise ValueError("data.era_allowlist_path escapes the repository.") from error
+    _bootstrap_require_plain_directory_chain(path.parent)
+    _bootstrap_require_plain_file(path, "era allowlist")
+    payload = path.read_bytes()
+    try:
+        parsed = json.loads(payload)
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ValueError("data.era_allowlist_path must contain valid UTF-8 JSON.") from error
+    if (
+        not isinstance(parsed, list)
+        or not parsed
+        or not all(isinstance(era, str) and era for era in parsed)
+        or len(set(parsed)) != len(parsed)
+    ):
+        raise ValueError("Era allowlist must be a non-empty list of unique strings.")
+    try:
+        sorted_eras = sorted(parsed, key=lambda era: int(era))
+    except ValueError as error:
+        raise ValueError("Era allowlist entries must be integer-like strings.") from error
+    if any(str(int(era)).zfill(4) != era for era in parsed):
+        raise ValueError("Era allowlist entries must use canonical four-digit strings.")
+    if parsed != sorted_eras:
+        raise ValueError("Era allowlist must be in ascending chronological order.")
+    return tuple(parsed), {
+        "path": relative.as_posix(),
+        "sha256": hashlib.sha256(payload).hexdigest(),
+        "size_bytes": len(payload),
+        "era_count": len(parsed),
+        "first_era": parsed[0],
+        "last_era": parsed[-1],
+    }
+
+
+def _filter_to_era_allowlist(
+    full: pd.DataFrame,
+    era_col: str,
+    allowed_eras: tuple[str, ...] | None,
+) -> pd.DataFrame:
+    if allowed_eras is None:
+        return full
+    if era_col not in full.columns:
+        raise ValueError(f"Era allowlist requires data column '{era_col}'.")
+    eras = full[era_col].astype(str)
+    present = set(eras.unique())
+    missing = [era for era in allowed_eras if era not in present]
+    if missing:
+        raise ValueError(f"Era allowlist entries are absent from modeling data: {missing[:5]}")
+    filtered = full.loc[eras.isin(set(allowed_eras))].copy()
+    observed = sorted(filtered[era_col].astype(str).unique(), key=lambda era: int(era))
+    if observed != list(allowed_eras):
+        raise ValueError("Filtered modeling eras do not exactly equal the era allowlist.")
+    print(
+        "Restricted modeling data to the frozen era allowlist: "
+        f"{len(filtered):,}/{len(full):,} rows, {len(observed)} eras."
+    )
+    return filtered
+
+
 class _BootstrapReadOnlyFileLease:
     """Minimal stdlib-only immutable lease used before local source verification."""
 
@@ -1600,6 +1672,7 @@ def build_results_payload(
     data_mode: str,
     disk_store_diagnostics: dict[str, object] | None,
     prediction_semantics: dict,
+    era_allowlist_receipt: dict | None = None,
 ) -> dict:
     model_meta = {
         "type": model_type,
@@ -1672,6 +1745,8 @@ def build_results_payload(
     }
     if disk_store_diagnostics is not None:
         results["data"]["disk_feature_store"] = disk_store_diagnostics
+    if era_allowlist_receipt is not None:
+        results["data"]["era_allowlist"] = era_allowlist_receipt
     return results
 
 
@@ -1990,6 +2065,9 @@ def _run_training_impl(
     benchmark_data_path = data_config.get("benchmark_data_path")
     embargo_eras = data_config.get("embargo_eras", 13)
     benchmark_model = data_config.get("benchmark_model", DEFAULT_BENCHMARK_MODEL)
+    allowed_eras, era_allowlist_receipt = _load_era_allowlist(
+        data_config.get("era_allowlist_path")
+    )
     require_benchmark_coverage = bool(
         data_config.get("require_benchmark_coverage", False)
     )
@@ -2214,6 +2292,10 @@ def _run_training_impl(
             data_loader.close()
             raise
 
+    full = _filter_to_era_allowlist(full, era_col, allowed_eras)
+    if data_mode == "disk_feature_store":
+        scoring_benchmark_data = full
+
     try:
         x_cols = build_x_cols(
             x_groups=x_groups,
@@ -2312,6 +2394,7 @@ def _run_training_impl(
         data_mode=data_mode,
         disk_store_diagnostics=disk_store_diagnostics,
         prediction_semantics=prediction_semantics,
+        era_allowlist_receipt=era_allowlist_receipt,
     )
     save_results(
         results,

@@ -306,6 +306,72 @@ class TestDiskFeatureStoreModeling(unittest.TestCase):
             finally:
                 loader.close()
 
+    def test_era_balanced_loss_keeps_eager_and_disk_auxiliary_rows_aligned(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store, eager = _build_fixture(Path(tmp), eras=3, rows_per_era=4)
+            loader = _loader(store)
+            try:
+                # Deliberately retain unequal numbers of rows per era. The
+                # shuffled disk batches must use local_positions to align the
+                # inverse-era-count auxiliary weights with these targets.
+                positions = np.array([0, 4, 5, 6, 8, 9, 10, 11])
+                batch = loader.load(loader.eras.unique())
+                disk_X = batch.X.take(positions)
+                eager_X = eager.iloc[positions][[*FEATURES, "era", BENCHMARK]]
+                targets = pd.Series([1.0, 3.0, 3.0, 3.0, 2.0, 2.0, 2.0, 2.0])
+
+                params = _torch_params(batch_size=2)
+                params.update(
+                    {
+                        "learning_rate": 0.0,
+                        "loss_mode": "era_balanced_mse",
+                        "disk_block_rows": 2,
+                    }
+                )
+                eager_model = build_model(
+                    "TorchTabularRegressor", params, feature_cols=FEATURES
+                )
+                disk_model = build_model(
+                    "TorchTabularRegressor", params, feature_cols=FEATURES
+                )
+
+                def install_zero_forward(model):
+                    torch = model._torch
+
+                    def build(input_dim):
+                        layer = torch.nn.Linear(input_dim, 1)
+                        with torch.no_grad():
+                            layer.weight.zero_()
+                            layer.bias.zero_()
+                        return layer
+
+                    model._build_model = build
+
+                install_zero_forward(eager_model)
+                install_zero_forward(disk_model)
+                eager_model.fit(eager_X, targets)
+                disk_model.fit(disk_X, targets)
+
+                expected = float(np.mean([1.0, 9.0, 4.0]))
+                self.assertAlmostEqual(
+                    eager_model.training_history_[0]["train_loss"],
+                    expected,
+                    places=6,
+                )
+                self.assertAlmostEqual(
+                    disk_model.training_history_[0]["train_loss"],
+                    expected,
+                    places=6,
+                )
+                np.testing.assert_allclose(
+                    disk_model.predict(disk_X),
+                    eager_model.predict(eager_X),
+                    rtol=0.0,
+                    atol=0.0,
+                )
+            finally:
+                loader.close()
+
     def test_capped_cv_preserves_oof_order_and_reports_disk_diagnostics(self):
         with tempfile.TemporaryDirectory() as tmp:
             store, eager = _build_fixture(Path(tmp))
@@ -2324,6 +2390,208 @@ class TestDiskFeatureStoreModeling(unittest.TestCase):
                 results["data"]["disk_feature_store"]["generation_id"],
                 store.generation_id,
             )
+
+    def test_pipeline_era_allowlist_filters_disk_cv_universe(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            store, _ = _build_fixture(root)
+            allowlist_relative = Path(
+                "numerai/agents/experiments/ender21-test/scout-eras.json"
+            )
+            allowlist_path = root / allowlist_relative
+            allowlist_path.parent.mkdir(parents=True)
+            allowlist_path.write_text(
+                json.dumps(["0002", "0006", "0008"]), encoding="utf-8"
+            )
+            output = root / "allowlisted-output"
+            config = {
+                "data": {
+                    "data_version": "v5.3",
+                    "feature_set": "all",
+                    "target_col": TARGET,
+                    "era_col": "era",
+                    "id_col": "id",
+                    "benchmark_model": BENCHMARK,
+                    "disk_feature_store_path": str(store.directory),
+                    "era_allowlist_path": allowlist_relative.as_posix(),
+                },
+                "model": {
+                    "type": "TorchTabularRegressor",
+                    "x_groups": ["features", "era", "benchmark_models"],
+                    "params": _torch_params(batch_size=16),
+                },
+                "training": {
+                    "data_mode": "disk_feature_store",
+                    "cv": {"enabled": True, "n_splits": 2, "embargo": 0},
+                },
+                "preprocessing": {"nan_missing_all_twos": False},
+                "output": {
+                    "output_dir": str(output),
+                    "results_name": "allowlisted",
+                },
+            }
+            config_path = root / "allowlisted-config.json"
+            config_path.write_text(json.dumps(config), encoding="utf-8")
+            captured = {}
+
+            def fake_oof(eras, data_loader, *args, **kwargs):
+                captured["eras"] = pd.Series(eras, copy=False).astype(str).tolist()
+                batch = data_loader.load(["0002", "0006", "0008"])
+                return pd.DataFrame(
+                    {
+                        "id": batch.id.to_numpy(),
+                        "era": batch.era.to_numpy(),
+                        TARGET: batch.y.to_numpy(),
+                        "prediction": np.linspace(0.1, 0.9, len(batch.y)),
+                        "cv_fold": 1,
+                    }
+                ), {
+                    "n_splits": 2,
+                    "embargo": 0,
+                    "mode": "expanding",
+                    "min_train_size": 0,
+                    "folds_used": 1,
+                    "folds": [],
+                }
+
+            summary = pd.DataFrame(
+                {"mean": [0.01], "avg_corr_with_benchmark": [0.1]},
+                index=["prediction"],
+            )
+            with mock.patch.object(
+                pipeline_module, "REPO_DIR", root
+            ), mock.patch(
+                "agents.code.modeling.utils.pipeline.load_features",
+                return_value=FEATURES,
+            ), mock.patch(
+                "agents.code.modeling.utils.pipeline.build_oof_predictions",
+                side_effect=fake_oof,
+            ), mock.patch(
+                "agents.code.modeling.utils.pipeline.summarize_predictions",
+                return_value={
+                    "corr": summary,
+                    "bmc": summary,
+                    "bmc_last_200_eras": summary,
+                },
+            ):
+                run_training(config_path)
+
+            self.assertEqual(
+                list(dict.fromkeys(captured["eras"])),
+                ["0002", "0006", "0008"],
+            )
+            self.assertEqual(set(captured["eras"]), {"0002", "0006", "0008"})
+
+    def test_pipeline_era_allowlist_rejects_malformed_or_unmatched_values(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _, eager = _build_fixture(root)
+            full_without_benchmark = eager.drop(columns=[BENCHMARK])
+            invalid_payloads = {
+                "mapping": {"eras": ["0001"]},
+                "empty": [],
+                "integer": ["0001", 2],
+                "duplicate": ["0001", "0001"],
+                "non_exact": ["0001", " 0002"],
+                "unmatched": ["9999"],
+            }
+
+            for name, payload in invalid_payloads.items():
+                with self.subTest(name=name):
+                    relative = Path(f"allowlists/{name}.json")
+                    path = root / relative
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_text(json.dumps(payload), encoding="utf-8")
+                    config = {
+                        "data": {
+                            "data_version": "v5.3",
+                            "feature_set": "all",
+                            "target_col": TARGET,
+                            "era_col": "era",
+                            "id_col": "id",
+                            "benchmark_model": BENCHMARK,
+                            "era_allowlist_path": relative.as_posix(),
+                        },
+                        "model": {
+                            "type": "LGBMRegressor",
+                            "x_groups": ["features", "era", "benchmark_models"],
+                            "params": {},
+                        },
+                        "training": {
+                            "cv": {"enabled": True, "n_splits": 2, "embargo": 0}
+                        },
+                        "output": {
+                            "output_dir": str(root / f"output-{name}"),
+                            "results_name": name,
+                        },
+                    }
+                    config_path = root / f"config-{name}.json"
+                    config_path.write_text(json.dumps(config), encoding="utf-8")
+
+                    with mock.patch.object(
+                        pipeline_module, "REPO_DIR", root
+                    ), mock.patch(
+                        "agents.code.modeling.utils.pipeline.load_and_prepare_data",
+                        return_value=(full_without_benchmark, FEATURES),
+                    ), mock.patch(
+                        "agents.code.modeling.utils.pipeline.attach_benchmark_models",
+                        return_value=(eager, [BENCHMARK]),
+                    ), mock.patch(
+                        "agents.code.modeling.utils.pipeline.build_oof_predictions"
+                    ) as oof:
+                        with self.assertRaisesRegex(
+                            (TypeError, ValueError), "(?i)era.*allowlist|allowlist.*era"
+                        ):
+                            run_training(config_path)
+                    oof.assert_not_called()
+
+    def test_pipeline_era_allowlist_path_must_be_repo_relative(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _, eager = _build_fixture(root)
+            absolute_allowlist = root / "absolute-eras.json"
+            absolute_allowlist.write_text(json.dumps(["0001"]), encoding="utf-8")
+            config = {
+                "data": {
+                    "data_version": "v5.3",
+                    "feature_set": "all",
+                    "target_col": TARGET,
+                    "era_col": "era",
+                    "id_col": "id",
+                    "benchmark_model": BENCHMARK,
+                    "era_allowlist_path": str(absolute_allowlist),
+                },
+                "model": {
+                    "type": "LGBMRegressor",
+                    "x_groups": ["features", "era", "benchmark_models"],
+                    "params": {},
+                },
+                "training": {
+                    "cv": {"enabled": True, "n_splits": 2, "embargo": 0}
+                },
+                "output": {
+                    "output_dir": str(root / "absolute-output"),
+                    "results_name": "absolute",
+                },
+            }
+            config_path = root / "absolute-config.json"
+            config_path.write_text(json.dumps(config), encoding="utf-8")
+            with mock.patch.object(
+                pipeline_module, "REPO_DIR", root
+            ), mock.patch(
+                "agents.code.modeling.utils.pipeline.load_and_prepare_data",
+                return_value=(eager.drop(columns=[BENCHMARK]), FEATURES),
+            ), mock.patch(
+                "agents.code.modeling.utils.pipeline.attach_benchmark_models",
+                return_value=(eager, [BENCHMARK]),
+            ), mock.patch(
+                "agents.code.modeling.utils.pipeline.build_oof_predictions"
+            ) as oof:
+                with self.assertRaisesRegex(
+                    ValueError, "(?i)repo.relative|relative.*repo"
+                ):
+                    run_training(config_path)
+            oof.assert_not_called()
 
     def test_manifest_is_a_valid_benchmark_scoring_source(self):
         with tempfile.TemporaryDirectory() as tmp:
