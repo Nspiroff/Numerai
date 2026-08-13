@@ -1,3 +1,4 @@
 /.gitattributes text eol=lf
 /numerai/agents/experiments/ender24_ema_seed_stability_v53/results/*.json -text
 /numerai/agents/experiments/ender24_ema_seed_stability_v53/receipts/*.json -text
+/numerai/agents/experiments/ender25_ender24_evaluation_recovery_v53/receipts/ender24_round1_recovery_decision.json -text
