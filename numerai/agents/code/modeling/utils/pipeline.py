@@ -772,6 +772,296 @@ def _validate_ender24_bootstrap_custody(
     return custody
 
 
+_ENDER26_EXPERIMENT_NAME = "ender26_gaussian_rank_residual_v53"
+_ENDER26_ROUND1_NAMES = (
+    "r1_control_rawresid_seed1337",
+    "r1_grank_resid_seed1337",
+    "r1_control_rawresid_seed2027",
+    "r1_grank_resid_seed2027",
+)
+_ENDER26_PREFIX = (
+    "numerai/agents/experiments/ender26_gaussian_rank_residual_v53"
+)
+_ENDER26_ROUND1_MANIFEST_FILES = frozenset(
+    {
+        "numerai/agents/code/modeling/__main__.py",
+        "numerai/agents/code/modeling/models/torch_tabular_regressor.py",
+        "numerai/agents/code/modeling/utils/cli.py",
+        "numerai/agents/code/modeling/utils/config.py",
+        "numerai/agents/code/modeling/utils/constants.py",
+        "numerai/agents/code/modeling/utils/data.py",
+        "numerai/agents/code/modeling/utils/model_data.py",
+        "numerai/agents/code/modeling/utils/model_factory.py",
+        "numerai/agents/code/modeling/utils/numerai_cv.py",
+        "numerai/agents/code/modeling/utils/pipeline.py",
+        "numerai/agents/code/modeling/utils/target_transforms.py",
+        "numerai/agents/code/metrics/numerai_metrics.py",
+        (
+            "numerai/agents/experiments/ender21_residual_stability_v53/"
+            "protocol/discovery_eras_through_0861.json"
+        ),
+        (
+            "numerai/agents/experiments/ender21_residual_stability_v53/"
+            "protocol/feature_columns_all_v53.json"
+        ),
+        f"{_ENDER26_PREFIX}/experiment.md",
+        f"{_ENDER26_PREFIX}/gate.md",
+        f"{_ENDER26_PREFIX}/protocol/discovery_data_authority.json",
+        f"{_ENDER26_PREFIX}/configs/base_r1.py",
+        *(
+            f"{_ENDER26_PREFIX}/configs/{name}.py"
+            for name in _ENDER26_ROUND1_NAMES
+        ),
+        f"{_ENDER26_PREFIX}/run_round1.py",
+        f"{_ENDER26_PREFIX}/training_bootstrap.py",
+        f"{_ENDER26_PREFIX}/evaluation_common.py",
+        f"{_ENDER26_PREFIX}/evaluate_round1.py",
+        f"{_ENDER26_PREFIX}/evaluate_round1_impl.py",
+        "numerai/agents/tests/test_target_transforms.py",
+        "numerai/agents/tests/test_ender26_gaussian_rank_residual.py",
+        "numerai/agents/tests/test_ender26_pipeline_custody.py",
+        "numerai/agents/tests/test_ender26_evaluator.py",
+    }
+)
+_ENDER26_EXTERNAL_ARTIFACTS = frozenset(
+    {
+        "numerai/v5.3/ender21_discovery_full_through_0861.parquet",
+        "numerai/v5.3/ender21_discovery_benchmark_models_through_0861.parquet",
+    }
+)
+_ENDER26_DISCOVERY_AUTHORITY = "ender26-discovery-only"
+
+
+@dataclass(frozen=True)
+class _Ender26BootstrapCustody:
+    round_number: int
+    config_name: str
+    manifest: dict
+    manifest_bytes: bytes
+    manifest_sha256: str
+    leases: tuple
+    reservations: object
+
+
+def _ender26_config_identity(
+    config_path: Path,
+    output_dir_override: Path | None,
+) -> tuple[int, str] | None:
+    """Classify only the four canonical Ender26 Round-1 config paths."""
+
+    experiment = Path(
+        os.path.abspath(
+            REPO_DIR / "numerai/agents/experiments" / _ENDER26_EXPERIMENT_NAME
+        )
+    )
+    configs = experiment / "configs"
+    supplied = Path(config_path)
+    if any(part in {".", ".."} for part in supplied.parts):
+        raise ValueError("Ender26 config paths must be canonical.")
+    lexical = Path(os.path.abspath(supplied))
+    if lexical.parent != configs:
+        return None
+    if lexical.suffix != ".py" or lexical.stem not in _ENDER26_ROUND1_NAMES:
+        raise ValueError("Only frozen named Ender26 Round-1 configs may execute.")
+    if lexical != configs / f"{lexical.stem}.py":
+        raise ValueError("Ender26 config path is not canonical.")
+    if output_dir_override is not None:
+        raise ValueError("Ender26 outputs may not be redirected.")
+    return 1, lexical.stem
+
+
+def _validate_ender26_bootstrap_custody(
+    identity: tuple[int, str] | None,
+    custody: _Ender26BootstrapCustody | None,
+) -> _Ender26BootstrapCustody | None:
+    """Require the complete held Ender26 source, data, and output envelope."""
+
+    if identity is None:
+        if custody is not None:
+            raise ValueError(
+                "Ender26 bootstrap custody was supplied for another config."
+            )
+        return None
+    if custody is None:
+        raise ValueError(
+            "Canonical Ender26 configs require the isolated run_round bootstrap."
+        )
+    round_number, config_name = identity
+    manifest = custody.manifest
+    files = manifest.get("files") if isinstance(manifest, dict) else None
+    external = (
+        manifest.get("external_artifacts") if isinstance(manifest, dict) else None
+    )
+    if (
+        round_number != 1
+        or config_name not in _ENDER26_ROUND1_NAMES
+        or custody.round_number != 1
+        or custody.config_name != config_name
+        or not isinstance(custody.manifest_bytes, bytes)
+        or not custody.manifest_bytes
+        or hashlib.sha256(custody.manifest_bytes).hexdigest()
+        != custody.manifest_sha256
+        or not isinstance(manifest, dict)
+        or not isinstance(files, dict)
+        or set(files) != _ENDER26_ROUND1_MANIFEST_FILES
+        or not isinstance(external, dict)
+        or set(external) != _ENDER26_EXTERNAL_ARTIFACTS
+    ):
+        raise ValueError("Ender26 bootstrap custody does not match this run.")
+    try:
+        if json.loads(custody.manifest_bytes) != manifest:
+            raise ValueError("Ender26 held manifest bytes differ from custody.")
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ValueError("Ender26 held manifest bytes are invalid JSON.") from error
+
+    manifest_path = Path(
+        os.path.abspath(REPO_DIR / _ENDER26_PREFIX / "source_manifest_round1.json")
+    )
+    expected_paths = {
+        manifest_path,
+        *(
+            Path(os.path.abspath(REPO_DIR / relative))
+            for relative in _ENDER26_ROUND1_MANIFEST_FILES
+        ),
+        *(
+            Path(os.path.abspath(REPO_DIR / relative))
+            for relative in _ENDER26_EXTERNAL_ARTIFACTS
+        ),
+    }
+    leases_by_path = {
+        Path(os.path.abspath(lease.path)): lease for lease in custody.leases
+    }
+    if (
+        len(leases_by_path) != len(custody.leases)
+        or set(leases_by_path) != expected_paths
+    ):
+        raise ValueError("Ender26 bootstrap custody lease set differs.")
+    if leases_by_path[manifest_path].read_bytes() != custody.manifest_bytes:
+        raise ValueError("Ender26 bootstrap manifest handle bytes changed.")
+    for relative, expected in files.items():
+        if not _is_lower_hex(expected, 64):
+            raise ValueError(f"Ender26 source digest is malformed: {relative}")
+        lease = leases_by_path[Path(os.path.abspath(REPO_DIR / relative))]
+        if lease.sha256() != expected:
+            raise ValueError(f"Ender26 held source changed: {relative}")
+    for relative, expected in external.items():
+        if (
+            not isinstance(expected, dict)
+            or set(expected) != {"size_bytes", "sha256", "last_era"}
+            or isinstance(expected.get("size_bytes"), bool)
+            or not isinstance(expected.get("size_bytes"), int)
+            or expected["size_bytes"] <= 0
+            or not _is_lower_hex(expected.get("sha256"), 64)
+            or expected.get("last_era") != "0861"
+        ):
+            raise ValueError(f"Ender26 artifact receipt is malformed: {relative}")
+        lease = leases_by_path[Path(os.path.abspath(REPO_DIR / relative))]
+        if (
+            lease.size_bytes() != expected["size_bytes"]
+            or lease.sha256() != expected["sha256"]
+        ):
+            raise ValueError(f"Ender26 held artifact changed: {relative}")
+
+    authority_relative = f"{_ENDER26_PREFIX}/protocol/discovery_data_authority.json"
+    authority_lease = leases_by_path[
+        Path(os.path.abspath(REPO_DIR / authority_relative))
+    ]
+    try:
+        authority = json.loads(authority_lease.read_bytes())
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ValueError("Ender26 discovery authority is invalid JSON.") from error
+    if (
+        not isinstance(authority, dict)
+        or authority.get("schema_version") != 1
+        or authority.get("authority") != _ENDER26_DISCOVERY_AUTHORITY
+    ):
+        raise ValueError("Ender26 discovery authority envelope differs.")
+    full_section = authority.get("full")
+    benchmark_section = authority.get("benchmark")
+    if not isinstance(full_section, dict) or not isinstance(
+        benchmark_section, dict
+    ):
+        raise ValueError("Ender26 discovery authority sections differ.")
+    authority_sections = {
+        full_section.get("path"): full_section,
+        benchmark_section.get("path"): benchmark_section,
+    }
+    if set(authority_sections) != _ENDER26_EXTERNAL_ARTIFACTS:
+        raise ValueError("Ender26 discovery authority artifact set differs.")
+    for relative, receipt in external.items():
+        section = authority_sections[relative]
+        if (
+            not isinstance(receipt, dict)
+            or set(receipt) != {"size_bytes", "sha256", "last_era"}
+            or receipt.get("last_era") != "0861"
+            or not isinstance(section, dict)
+            or section.get("size_bytes") != receipt["size_bytes"]
+            or section.get("sha256") != receipt["sha256"]
+            or section.get("last_era") != "0861"
+        ):
+            raise ValueError(
+                f"Ender26 manifest differs from discovery authority: {relative}"
+            )
+
+    experiment = Path(os.path.abspath(REPO_DIR / _ENDER26_PREFIX))
+    expected_outputs = (
+        experiment / "predictions" / f"{config_name}.parquet",
+        experiment / "results" / f"{config_name}.json",
+        experiment / "receipts" / f"{config_name}.completion.json",
+    )
+    reservations = custody.reservations
+    actual_outputs = (
+        getattr(reservations, "predictions_path", None),
+        getattr(reservations, "results_path", None),
+        getattr(reservations, "completion_path", None),
+    )
+    if actual_outputs != expected_outputs or any(
+        getattr(reservations, name, None) is None
+        for name in (
+            "predictions_stream",
+            "results_stream",
+            "completion_stream",
+        )
+    ):
+        raise ValueError("Ender26 bootstrap output reservations differ.")
+    for label, path, stream in (
+        (
+            "prediction",
+            reservations.predictions_path,
+            reservations.predictions_stream,
+        ),
+        ("result", reservations.results_path, reservations.results_stream),
+        (
+            "completion",
+            reservations.completion_path,
+            reservations.completion_stream,
+        ),
+    ):
+        try:
+            opened = os.fstat(stream.fileno())
+            lexical = path.lstat()
+        except (AttributeError, OSError) as error:
+            raise ValueError(
+                f"Ender26 {label} reservation is not an open file handle."
+            ) from error
+        attributes = getattr(lexical, "st_file_attributes", 0)
+        if (
+            not stat.S_ISREG(opened.st_mode)
+            or opened.st_nlink != 1
+            or opened.st_size != 0
+            or path.is_symlink()
+            or bool(
+                attributes & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0)
+            )
+            or not stat.S_ISREG(lexical.st_mode)
+            or lexical.st_nlink != 1
+            or (int(opened.st_dev), int(opened.st_ino))
+            != (int(lexical.st_dev), int(lexical.st_ino))
+        ):
+            raise ValueError(f"Ender26 {label} reservation identity differs.")
+    return custody
+
+
 def _governed_output_paths() -> set[Path]:
     experiment = Path(
         os.path.abspath(
@@ -924,6 +1214,30 @@ def _governed_output_paths() -> set[Path]:
             ),
             ender24_experiment / "receipts/round1_ema_stability.json",
             ender24_experiment / "receipts/round2_seed_replication.json",
+        }
+    )
+    ender26_experiment = Path(
+        os.path.abspath(
+            REPO_DIR
+            / "numerai/agents/experiments"
+            / _ENDER26_EXPERIMENT_NAME
+        )
+    )
+    governed.update(
+        {
+            *(
+                ender26_experiment / "predictions" / f"{name}.parquet"
+                for name in _ENDER26_ROUND1_NAMES
+            ),
+            *(
+                ender26_experiment / "results" / f"{name}.json"
+                for name in _ENDER26_ROUND1_NAMES
+            ),
+            *(
+                ender26_experiment / "receipts" / f"{name}.completion.json"
+                for name in _ENDER26_ROUND1_NAMES
+            ),
+            ender26_experiment / "receipts/round1_bmc_alignment.json",
         }
     )
     return governed
@@ -1311,6 +1625,37 @@ def _ender24_output_reservations(
     lexical = configs / f"{config_name}.py"
     _bootstrap_require_plain_directory_chain(experiment)
     _bootstrap_require_plain_file(lexical, "Ender24 config")
+    predictions_dir = experiment / "predictions"
+    results_dir = experiment / "results"
+    receipts_dir = experiment / "receipts"
+    predictions_dir.mkdir(exist_ok=True)
+    results_dir.mkdir(exist_ok=True)
+    receipts_dir.mkdir(exist_ok=True)
+    _bootstrap_require_plain_directory_chain(predictions_dir)
+    _bootstrap_require_plain_directory_chain(results_dir)
+    _bootstrap_require_plain_directory_chain(receipts_dir)
+    return _ExclusiveOutputReservations(
+        predictions_dir / f"{lexical.stem}.parquet",
+        results_dir / f"{lexical.stem}.json",
+        receipts_dir / f"{lexical.stem}.completion.json",
+    )
+
+
+def _ender26_output_reservations(
+    config_path: Path,
+    output_dir_override: Path | None,
+) -> _ExclusiveOutputReservations | None:
+    """Describe the Ender26 CREATE_NEW triple before governed input reads."""
+
+    experiment = Path(os.path.abspath(REPO_DIR / _ENDER26_PREFIX))
+    configs = experiment / "configs"
+    identity = _ender26_config_identity(config_path, output_dir_override)
+    if identity is None:
+        return None
+    _, config_name = identity
+    lexical = configs / f"{config_name}.py"
+    _bootstrap_require_plain_directory_chain(experiment)
+    _bootstrap_require_plain_file(lexical, "Ender26 config")
     predictions_dir = experiment / "predictions"
     results_dir = experiment / "results"
     receipts_dir = experiment / "receipts"
@@ -2569,6 +2914,53 @@ def _write_ender24_completion(
     payload = {
         "schema_version": 1,
         "stage": "ender24-round1-training-completion",
+        "state": "OUTPUTS_FINALIZED",
+        "component": name,
+        "manifest": {
+            "path": manifest_path.relative_to(REPO_DIR).as_posix(),
+            "sha256": hashlib.sha256(manifest_bytes).hexdigest(),
+            "git_head": manifest["git_head"],
+        },
+        "config": {
+            "path": config_relative,
+            "sha256": manifest["files"][config_relative],
+        },
+        "outputs": reservations.completion_identities(),
+    }
+    payload_bytes = reservations.write_completion(payload)
+    return completion_path, payload, payload_bytes
+
+
+def _write_ender26_completion(
+    config_path: Path,
+    manifest: dict,
+    manifest_bytes: bytes,
+    reservations: _ExclusiveOutputReservations,
+) -> tuple[Path, dict, bytes]:
+    """Fsync-bind one Ender26 Round-1 run to its held custody envelope."""
+
+    name = Path(config_path).stem
+    if name not in _ENDER26_ROUND1_NAMES:
+        raise ValueError("Ender26 completion requires a frozen Round-1 config.")
+    experiment = Path(os.path.abspath(REPO_DIR / _ENDER26_PREFIX))
+    completion_path = experiment / f"receipts/{name}.completion.json"
+    if reservations.completion_path != completion_path:
+        raise ValueError("Ender26 completion reservation path differs.")
+    config_absolute = Path(os.path.abspath(config_path))
+    config_relative = config_absolute.relative_to(REPO_DIR).as_posix()
+    manifest_path = experiment / "source_manifest_round1.json"
+    if not isinstance(manifest_bytes, bytes) or not manifest_bytes:
+        raise ValueError("Ender26 completion requires held manifest bytes.")
+    try:
+        if json.loads(manifest_bytes) != manifest:
+            raise ValueError("Ender26 completion manifest bytes differ from custody.")
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ValueError(
+            "Ender26 completion manifest bytes are invalid JSON."
+        ) from error
+    payload = {
+        "schema_version": 1,
+        "stage": "ender26-round1-training-completion",
         "state": "OUTPUTS_FINALIZED",
         "component": name,
         "manifest": {
@@ -3891,6 +4283,7 @@ def run_training(
     _ender22_bootstrap_custody: _Ender22BootstrapCustody | None = None,
     _ender23_bootstrap_custody: _Ender23BootstrapCustody | None = None,
     _ender24_bootstrap_custody: _Ender24BootstrapCustody | None = None,
+    _ender26_bootstrap_custody: _Ender26BootstrapCustody | None = None,
 ) -> tuple[Path, Path]:
     scout_authority_values = (
         scout_component,
@@ -3964,6 +4357,12 @@ def run_training(
     ender24_custody = _validate_ender24_bootstrap_custody(
         ender24_identity, _ender24_bootstrap_custody
     )
+    ender26_identity = _ender26_config_identity(
+        Path(config_path), output_dir_override
+    )
+    ender26_custody = _validate_ender26_bootstrap_custody(
+        ender26_identity, _ender26_bootstrap_custody
+    )
     ender21_reservations = _ender21_output_reservations(
         Path(config_path), output_dir_override
     )
@@ -3975,6 +4374,9 @@ def run_training(
     )
     ender24_reservations = (
         ender24_custody.reservations if ender24_custody is not None else None
+    )
+    ender26_reservations = (
+        ender26_custody.reservations if ender26_custody is not None else None
     )
     authority = None
     authority_checkpoint = None
@@ -4014,6 +4416,8 @@ def run_training(
     ender23_manifest_bytes = None
     ender24_input_leases = ()
     ender24_manifest_bytes = None
+    ender26_input_leases = ()
+    ender26_manifest_bytes = None
     try:
         if authority_checkpoint is not None:
             source_leases = _verify_frozen_training_source(
@@ -4052,6 +4456,7 @@ def run_training(
             or ender22_reservations
             or ender23_reservations
             or ender24_reservations
+            or ender26_reservations
         )
         if authority is not None:
             reservations = _ExclusiveOutputReservations(
@@ -4064,6 +4469,7 @@ def run_training(
                 ender22_custody is not None
                 or ender23_custody is not None
                 or ender24_custody is not None
+                or ender26_custody is not None
             )
             else reservations if reservations is not None else nullcontext(None)
         )
@@ -4072,6 +4478,7 @@ def run_training(
                 ender22_reservations is not None
                 or ender23_reservations is not None
                 or ender24_reservations is not None
+                or ender26_reservations is not None
             ):
                 _require_frozen_python_runtime()
             ender21_manifest = None
@@ -4108,6 +4515,12 @@ def run_training(
                 ender24_manifest = ender24_custody.manifest
                 ender24_manifest_bytes = ender24_custody.manifest_bytes
                 ender24_input_leases = ender24_custody.leases
+            ender26_manifest = None
+            if ender26_reservations is not None:
+                assert ender26_custody is not None
+                ender26_manifest = ender26_custody.manifest
+                ender26_manifest_bytes = ender26_custody.manifest_bytes
+                ender26_input_leases = ender26_custody.leases
             marker_lease = None
             completion_claim_lease = None
             completion_receipt_lease = None
@@ -4272,6 +4685,28 @@ def run_training(
                                 sort_keys=True,
                             )
                         )
+                    if ender26_reservations is not None:
+                        assert ender26_manifest is not None
+                        assert ender26_manifest_bytes is not None
+                        completion_path, completion_payload, completion_bytes = (
+                            _write_ender26_completion(
+                                Path(config_path),
+                                ender26_manifest,
+                                ender26_manifest_bytes,
+                                reserved_outputs,
+                            )
+                        )
+                        print(
+                            json.dumps(
+                                {
+                                    "training_completion_receipt": str(completion_path),
+                                    "training_completion_receipt_sha256": hashlib.sha256(
+                                        completion_bytes
+                                    ).hexdigest(),
+                                },
+                                sort_keys=True,
+                            )
+                        )
                     if authority is not None:
                         completion_path, completion_payload = (
                             evaluator.complete_component_training_consumption(
@@ -4331,6 +4766,9 @@ def run_training(
                 lease.close()
         if ender24_custody is None:
             for lease in reversed(ender24_input_leases):
+                lease.close()
+        if ender26_custody is None:
+            for lease in reversed(ender26_input_leases):
                 lease.close()
         for lease in reversed(source_leases):
             lease.close()
@@ -4427,6 +4865,39 @@ def run_ender24_training_from_bootstrap(
     )
     return run_training(
         Path(config_path), _ender24_bootstrap_custody=custody
+    )
+
+
+def run_ender26_training_from_bootstrap(
+    config_path: Path,
+    *,
+    round_number: int,
+    manifest: dict,
+    manifest_bytes: bytes,
+    leases: tuple,
+    reservations: object,
+) -> tuple[Path, Path]:
+    """Dedicated Ender26 Round-1 entry after isolated CREATE_NEW custody."""
+
+    identity = _ender26_config_identity(Path(config_path), None)
+    if (
+        identity is None
+        or identity[0] != 1
+        or round_number != 1
+        or identity[1] not in _ENDER26_ROUND1_NAMES
+    ):
+        raise ValueError("Ender26 bootstrap config/round identity differs.")
+    custody = _Ender26BootstrapCustody(
+        round_number=round_number,
+        config_name=identity[1],
+        manifest=manifest,
+        manifest_bytes=manifest_bytes,
+        manifest_sha256=hashlib.sha256(manifest_bytes).hexdigest(),
+        leases=leases,
+        reservations=reservations,
+    )
+    return run_training(
+        Path(config_path), _ender26_bootstrap_custody=custody
     )
 
 

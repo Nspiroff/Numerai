@@ -22,9 +22,13 @@ the matched Sharpe and drawdown guards. Round 2 is unauthorized.
 
 ## Active research gate
 
-None. A future Ender26 proposal must introduce a genuinely new hypothesis and
-must pass its own source, manifest, execution, and prospective-validation
-gates. Ender25's negative decision grants no continuation authority.
+[Ender26 Gaussian-rank benchmark residual](ender26_gaussian_rank_residual_v53/experiment.md)
+is an active **source-only** Round-1 gate. It tests whether moving Numerai's
+rank-Gaussian benchmark projection to the target side improves stable BMC over
+the fixed non-EMA window-78 control. The exact four-run, two-seed comparison,
+source custody, evaluator, and stop rules are implemented, but no manifest,
+data access, training, scoring, output reservation, Round 2, deployment, or
+account action is authorized.
 
 ## Ender20-25 outcome chain
 
@@ -35,7 +39,7 @@ gates. Ender25's negative decision grants no continuation authority.
 | Ender22 | Operationally invalid; no experiment decision | The half-life-52 run failed before its first fit on a 3.17 GiB allocation. The cohort was not scored and Round 2 was never authorized. | [Round-1 execution postmortem](ender22_temporal_retention_v53/round1_execution_postmortem.md) | `f9f45f6`, tag `numerai-ender22-terminal` |
 | Ender23 | `NEGATIVE_SEED_INSTABILITY` | The memory repair worked and window-78 won Round 1. Two of three Round-2 realizations qualified, but the fixed ensemble failed its Sharpe and drawdown gates. | [Terminal postmortem](ender23_temporal_retention_v53/round2_terminal_postmortem.md) | `aff188b`, tag `numerai-ender23-terminal` |
 | Ender24 | No decision; evaluator precondition failure | Four matched control/EMA runs finalized, but a CRLF/LF authority-fingerprint defect stopped the evaluator before metrics. Round 2 was not authorized. | [Round-1 execution postmortem](ender24_ema_seed_stability_v53/round1_execution_postmortem.md) | `d12f755`, tag `numerai-ender24-terminal` |
-| Ender25 | `ENDER25_NEGATIVE_NO_EMA_STABILITY_GAIN` | The repaired one-shot evaluator produced the missing scientific decision. EMA greatly compressed seed variance, but lost average full and recent BMC and worsened seed-1337 Sharpe/drawdown. | [Terminal postmortem](ender25_ender24_evaluation_recovery_v53/terminal_postmortem.md) | terminal evidence commit/tag pending publication |
+| Ender25 | `ENDER25_NEGATIVE_NO_EMA_STABILITY_GAIN` | The repaired one-shot evaluator produced the missing scientific decision. EMA greatly compressed seed variance, but lost average full and recent BMC and worsened seed-1337 Sharpe/drawdown. | [Terminal postmortem](ender25_ender24_evaluation_recovery_v53/terminal_postmortem.md) | `9f6a08c`, tags `numerai-ender25-terminal` and `numerai-ender25-terminal-custody` |
 
 ## What the sequence established
 
@@ -61,10 +65,11 @@ gates. Ender25's negative decision grants no continuation authority.
 
 1. Do not retry Ender24 or Ender25, populate the old Ender24 decision path,
    add EMA seeds, change the EMA decay or thresholds, or launch Round 2.
-2. Begin a new Ender26 family only with a genuinely new source hypothesis that
-   targets stable benchmark-unique BMC rather than variance reduction alone.
-3. Give Ender26 new output identities, a frozen comparison law, independent
-   source/manifest review, and later explicit execution authorization.
+2. Review and merge the Ender26 source-only gate. Its sole new scientific
+   variable is the target-side Gaussian-rank benchmark projection; do not add
+   another architecture, temporal window, seed, transform, or threshold.
+3. Only after source review may Ender26 receive a separate manifest-only seal.
+   Training and evaluation still require later explicit user authorization.
 4. Do not reuse consumed eras `0865`-`1021` for model selection. Historical
    eras `1022`-`1230` are not a substitute confirmation cohort.
 5. Keep deployment separate: it requires a successful, separately frozen
