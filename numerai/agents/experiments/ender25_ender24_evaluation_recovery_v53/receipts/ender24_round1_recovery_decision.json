@@ -1,0 +1,530 @@
+{
+  "account_actions_authorized": false,
+  "aggregate_checks": {
+    "ema_full_bmc_two_seed_gap_at_most_75pct_control": true,
+    "ema_mean_full_bmc_retains_95pct_control": false,
+    "ema_mean_recent40_bmc_at_least_control": false,
+    "ema_recent40_bmc_two_seed_gap_at_most_75pct_control": true,
+    "ema_worst_seed_full_bmc_retains_95pct_control": true,
+    "ema_worst_seed_recent40_bmc_at_least_control": true
+  },
+  "aggregates": {
+    "control": {
+      "full_bmc": {
+        "absolute_two_seed_gap": 0.0017069706432935863,
+        "mean": 0.005811426364338923,
+        "worst_seed": 0.004957941042692131
+      },
+      "recent40_bmc": {
+        "absolute_two_seed_gap": 0.0026315400136204814,
+        "mean": 0.007174454375737901,
+        "worst_seed": 0.00585868436892766
+      }
+    },
+    "ema995": {
+      "full_bmc": {
+        "absolute_two_seed_gap": 0.00035533109718313173,
+        "mean": 0.005116024393476147,
+        "worst_seed": 0.004938358844884581
+      },
+      "recent40_bmc": {
+        "absolute_two_seed_gap": 8.0852552707158e-05,
+        "mean": 0.00659973607287931,
+        "worst_seed": 0.006559309796525731
+      }
+    }
+  },
+  "deployment_authorized": false,
+  "ema_run_checks": {
+    "r1_ema995_seed1337": {
+      "all_used_folds_bmc_positive": true,
+      "benchmark_corr_below_0_25": true,
+      "corr_at_least_0_005": true,
+      "corr_below_0_04": true,
+      "drawdown_no_greater_than_matched_control_plus_0_01": false,
+      "full_bmc_positive": true,
+      "sharpe_not_below_matched_control_minus_0_05": false,
+      "three_of_four_recent_blocks_positive": true,
+      "worst_recent_block_above_minus_0_001": true
+    },
+    "r1_ema995_seed2027": {
+      "all_used_folds_bmc_positive": true,
+      "benchmark_corr_below_0_25": true,
+      "corr_at_least_0_005": true,
+      "corr_below_0_04": true,
+      "drawdown_no_greater_than_matched_control_plus_0_01": true,
+      "full_bmc_positive": true,
+      "sharpe_not_below_matched_control_minus_0_05": true,
+      "three_of_four_recent_blocks_positive": true,
+      "worst_recent_block_above_minus_0_001": true
+    }
+  },
+  "evaluator_retry": false,
+  "family": "ender25_ender24_evaluation_recovery_v53",
+  "inputs": {
+    "canonical_text_authority": {
+      "era_allowlist": {
+        "canonical_lf": {
+          "sha256": "be0c212a8e910f56dbdae4e1e134fa36ce7e5e1a95e43faa1ccc9e6330f544ca",
+          "size_bytes": 1763
+        },
+        "raw": {
+          "path": "numerai/agents/experiments/ender21_residual_stability_v53/protocol/discovery_eras_through_0861.json",
+          "sha256": "4ffd0ef68092d935c121b45c83a89ef67afe832b48fc259e425d3fe3f51deae7",
+          "size_bytes": 1941
+        }
+      },
+      "feature_columns": {
+        "canonical_lf": {
+          "sha256": "663184191e17d2fa4fac6dae017890f0e762368e638d46cfaa489297b9b2049b",
+          "size_bytes": 148179
+        },
+        "raw": {
+          "path": "numerai/agents/experiments/ender21_residual_stability_v53/protocol/feature_columns_all_v53.json",
+          "sha256": "e4df25383aff5ddf9446df275f55a8a93ca64f926a842f4cf84a68280adf769d",
+          "size_bytes": 151736
+        }
+      }
+    },
+    "discovery_benchmark": {
+      "path": "numerai/v5.3/ender21_discovery_benchmark_models_through_0861.parquet",
+      "sha256": "c2db9a77811390e9b9c47926b62fbfb7a6c7af24bb9c4db63137798e61b955b6",
+      "size_bytes": 23325224
+    },
+    "discovery_full": {
+      "path": "numerai/v5.3/ender21_discovery_full_through_0861.parquet",
+      "sha256": "476d561ba8515a0066e892c5489a5ae1db6443587e9d5d06a9a6280400a701b9",
+      "size_bytes": 1302848771
+    },
+    "ender24_discovery_authority": {
+      "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/protocol/discovery_data_authority.json",
+      "sha256": "c101e2ba91770fc0823ab4d4a4a0f66e8e11e7592cccbac0ea3f725dc59d7fc7",
+      "size_bytes": 1819
+    },
+    "ender24_manifest": {
+      "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/source_manifest_round1.json",
+      "sha256": "bd55280e4a99a1b45be87cc5af73aea2615da14a4de0e0662d1ac6c008ab1b35",
+      "size_bytes": 5491
+    },
+    "ender24_postmortem": {
+      "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/receipts/round1_execution_postmortem.json",
+      "sha256": "60acca8896fab9e97d2c559b951019da901fc033fb2b2e65d35d0e7b5101ed03",
+      "size_bytes": 5922
+    },
+    "recovery_manifest": {
+      "path": "numerai/agents/experiments/ender25_ender24_evaluation_recovery_v53/source_manifest_evaluation_recovery.json",
+      "sha256": "d15583d454d0befbc7fa561fa8ba5360bbfb664502742c14acfed551b3ca9a7f",
+      "size_bytes": 11279
+    }
+  },
+  "matched_pairs": {
+    "1337": {
+      "checks": {
+        "exact_cohort": true,
+        "exact_common_provenance": true,
+        "exact_config_delta": true
+      },
+      "cohort": {
+        "eras": 141,
+        "first_era": "0301",
+        "last_era": "0861",
+        "rows": 768362,
+        "sha256": "46b98f2474af29f13b0f39f9320782f4371580a0a82da1d480bf1743253665df"
+      },
+      "config_delta": [
+        "model.params.ema_decay",
+        "output.results_name"
+      ],
+      "control": "r1_control_seed1337",
+      "ema": "r1_ema995_seed1337",
+      "model_seed": 1337,
+      "sample_seed": 1337
+    },
+    "2027": {
+      "checks": {
+        "exact_cohort": true,
+        "exact_common_provenance": true,
+        "exact_config_delta": true
+      },
+      "cohort": {
+        "eras": 141,
+        "first_era": "0301",
+        "last_era": "0861",
+        "rows": 768362,
+        "sha256": "46b98f2474af29f13b0f39f9320782f4371580a0a82da1d480bf1743253665df"
+      },
+      "config_delta": [
+        "model.params.ema_decay",
+        "output.results_name"
+      ],
+      "control": "r1_control_seed2027",
+      "ema": "r1_ema995_seed2027",
+      "model_seed": 2027,
+      "sample_seed": 1337
+    }
+  },
+  "passed": false,
+  "reused_training": true,
+  "round2_authorized": false,
+  "round2_source_gate_authorized": false,
+  "runs": {
+    "r1_control_seed1337": {
+      "artifacts": {
+        "completion": {
+          "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/receipts/r1_control_seed1337.completion.json",
+          "sha256": "5a38b9f7211155b7ce9ea71db8c6815a72940f8c999c53e7b2f0ef6d4bd65b4e",
+          "size_bytes": 1370
+        },
+        "config": {
+          "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/configs/r1_control_seed1337.py",
+          "sha256": "4aa28eb6cccd3ceb376b3e2a0d439b715c087beacd6c96a865a7069aadefccc4",
+          "size_bytes": 184
+        },
+        "prediction": {
+          "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/predictions/r1_control_seed1337.parquet",
+          "sha256": "3e5285e3d5b9e3dea7df8da3d121a0157fa83e91bbec371c30526a8539aced73",
+          "size_bytes": 15779944
+        },
+        "result": {
+          "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/results/r1_control_seed1337.json",
+          "sha256": "fecf817835e2794c3d9caae16a15a244ff6976636295530a34c59b5772c9b5e0",
+          "size_bytes": 6148
+        }
+      },
+      "eras": 141,
+      "first_era": "0301",
+      "last_era": "0861",
+      "metrics": {
+        "avg_corr_with_benchmark": 0.09426613361228738,
+        "bmc": {
+          "max_drawdown": 0.04361362545889927,
+          "mean": 0.006664911685985717,
+          "sharpe": 0.6290597832999971,
+          "std": 0.010595037010667135
+        },
+        "corr_mean": 0.010706598203043503,
+        "fold_bmc_mean": {
+          "1": 0.0025533472216259,
+          "2": 0.007086776409377295,
+          "3": 0.008564303749308676,
+          "4": 0.008405488594807518
+        },
+        "recent40_bmc_mean": 0.008490224382548142,
+        "recent_blocks_bmc_mean": {
+          "0705-0741": 0.009938452293358671,
+          "0745-0781": 0.011171348584415475,
+          "0785-0821": 0.008998627719899554,
+          "0825-0861": 0.0038524689325188655
+        }
+      },
+      "parameter_count": 2866944,
+      "procedure": {
+        "ema_decay": null,
+        "model_seed": 1337,
+        "sample_seed": 1337
+      },
+      "provenance": {
+        "component": "r1_control_seed1337",
+        "config": {
+          "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/configs/r1_control_seed1337.py",
+          "sha256": "4aa28eb6cccd3ceb376b3e2a0d439b715c087beacd6c96a865a7069aadefccc4"
+        },
+        "manifest": {
+          "git_head": "a2bfe0fce7ac1a6a6b075a65b8538aa32165e3c6",
+          "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/source_manifest_round1.json",
+          "sha256": "bd55280e4a99a1b45be87cc5af73aea2615da14a4de0e0662d1ac6c008ab1b35"
+        },
+        "outputs": {
+          "predictions": {
+            "device": 6109702118523114368,
+            "inode": 186617909559634795,
+            "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender24_ema_seed_stability_v53\\predictions\\r1_control_seed1337.parquet",
+            "sha256": "3e5285e3d5b9e3dea7df8da3d121a0157fa83e91bbec371c30526a8539aced73",
+            "size_bytes": 15779944
+          },
+          "result": {
+            "device": 6109702118523114368,
+            "inode": 69805794224712568,
+            "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender24_ema_seed_stability_v53\\results\\r1_control_seed1337.json",
+            "sha256": "fecf817835e2794c3d9caae16a15a244ff6976636295530a34c59b5772c9b5e0",
+            "size_bytes": 6148
+          }
+        },
+        "schema_version": 1,
+        "stage": "ender24-round1-training-completion",
+        "state": "OUTPUTS_FINALIZED"
+      },
+      "rows": 768362
+    },
+    "r1_control_seed2027": {
+      "artifacts": {
+        "completion": {
+          "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/receipts/r1_control_seed2027.completion.json",
+          "sha256": "f33f40f537413fdd8fc80cb7d656192fbf02d906b6885723894e9fc1776653e4",
+          "size_bytes": 1369
+        },
+        "config": {
+          "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/configs/r1_control_seed2027.py",
+          "sha256": "fbf91f7817807368bbadb4c24de0d33501107fbda1bdd222c8f132d51b56453a",
+          "size_bytes": 184
+        },
+        "prediction": {
+          "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/predictions/r1_control_seed2027.parquet",
+          "sha256": "183e9f2d74f44e34a8b0bd36b34d86d76808ae501a1d06e46b3d33cc89ce0df0",
+          "size_bytes": 15786216
+        },
+        "result": {
+          "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/results/r1_control_seed2027.json",
+          "sha256": "4be1fc26f223275ea7dd9526706d348ca84c66aee5ecd69e3578ee11c5fa807c",
+          "size_bytes": 6144
+        }
+      },
+      "eras": 141,
+      "first_era": "0301",
+      "last_era": "0861",
+      "metrics": {
+        "avg_corr_with_benchmark": 0.2140816674471981,
+        "bmc": {
+          "max_drawdown": 0.05825455222025591,
+          "mean": 0.004957941042692131,
+          "sharpe": 0.4406625489351802,
+          "std": 0.011251105987274234
+        },
+        "corr_mean": 0.013883286525787852,
+        "fold_bmc_mean": {
+          "1": 0.00027958917398765773,
+          "2": 0.004430976311528405,
+          "3": 0.009647265664754285,
+          "4": 0.0054595999100035646
+        },
+        "recent40_bmc_mean": 0.00585868436892766,
+        "recent_blocks_bmc_mean": {
+          "0705-0741": 0.007807250744614878,
+          "0745-0781": 0.007862119323628996,
+          "0785-0821": 0.006613825144808717,
+          "0825-0861": 0.0011515422626580515
+        }
+      },
+      "parameter_count": 2866944,
+      "procedure": {
+        "ema_decay": null,
+        "model_seed": 2027,
+        "sample_seed": 1337
+      },
+      "provenance": {
+        "component": "r1_control_seed2027",
+        "config": {
+          "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/configs/r1_control_seed2027.py",
+          "sha256": "fbf91f7817807368bbadb4c24de0d33501107fbda1bdd222c8f132d51b56453a"
+        },
+        "manifest": {
+          "git_head": "a2bfe0fce7ac1a6a6b075a65b8538aa32165e3c6",
+          "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/source_manifest_round1.json",
+          "sha256": "bd55280e4a99a1b45be87cc5af73aea2615da14a4de0e0662d1ac6c008ab1b35"
+        },
+        "outputs": {
+          "predictions": {
+            "device": 6109702118523114368,
+            "inode": 28710447625978495,
+            "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender24_ema_seed_stability_v53\\predictions\\r1_control_seed2027.parquet",
+            "sha256": "183e9f2d74f44e34a8b0bd36b34d86d76808ae501a1d06e46b3d33cc89ce0df0",
+            "size_bytes": 15786216
+          },
+          "result": {
+            "device": 6109702118523114368,
+            "inode": 28991922602689152,
+            "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender24_ema_seed_stability_v53\\results\\r1_control_seed2027.json",
+            "sha256": "4be1fc26f223275ea7dd9526706d348ca84c66aee5ecd69e3578ee11c5fa807c",
+            "size_bytes": 6144
+          }
+        },
+        "schema_version": 1,
+        "stage": "ender24-round1-training-completion",
+        "state": "OUTPUTS_FINALIZED"
+      },
+      "rows": 768362
+    },
+    "r1_ema995_seed1337": {
+      "artifacts": {
+        "completion": {
+          "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/receipts/r1_ema995_seed1337.completion.json",
+          "sha256": "0b6d500c571abe376ae388ace4abc56430ac8df9c5bce71be7a41657a149431f",
+          "size_bytes": 1365
+        },
+        "config": {
+          "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/configs/r1_ema995_seed1337.py",
+          "sha256": "ae064a2cbdf8aad663d30cfa4b4d200bdaec5513383213420d7e26884b91ed30",
+          "size_bytes": 200
+        },
+        "prediction": {
+          "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/predictions/r1_ema995_seed1337.parquet",
+          "sha256": "373110812795dc907e7ee8346b209204a73a3e242a6665cf14863aeb0abb467f",
+          "size_bytes": 15786841
+        },
+        "result": {
+          "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/results/r1_ema995_seed1337.json",
+          "sha256": "0aba98130c6d3f80b91731f59b130531f7792266338fe230ae02f581df43c194",
+          "size_bytes": 7678
+        }
+      },
+      "eras": 141,
+      "first_era": "0301",
+      "last_era": "0861",
+      "metrics": {
+        "avg_corr_with_benchmark": 0.2062885709471263,
+        "bmc": {
+          "max_drawdown": 0.08381711343782092,
+          "mean": 0.005293689942067713,
+          "sharpe": 0.44103223618188087,
+          "std": 0.012002954677182837
+        },
+        "corr_mean": 0.013858334805763308,
+        "fold_bmc_mean": {
+          "1": 0.0008685330596461228,
+          "2": 0.0049782613892633415,
+          "3": 0.008745658852717818,
+          "4": 0.006546511563183128
+        },
+        "recent40_bmc_mean": 0.006640162349232889,
+        "recent_blocks_bmc_mean": {
+          "0705-0741": 0.010295285095622572,
+          "0745-0781": 0.01000014429052879,
+          "0785-0821": 0.005189978558699093,
+          "0825-0861": 0.001075241452081098
+        }
+      },
+      "parameter_count": 2866944,
+      "procedure": {
+        "ema_decay": 0.995,
+        "model_seed": 1337,
+        "sample_seed": 1337
+      },
+      "provenance": {
+        "component": "r1_ema995_seed1337",
+        "config": {
+          "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/configs/r1_ema995_seed1337.py",
+          "sha256": "ae064a2cbdf8aad663d30cfa4b4d200bdaec5513383213420d7e26884b91ed30"
+        },
+        "manifest": {
+          "git_head": "a2bfe0fce7ac1a6a6b075a65b8538aa32165e3c6",
+          "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/source_manifest_round1.json",
+          "sha256": "bd55280e4a99a1b45be87cc5af73aea2615da14a4de0e0662d1ac6c008ab1b35"
+        },
+        "outputs": {
+          "predictions": {
+            "device": 6109702118523114368,
+            "inode": 37154696927298014,
+            "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender24_ema_seed_stability_v53\\predictions\\r1_ema995_seed1337.parquet",
+            "sha256": "373110812795dc907e7ee8346b209204a73a3e242a6665cf14863aeb0abb467f",
+            "size_bytes": 15786841
+          },
+          "result": {
+            "device": 6109702118523114368,
+            "inode": 35465847067034079,
+            "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender24_ema_seed_stability_v53\\results\\r1_ema995_seed1337.json",
+            "sha256": "0aba98130c6d3f80b91731f59b130531f7792266338fe230ae02f581df43c194",
+            "size_bytes": 7678
+          }
+        },
+        "schema_version": 1,
+        "stage": "ender24-round1-training-completion",
+        "state": "OUTPUTS_FINALIZED"
+      },
+      "rows": 768362
+    },
+    "r1_ema995_seed2027": {
+      "artifacts": {
+        "completion": {
+          "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/receipts/r1_ema995_seed2027.completion.json",
+          "sha256": "c63793b84ef0e3fa03a9dc1a8c1aa167a1fb6a29863313e82259301f12f512ed",
+          "size_bytes": 1363
+        },
+        "config": {
+          "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/configs/r1_ema995_seed2027.py",
+          "sha256": "c42c6f8e00ab2b67cecc2683e16245dc581de77af638a210285561c93c7cd16d",
+          "size_bytes": 200
+        },
+        "prediction": {
+          "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/predictions/r1_ema995_seed2027.parquet",
+          "sha256": "763d8030056af4e83828ce952c86ec499452014dd9a14ba361e0daccd7f501f6",
+          "size_bytes": 15787673
+        },
+        "result": {
+          "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/results/r1_ema995_seed2027.json",
+          "sha256": "4852ad7788c13197f8a0c9ac6fc4a075974471a0db031d024a417d46332a80df",
+          "size_bytes": 7673
+        }
+      },
+      "eras": 141,
+      "first_era": "0301",
+      "last_era": "0861",
+      "metrics": {
+        "avg_corr_with_benchmark": 0.230700038297067,
+        "bmc": {
+          "max_drawdown": 0.06197660904453116,
+          "mean": 0.004938358844884581,
+          "sharpe": 0.4309403442501346,
+          "std": 0.011459495289255547
+        },
+        "corr_mean": 0.01422018301822646,
+        "fold_bmc_mean": {
+          "1": 0.0003563797763580869,
+          "2": 0.0038577412342619163,
+          "3": 0.009043019129678476,
+          "4": 0.00645301922828553
+        },
+        "recent40_bmc_mean": 0.006559309796525731,
+        "recent_blocks_bmc_mean": {
+          "0705-0741": 0.008439239047578083,
+          "0745-0781": 0.00808504898848563,
+          "0785-0821": 0.007606475653396371,
+          "0825-0861": 0.002106475496642838
+        }
+      },
+      "parameter_count": 2866944,
+      "procedure": {
+        "ema_decay": 0.995,
+        "model_seed": 2027,
+        "sample_seed": 1337
+      },
+      "provenance": {
+        "component": "r1_ema995_seed2027",
+        "config": {
+          "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/configs/r1_ema995_seed2027.py",
+          "sha256": "c42c6f8e00ab2b67cecc2683e16245dc581de77af638a210285561c93c7cd16d"
+        },
+        "manifest": {
+          "git_head": "a2bfe0fce7ac1a6a6b075a65b8538aa32165e3c6",
+          "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/source_manifest_round1.json",
+          "sha256": "bd55280e4a99a1b45be87cc5af73aea2615da14a4de0e0662d1ac6c008ab1b35"
+        },
+        "outputs": {
+          "predictions": {
+            "device": 6109702118523114368,
+            "inode": 5348024558199551,
+            "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender24_ema_seed_stability_v53\\predictions\\r1_ema995_seed2027.parquet",
+            "sha256": "763d8030056af4e83828ce952c86ec499452014dd9a14ba361e0daccd7f501f6",
+            "size_bytes": 15787673
+          },
+          "result": {
+            "device": 6109702118523114368,
+            "inode": 3659174698445229,
+            "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender24_ema_seed_stability_v53\\results\\r1_ema995_seed2027.json",
+            "sha256": "4852ad7788c13197f8a0c9ac6fc4a075974471a0db031d024a417d46332a80df",
+            "size_bytes": 7673
+          }
+        },
+        "schema_version": 1,
+        "stage": "ender24-round1-training-completion",
+        "state": "OUTPUTS_FINALIZED"
+      },
+      "rows": 768362
+    }
+  },
+  "schema_version": 1,
+  "scientific_decision": true,
+  "scoring_authorized": false,
+  "stage": "ender25-ender24-round1-evaluation-recovery",
+  "state": "ENDER25_NEGATIVE_NO_EMA_STABILITY_GAIN",
+  "training_authorized": false
+}
