@@ -7,29 +7,22 @@ decisions.
 ## Current program state
 
 No Ender20-family model is approved for deployment. No upload, assignment,
-staking, submission, or Numerai account mutation is authorized. Ender20,
-Ender21, Ender22, and Ender23 are closed research families; their frozen
-artifacts and decision records must not be overwritten or reused as new runs.
+staking, submission, or Numerai account mutation is authorized. Ender20
+through Ender24 are closed research families; their frozen artifacts and
+decision records must not be overwritten or reused as new runs.
 
-## Active source-only design
+## Latest terminal experiment
 
-[Ender24 EMA seed stability](ender24_ema_seed_stability_v53/experiment.md) is
-the only active research design. It tests one fixed EMA weight-stabilization
-procedure against matched model seeds. Round 1 is source-reviewed and sealed:
-the [mechanical-activity receipt](ender24_ema_seed_stability_v53/protocol/mechanical_activity_receipt.json)
-records 12/12 passing proofs, and the
-[source manifest](ender24_ema_seed_stability_v53/source_manifest_round1.json)
-binds the exact 31-file source/evidence set, runtime, and two discovery-input
-receipts. The immutable Git chain is source merge `aebc577`, receipt-only
-`a2bfe0f`, manifest-only `5a1a75d`, and seal merge `789a91f`.
+[Ender24 EMA seed stability](ender24_ema_seed_stability_v53/round1_execution_postmortem.md)
+is closed at
+`STOPPED_AT_ENDER24_ROUND1_EVALUATOR_PRECONDITION_FAILURE`. All four frozen
+training components completed exactly once, but the sole evaluator invocation
+stopped before truth or result parsing because it compared CRLF physical JSON
+bytes against LF Git-blob fingerprints. No scientific decision was produced;
+Round 2 is unauthorized. The immutable training artifacts are preserved for a
+separately reviewed recovery gate, not for an Ender24 retry.
 
-Current state: `ROUND1_SEALED_AWAITING_EXPLICIT_LAUNCH_AUTHORITY`. No Ender24
-training or scoring has occurred. The next admissible action is a separate
-pre-launch audit and explicit launch decision for exactly four one-shot
-Round-1 runs. The seal itself grants no data access, output reservation,
-training, scoring, confirmation, deployment, or account authority.
-
-## Ender20-23 outcome chain
+## Ender20-24 outcome chain
 
 | Family | Terminal state | Key conclusion | Canonical record | Archival point |
 | --- | --- | --- | --- | --- |
@@ -37,6 +30,7 @@ training, scoring, confirmation, deployment, or account authority.
 | Ender21 | `NEGATIVE` confirmation terminal | Block-DRO remained positive and passed the absolute risk gates, but retained only 40.745% of discovery BMC against the required 60%. | [Confirmation postmortem](ender21_residual_stability_v53/confirmation_postmortem.md) | `bd0fe11`, tag `numerai-ender21-terminal` |
 | Ender22 | Operationally invalid; no experiment decision | The half-life-52 run failed before its first fit on a 3.17 GiB allocation. The cohort was not scored and Round 2 was never authorized. | [Round-1 execution postmortem](ender22_temporal_retention_v53/round1_execution_postmortem.md) | `f9f45f6`, tag `numerai-ender22-terminal` |
 | Ender23 | `NEGATIVE_SEED_INSTABILITY` | The memory repair worked and window-78 won Round 1. Two of three Round-2 realizations qualified, but the fixed ensemble failed its Sharpe and drawdown gates. | [Terminal postmortem](ender23_temporal_retention_v53/round2_terminal_postmortem.md) | `aff188b`, tag `numerai-ender23-terminal` |
+| Ender24 | No decision; evaluator precondition failure | Four matched control/EMA runs finalized, but a CRLF/LF authority-fingerprint defect stopped the evaluator before metrics. Round 2 was not authorized. | [Round-1 execution postmortem](ender24_ema_seed_stability_v53/round1_execution_postmortem.md) | Issue `#9`; terminal evidence commit pending |
 
 ## What the sequence established
 
@@ -50,19 +44,21 @@ training, scoring, confirmation, deployment, or account authority.
 - Ender23's sample-seed replication was mechanically inactive because no
   window-78 training fold reached the 500,000-row sampling cap. It is not
   independent support for the selected procedure.
+- Ender24 produced complete matched-seed artifacts but no scientific evidence:
+  the evaluator failed before metric parsing because text-byte authority was
+  not portable across LF and CRLF checkouts.
 
 ## Next admissible work
 
-1. Do not rescue Ender23 with another seed, neighboring window, blend weight,
-   threshold change, or reuse of its output paths.
-2. If more research is authorized, start a newly named family from a genuinely
-   new hypothesis aimed at reducing model-seed variance, not another temporal
-   retention sweep.
-3. Freeze the protocol, data authority, candidate set, evaluation boundary,
-   replication design, and stopping rule before any score is read.
-4. Prove every replication axis is mechanically active for every candidate
-   before launch. Do not use sample seed as a replicate when sampling is not
-   actually triggered.
+1. Do not retry Ender24 training or evaluation, populate its old decision path,
+   infer an EMA winner from its stored results, or launch its Round 2.
+2. If recovery is authorized, create a newly named evaluation-recovery family
+   that binds the immutable Ender24 completions and artifacts as held inputs.
+3. Give that family a new evaluator stage, create-only decision path, source
+   review, manifest-only seal, and explicit launch authorization.
+4. Treat the manifest as raw-byte custody while validating JSON authority by
+   canonical semantics, with regressions for LF/CRLF equivalence and semantic
+   mutation rejection.
 5. Do not reuse consumed eras `0865`-`1021` for model selection. Historical
    eras `1022`-`1230` are not a substitute confirmation cohort.
 6. Keep deployment separate: it requires a successful, separately frozen

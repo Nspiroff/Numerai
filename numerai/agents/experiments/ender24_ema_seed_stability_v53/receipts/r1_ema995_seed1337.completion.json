@@ -1,0 +1,31 @@
+{
+  "component": "r1_ema995_seed1337",
+  "config": {
+    "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/configs/r1_ema995_seed1337.py",
+    "sha256": "ae064a2cbdf8aad663d30cfa4b4d200bdaec5513383213420d7e26884b91ed30"
+  },
+  "manifest": {
+    "git_head": "a2bfe0fce7ac1a6a6b075a65b8538aa32165e3c6",
+    "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/source_manifest_round1.json",
+    "sha256": "bd55280e4a99a1b45be87cc5af73aea2615da14a4de0e0662d1ac6c008ab1b35"
+  },
+  "outputs": {
+    "predictions": {
+      "device": 6109702118523114368,
+      "inode": 37154696927298014,
+      "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender24_ema_seed_stability_v53\\predictions\\r1_ema995_seed1337.parquet",
+      "sha256": "373110812795dc907e7ee8346b209204a73a3e242a6665cf14863aeb0abb467f",
+      "size_bytes": 15786841
+    },
+    "result": {
+      "device": 6109702118523114368,
+      "inode": 35465847067034079,
+      "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender24_ema_seed_stability_v53\\results\\r1_ema995_seed1337.json",
+      "sha256": "0aba98130c6d3f80b91731f59b130531f7792266338fe230ae02f581df43c194",
+      "size_bytes": 7678
+    }
+  },
+  "schema_version": 1,
+  "stage": "ender24-round1-training-completion",
+  "state": "OUTPUTS_FINALIZED"
+}
