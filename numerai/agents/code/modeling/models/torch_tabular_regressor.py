@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Sequence
+from contextlib import contextmanager
+
 import numpy as np
 
 
@@ -113,6 +116,7 @@ class TorchTabularRegressor:
         chronological_blocks: int = 8,
         dro_temperature: float = 2.0,
         recency_half_life_eras: float | None = None,
+        ema_decay: float | None = None,
         max_epochs: int = 40,
         patience: int = 5,
         val_fraction: float = 0.1,
@@ -210,6 +214,19 @@ class TorchTabularRegressor:
                     "recency_half_life_eras is only supported with "
                     "loss_mode='chronological_block_dro'"
                 )
+        if ema_decay is None:
+            self.ema_decay = None
+        else:
+            if isinstance(ema_decay, (bool, np.bool_)):
+                raise ValueError("ema_decay must be finite and in (0, 1)")
+            try:
+                self.ema_decay = float(ema_decay)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(
+                    "ema_decay must be finite and in (0, 1)"
+                ) from exc
+            if not np.isfinite(self.ema_decay) or not 0.0 < self.ema_decay < 1.0:
+                raise ValueError("ema_decay must be finite and in (0, 1)")
         self.max_epochs = int(max_epochs)
         self.patience = int(patience)
         self.val_fraction = float(val_fraction)
@@ -264,12 +281,22 @@ class TorchTabularRegressor:
         self.disk_rows_per_epoch_: list[int] = []
         self.disk_batches_per_epoch_: list[int] = []
         self.disk_prediction_batches_: int | None = None
+        self.ema_updates_: int = 0
+        self.ema_live_state_sha256_: str | None = None
+        self.ema_shadow_state_sha256_: str | None = None
+        self.ema_inference_state_sha256_: str | None = None
+        self._ema_state = None
 
     def fit(self, X, y, **kwargs):
         del kwargs
         torch = self._torch
         self.best_epoch_ = None
         self.epochs_trained_ = 0
+        self.ema_updates_ = 0
+        self.ema_live_state_sha256_ = None
+        self.ema_shadow_state_sha256_ = None
+        self.ema_inference_state_sha256_ = None
+        self._ema_state = None
         self._seed_everything()
 
         X_features = self._select_features(X, fit=True)
@@ -402,18 +429,26 @@ class TorchTabularRegressor:
                     )
                 self.disk_rows_per_epoch_.append(epoch_rows)
                 self.disk_batches_per_epoch_.append(epoch_batches)
-                val_loss = (
-                    self._validation_loss_disk(val_view, val_targets)
-                    if val_view is not None
-                    else train_loss
-                )
             else:
                 train_loss = self._train_epoch(train_loader, optimizer, scaler)
-                val_loss = (
-                    self._validation_loss(val_loader)
-                    if val_loader is not None
-                    else train_loss
-                )
+            epoch_evaluation_state = None
+            if has_validation:
+                if self.ema_decay is None:
+                    val_loss = (
+                        self._validation_loss_disk(val_view, val_targets)
+                        if is_disk
+                        else self._validation_loss(val_loader)
+                    )
+                else:
+                    with self._ema_evaluation_scope():
+                        val_loss = (
+                            self._validation_loss_disk(val_view, val_targets)
+                            if is_disk
+                            else self._validation_loss(val_loader)
+                        )
+                        epoch_evaluation_state = self._cpu_model_state()
+            else:
+                val_loss = train_loss
             self.training_history_.append(
                 {"epoch": epoch, "train_loss": train_loss, "val_loss": val_loss}
             )
@@ -427,10 +462,11 @@ class TorchTabularRegressor:
             if has_validation:
                 if val_loss < best_loss - 1e-8:
                     best_loss = val_loss
-                    best_state = {
-                        key: value.detach().cpu().clone()
-                        for key, value in self._model.state_dict().items()
-                    }
+                    best_state = (
+                        epoch_evaluation_state
+                        if epoch_evaluation_state is not None
+                        else self._cpu_model_state()
+                    )
                     self.best_epoch_ = epoch
                     epochs_without_improvement = 0
                 else:
@@ -443,8 +479,30 @@ class TorchTabularRegressor:
                             )
                         break
 
+        if self.ema_decay is not None:
+            if self._ema_state is None or self.ema_updates_ == 0:
+                raise RuntimeError(
+                    "EMA training completed without a successful optimizer step."
+                )
+            self.ema_live_state_sha256_ = self._state_sha256(
+                self._model.state_dict()
+            )
+            self.ema_shadow_state_sha256_ = self._state_sha256(self._ema_state)
         if has_validation and best_state is not None:
             self._model.load_state_dict(best_state)
+        elif self.ema_decay is not None:
+            self._model.load_state_dict(self._ema_state)
+        if self.ema_decay is not None:
+            self.ema_inference_state_sha256_ = self._state_sha256(
+                self._model.state_dict()
+            )
+            # Keep the post-fit shadow aligned with the exact checkpoint used
+            # by predict/export. The separately recorded shadow hash above is
+            # the terminal optimizer-trajectory EMA before best restoration.
+            self._ema_state = {
+                key: value.detach().clone()
+                for key, value in self._model.state_dict().items()
+            }
         return self
 
     def cpu_state_dict(self):
@@ -453,10 +511,89 @@ class TorchTabularRegressor:
                 "TorchTabularRegressor must be fitted before exporting state."
             )
         self._model.eval()
+        return self._cpu_model_state()
+
+    def _cpu_model_state(self):
         return {
             key: value.detach().cpu().clone()
             for key, value in self._model.state_dict().items()
         }
+
+    def _state_sha256(self, state) -> str:
+        digest = hashlib.sha256()
+        for key in sorted(state):
+            value = state[key].detach().cpu().contiguous()
+            encoded_key = key.encode("utf-8")
+            encoded_dtype = str(value.dtype).encode("ascii")
+            encoded_shape = repr(tuple(value.shape)).encode("ascii")
+            digest.update(len(encoded_key).to_bytes(8, "little"))
+            digest.update(encoded_key)
+            digest.update(len(encoded_dtype).to_bytes(8, "little"))
+            digest.update(encoded_dtype)
+            digest.update(len(encoded_shape).to_bytes(8, "little"))
+            digest.update(encoded_shape)
+            digest.update(value.view(self._torch.uint8).numpy().tobytes(order="C"))
+        return digest.hexdigest()
+
+    def _update_ema_after_step(self) -> None:
+        if self.ema_decay is None:
+            return
+        torch = self._torch
+        current_state = self._model.state_dict()
+        with torch.no_grad():
+            if self._ema_state is None:
+                self._ema_state = {
+                    key: value.detach().clone()
+                    for key, value in current_state.items()
+                }
+            else:
+                for key, value in current_state.items():
+                    shadow = self._ema_state[key]
+                    if torch.is_floating_point(shadow) or torch.is_complex(shadow):
+                        shadow.mul_(self.ema_decay).add_(
+                            value.detach(), alpha=1.0 - self.ema_decay
+                        )
+                    else:
+                        shadow.copy_(value.detach())
+        self.ema_updates_ += 1
+
+    def _step_optimizer(self, optimizer, scaler) -> None:
+        if self.ema_decay is None:
+            scaler.step(optimizer)
+            scaler.update()
+            return
+        scale_before = float(scaler.get_scale())
+        if not np.isfinite(scale_before) or scale_before <= 0.0:
+            raise RuntimeError(
+                "EMA training requires a finite positive AMP scale before step."
+            )
+        scaler.step(optimizer)
+        scaler.update()
+        scale_after = float(scaler.get_scale())
+        if not np.isfinite(scale_after) or scale_after <= 0.0:
+            raise RuntimeError(
+                "EMA training requires a finite positive AMP scale after update."
+            )
+        # GradScaler reduces its scale when an overflow skips optimizer.step().
+        # Equal or increased valid scale therefore proves that this step completed.
+        if scale_after >= scale_before:
+            self._update_ema_after_step()
+
+    @contextmanager
+    def _ema_evaluation_scope(self):
+        if self.ema_decay is None:
+            yield
+            return
+        if self._ema_state is None or self.ema_updates_ == 0:
+            raise RuntimeError(
+                "EMA validation requires at least one successful optimizer step."
+            )
+        live_state = self._cpu_model_state()
+        try:
+            self._model.load_state_dict(self._ema_state)
+            yield
+        finally:
+            self._model.load_state_dict(live_state)
 
     def predict(self, X):
         if self._model is None:
@@ -609,8 +746,7 @@ class TorchTabularRegressor:
                 torch.nn.utils.clip_grad_norm_(
                     self._model.parameters(), self.max_grad_norm
                 )
-            scaler.step(optimizer)
-            scaler.update()
+            self._step_optimizer(optimizer, scaler)
             rows = batch_y.shape[0]
             total_loss += loss.detach() * rows
             total_rows += rows
@@ -696,8 +832,7 @@ class TorchTabularRegressor:
                 torch.nn.utils.clip_grad_norm_(
                     self._model.parameters(), self.max_grad_norm
                 )
-            scaler.step(optimizer)
-            scaler.update()
+            self._step_optimizer(optimizer, scaler)
             rows = batch_y.shape[0]
             total_loss += loss.detach() * rows
             total_rows += rows
