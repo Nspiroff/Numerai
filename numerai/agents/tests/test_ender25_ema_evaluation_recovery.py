@@ -190,10 +190,11 @@ class TestEnder25FrozenEnder24Authority(unittest.TestCase):
             all(value is False for value in authority["current_authority"].values())
         )
 
-    def test_source_only_scaffold_has_no_manifest_or_decision(self) -> None:
-        self.assertFalse(
-            (EXPERIMENT / "source_manifest_evaluation_recovery.json").exists()
-        )
+    def test_scaffold_or_seal_has_no_decision_and_valid_manifest(self) -> None:
+        manifest_path = EXPERIMENT / "source_manifest_evaluation_recovery.json"
+        if manifest_path.exists():
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            self.assertIs(BOOTSTRAP.validate_recovery_manifest(manifest), manifest)
         self.assertFalse(
             (EXPERIMENT / "receipts/ender24_round1_recovery_decision.json").exists()
         )
