@@ -1,0 +1,149 @@
+{
+  "authority": {
+    "account_mutation": false,
+    "deployment": false,
+    "evaluator_retry": false,
+    "result_metric_interpretation": false,
+    "round2": false,
+    "scoring_completed": false,
+    "training_retry": false
+  },
+  "custody": {
+    "canonical_decision_path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/receipts/round1_ema_stability.json",
+    "canonical_decision_path_exists": false,
+    "completion_count": 4,
+    "outputs_preserved": true,
+    "prediction_count": 4,
+    "predictions_committed_to_git": false,
+    "result_count": 4
+  },
+  "decision_state": null,
+  "evaluator": {
+    "error_message": "Physical authority differs for era_allowlist",
+    "error_type": "ValueError",
+    "exit_code": 1,
+    "failed_stage": "load_authority",
+    "invocations": 1,
+    "metrics_interpreted": false,
+    "results_parsed": false,
+    "retried": false,
+    "scored": false,
+    "truth_loaded": false
+  },
+  "experiment": "ender24_ema_seed_stability_v53",
+  "frozen_authority": {
+    "issue": "https://github.com/Nspiroff/Numerai/issues/9",
+    "launch_git_head": "7adc6724bd41689e34e8d21effa088b0ff606022",
+    "manifest_git_head": "a2bfe0fce7ac1a6a6b075a65b8538aa32165e3c6",
+    "source_manifest": {
+      "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/source_manifest_round1.json",
+      "sha256": "bd55280e4a99a1b45be87cc5af73aea2615da14a4de0e0662d1ac6c008ab1b35",
+      "size_bytes": 5491
+    }
+  },
+  "observed_at": "2026-08-13T13:39:07.5660827Z",
+  "root_cause": {
+    "classification": "CRLF_LF_AUTHORITY_IDENTITY_SPLIT",
+    "feature_columns": {
+      "canonical_lf": {
+        "sha256": "663184191e17d2fa4fac6dae017890f0e762368e638d46cfaa489297b9b2049b",
+        "size_bytes": 148179
+      },
+      "sealed_physical": {
+        "sha256": "e4df25383aff5ddf9446df275f55a8a93ca64f926a842f4cf84a68280adf769d",
+        "size_bytes": 151736
+      }
+    },
+    "line_ending_normalization_reproduces_canonical_hashes": true,
+    "model_or_data_drift": false,
+    "era_allowlist": {
+      "canonical_lf": {
+        "sha256": "be0c212a8e910f56dbdae4e1e134fa36ce7e5e1a95e43faa1ccc9e6330f544ca",
+        "size_bytes": 1763
+      },
+      "sealed_physical": {
+        "sha256": "4ffd0ef68092d935c121b45c83a89ef67afe832b48fc259e425d3fe3f51deae7",
+        "size_bytes": 1941
+      }
+    }
+  },
+  "round2_authorized": false,
+  "schema_version": 1,
+  "scientific_decision": false,
+  "stage": "ender24-round1-execution-postmortem",
+  "state": "STOPPED_AT_ENDER24_ROUND1_EVALUATOR_PRECONDITION_FAILURE",
+  "training_components": {
+    "r1_control_seed1337": {
+      "completion": {
+        "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/receipts/r1_control_seed1337.completion.json",
+        "sha256": "5a38b9f7211155b7ce9ea71db8c6815a72940f8c999c53e7b2f0ef6d4bd65b4e",
+        "size_bytes": 1370
+      },
+      "exit_code": 0,
+      "prediction": {
+        "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/predictions/r1_control_seed1337.parquet",
+        "sha256": "3e5285e3d5b9e3dea7df8da3d121a0157fa83e91bbec371c30526a8539aced73",
+        "size_bytes": 15779944
+      },
+      "result": {
+        "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/results/r1_control_seed1337.json",
+        "sha256": "fecf817835e2794c3d9caae16a15a244ff6976636295530a34c59b5772c9b5e0",
+        "size_bytes": 6148
+      }
+    },
+    "r1_control_seed2027": {
+      "completion": {
+        "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/receipts/r1_control_seed2027.completion.json",
+        "sha256": "f33f40f537413fdd8fc80cb7d656192fbf02d906b6885723894e9fc1776653e4",
+        "size_bytes": 1369
+      },
+      "exit_code": 0,
+      "prediction": {
+        "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/predictions/r1_control_seed2027.parquet",
+        "sha256": "183e9f2d74f44e34a8b0bd36b34d86d76808ae501a1d06e46b3d33cc89ce0df0",
+        "size_bytes": 15786216
+      },
+      "result": {
+        "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/results/r1_control_seed2027.json",
+        "sha256": "4be1fc26f223275ea7dd9526706d348ca84c66aee5ecd69e3578ee11c5fa807c",
+        "size_bytes": 6144
+      }
+    },
+    "r1_ema995_seed1337": {
+      "completion": {
+        "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/receipts/r1_ema995_seed1337.completion.json",
+        "sha256": "0b6d500c571abe376ae388ace4abc56430ac8df9c5bce71be7a41657a149431f",
+        "size_bytes": 1365
+      },
+      "exit_code": 0,
+      "prediction": {
+        "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/predictions/r1_ema995_seed1337.parquet",
+        "sha256": "373110812795dc907e7ee8346b209204a73a3e242a6665cf14863aeb0abb467f",
+        "size_bytes": 15786841
+      },
+      "result": {
+        "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/results/r1_ema995_seed1337.json",
+        "sha256": "0aba98130c6d3f80b91731f59b130531f7792266338fe230ae02f581df43c194",
+        "size_bytes": 7678
+      }
+    },
+    "r1_ema995_seed2027": {
+      "completion": {
+        "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/receipts/r1_ema995_seed2027.completion.json",
+        "sha256": "c63793b84ef0e3fa03a9dc1a8c1aa167a1fb6a29863313e82259301f12f512ed",
+        "size_bytes": 1363
+      },
+      "exit_code": 0,
+      "prediction": {
+        "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/predictions/r1_ema995_seed2027.parquet",
+        "sha256": "763d8030056af4e83828ce952c86ec499452014dd9a14ba361e0daccd7f501f6",
+        "size_bytes": 15787673
+      },
+      "result": {
+        "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/results/r1_ema995_seed2027.json",
+        "sha256": "4852ad7788c13197f8a0c9ac6fc4a075974471a0db031d024a417d46332a80df",
+        "size_bytes": 7673
+      }
+    }
+  }
+}

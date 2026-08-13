@@ -1,0 +1,247 @@
+{
+  "benchmark": {
+    "file": "v5.3/ender21_discovery_benchmark_models_through_0861.parquet",
+    "model": "v53_lgbm_ender20"
+  },
+  "cv": {
+    "embargo": 13,
+    "folds": [
+      {
+        "available_train_eras": 22,
+        "first_train_era": "0161",
+        "fold": 1,
+        "last_train_era": "0245",
+        "max_train_eras": 78,
+        "model_diagnostics": {
+          "best_epoch": 5,
+          "best_val_loss": 0.04997787730269141,
+          "ema_decay": 0.995,
+          "ema_inference_state_sha256": "a608a828ec4ff0c001be60206e1db6c0b744858c8deb94d0f57be89b1fc9b21e",
+          "ema_live_state_sha256": "e67fee4c4361e76a75768a900e6d86745c96d9c695c21c9d71e61d5e49a14289",
+          "ema_shadow_state_sha256": "18ff628a8995b5ff6f6da22c5f27b15323a024b8b349163b344b5920b21d41f1",
+          "ema_updates": 324,
+          "epochs_ran": 9,
+          "final_train_loss": 0.044360844061318544,
+          "n_parameters": 2866944
+        },
+        "train_eras": 22,
+        "train_rows": 117820,
+        "val_eras": 35,
+        "val_rows": 168788
+      },
+      {
+        "available_train_eras": 57,
+        "first_train_era": "0161",
+        "fold": 2,
+        "last_train_era": "0385",
+        "max_train_eras": 78,
+        "model_diagnostics": {
+          "best_epoch": 3,
+          "best_val_loss": 0.04989334191689944,
+          "ema_decay": 0.995,
+          "ema_inference_state_sha256": "27a9e1b71926c238a37d210983804fb2dfbf3f6f5ec2cab62691d69ea8be692f",
+          "ema_live_state_sha256": "f071c53233ce94744c3fb8074e4c40aa37a5462154a24266ed0a4c728786365b",
+          "ema_shadow_state_sha256": "195833e2e99e494852986aff10d4e514503aecb8339b27ba58e2583539dc2090",
+          "ema_updates": 1421,
+          "epochs_ran": 7,
+          "final_train_loss": 0.05032678273193451,
+          "n_parameters": 2866944
+        },
+        "train_eras": 57,
+        "train_rows": 290284,
+        "val_eras": 35,
+        "val_rows": 179935
+      },
+      {
+        "available_train_eras": 92,
+        "first_train_era": "0217",
+        "fold": 3,
+        "last_train_era": "0525",
+        "max_train_eras": 78,
+        "model_diagnostics": {
+          "best_epoch": 4,
+          "best_val_loss": 0.04992237910617393,
+          "ema_decay": 0.995,
+          "ema_inference_state_sha256": "326efa7f9d55da6fca9b7a00fd1cce9738180fe8f6793707c9cea5927aea7ea4",
+          "ema_live_state_sha256": "cc885e381b744ecaaf3b3b61142524ba5a2c5565ccdaeb7e536c90601eef25af",
+          "ema_shadow_state_sha256": "aafa5fde33c2e3279bcc47d3357db96a4591cb72042d1cda1e9e383728105fd4",
+          "ema_updates": 2320,
+          "epochs_ran": 8,
+          "final_train_loss": 0.05037073778043993,
+          "n_parameters": 2866944
+        },
+        "train_eras": 78,
+        "train_rows": 394883,
+        "val_eras": 35,
+        "val_rows": 202101
+      },
+      {
+        "available_train_eras": 127,
+        "first_train_era": "0357",
+        "fold": 4,
+        "last_train_era": "0665",
+        "max_train_eras": 78,
+        "model_diagnostics": {
+          "best_epoch": 9,
+          "best_val_loss": 0.04987243129037858,
+          "ema_decay": 0.995,
+          "ema_inference_state_sha256": "78d754cd1ccf030bd3040560c5d3872f7a6868923a7ced7ce6d868ab06716ac8",
+          "ema_live_state_sha256": "0629e99fbc4f5c01eb0db1b0867e49d93c3204859141fe0a26634b1659aed0ff",
+          "ema_shadow_state_sha256": "19a50b33073915dfb971722457b93dc5b2531921aa069252ae30a1fedc5320f2",
+          "ema_updates": 3796,
+          "epochs_ran": 13,
+          "final_train_loss": 0.04978866263971456,
+          "n_parameters": 2866944
+        },
+        "train_eras": 78,
+        "train_rows": 415481,
+        "val_eras": 36,
+        "val_rows": 217538
+      }
+    ],
+    "folds_used": 4,
+    "max_train_eras": 78,
+    "min_train_size": 0,
+    "mode": "expanding",
+    "n_splits": 5
+  },
+  "data": {
+    "data_mode": "eager",
+    "data_version": "v5.3",
+    "embargo_eras": 13,
+    "era_allowlist": {
+      "era_count": 176,
+      "first_era": "0161",
+      "last_era": "0861",
+      "path": "numerai/agents/experiments/ender21_residual_stability_v53/protocol/discovery_eras_through_0861.json",
+      "sha256": "4ffd0ef68092d935c121b45c83a89ef67afe832b48fc259e425d3fe3f51deae7",
+      "size_bytes": 1941
+    },
+    "feature_set": "all",
+    "full_data_path": "v5.3/ender21_discovery_full_through_0861.parquet",
+    "full_eras": 176,
+    "full_rows": 957366,
+    "oof_eras": 141,
+    "oof_rows": 768362,
+    "require_benchmark_coverage": true,
+    "target": "target_ender_20"
+  },
+  "metrics": {
+    "bmc": {
+      "avg_corr_with_benchmark": 0.2062885709471263,
+      "max_drawdown": 0.08381711343782092,
+      "mean": 0.005293689942067713,
+      "sharpe": 0.44103223618188087,
+      "std": 0.012002954677182837
+    },
+    "bmc_last_200_eras": {
+      "avg_corr_with_benchmark": 0.2062885709471263,
+      "max_drawdown": 0.08381711343782092,
+      "mean": 0.005293689942067713,
+      "sharpe": 0.44103223618188087,
+      "std": 0.012002954677182837
+    },
+    "corr": {
+      "max_drawdown": 0.036049898079772824,
+      "mean": 0.013858334805763308,
+      "sharpe": 0.9925433290741933,
+      "std": 0.01396244818721399
+    }
+  },
+  "model": {
+    "params": {
+      "activation": "relu",
+      "amp": true,
+      "architecture": "tabm",
+      "batch_size": 1024,
+      "chronological_blocks": 4,
+      "device": "cuda",
+      "dro_temperature": 2.0,
+      "dropout": 0.1,
+      "ema_decay": 0.995,
+      "feature_center": 2.0,
+      "feature_scale": 2.0,
+      "internal_val_embargo": 13,
+      "learning_rate": 0.002,
+      "loss_mode": "chronological_block_dro",
+      "max_epochs": 30,
+      "patience": 4,
+      "prediction_batch_size": 2048,
+      "seed": 1337,
+      "tabm_arch_type": "tabm",
+      "tabm_blocks": 3,
+      "tabm_k": 64,
+      "tabm_width": 512,
+      "val_fraction": 0.1,
+      "val_split": "recent_eras",
+      "weight_decay": 0.0003
+    },
+    "target_transform": {
+      "benchmark_col": "v53_lgbm_ender20",
+      "era_col": "era",
+      "fit_intercept": true,
+      "per_era": true,
+      "proportion": 1.0,
+      "type": "residual_to_benchmark"
+    },
+    "type": "TorchTabularRegressor",
+    "x_groups": [
+      "features",
+      "era",
+      "benchmark_models"
+    ]
+  },
+  "output": {
+    "output_dir": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender24_ema_seed_stability_v53",
+    "prediction_semantics": {
+      "artifact_kind": "out_of_fold_validation",
+      "column": "prediction",
+      "era_column": "era",
+      "fold_column": "cv_fold",
+      "fold_index_base": 0,
+      "inverse_target_transform_applied": false,
+      "pipeline_postprocess": {
+        "type": "identity"
+      },
+      "producer": "model.predict",
+      "schema_version": 1,
+      "stored_target": {
+        "column": "target_ender_20",
+        "transform": {
+          "type": "identity"
+        }
+      },
+      "training_target": {
+        "column": "target_ender_20",
+        "transform": {
+          "benchmark_col": "v53_lgbm_ender20",
+          "era_col": "era",
+          "fit_intercept": true,
+          "per_era": true,
+          "proportion": 1.0,
+          "type": "residual_to_benchmark"
+        }
+      }
+    },
+    "predictions_file": "predictions\\r1_ema995_seed1337.parquet"
+  },
+  "preprocessing": {
+    "missing_value": 2.0,
+    "nan_missing_all_twos": false
+  },
+  "training": {
+    "cv": {
+      "embargo": 13,
+      "enabled": true,
+      "max_train_eras": 78,
+      "min_train_size": 0,
+      "mode": "expanding",
+      "n_splits": 5
+    },
+    "data_mode": "eager",
+    "data_sampling": {
+      "max_train_samples": 500000,
+      "sample_seed": 1337
+    }
+  }
+}
