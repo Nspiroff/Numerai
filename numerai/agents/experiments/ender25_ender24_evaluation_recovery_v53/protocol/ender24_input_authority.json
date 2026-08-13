@@ -1,0 +1,235 @@
+{
+  "schema_version": 1,
+  "authority_id": "ender25-ender24-round1-evaluation-recovery-input-authority-v1",
+  "family": "ender25_ender24_evaluation_recovery_v53",
+  "stage": "ender25-ender24-round1-evaluation-recovery",
+  "status": "SOURCE_ONLY_NOT_SEALED_NOT_AUTHORIZED",
+  "predecessor": {
+    "family": "ender24_ema_seed_stability_v53",
+    "launch_head": "7adc6724bd41689e34e8d21effa088b0ff606022",
+    "terminal_evidence_commit": "d12f75552d76ebceb7c73fa3ff0ef9c608105599",
+    "terminal_tag": "numerai-ender24-terminal",
+    "terminal_state": "STOPPED_AT_ENDER24_ROUND1_EVALUATOR_PRECONDITION_FAILURE",
+    "terminal_interpretation": "INFRASTRUCTURE_FAILURE_BEFORE_SCORING_NO_SCIENTIFIC_DECISION",
+    "old_decision_path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/receipts/round1_ema_stability.json",
+    "old_decision_required_state": "ABSENT"
+  },
+  "ender24_source_manifest": {
+    "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/source_manifest_round1.json",
+    "size_bytes": 5491,
+    "sha256": "bd55280e4a99a1b45be87cc5af73aea2615da14a4de0e0662d1ac6c008ab1b35",
+    "git_head": "a2bfe0fce7ac1a6a6b075a65b8538aa32165e3c6"
+  },
+  "ender24_execution_postmortem": {
+    "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/receipts/round1_execution_postmortem.json",
+    "size_bytes": 5922,
+    "sha256": "60acca8896fab9e97d2c559b951019da901fc033fb2b2e65d35d0e7b5101ed03"
+  },
+  "cohort_law": {
+    "member_count": 4,
+    "variants_in_order": [
+      "control",
+      "ema995"
+    ],
+    "seeds_in_order": [
+      1337,
+      2027
+    ],
+    "exact_members_in_preflight_order": [
+      "r1_control_seed1337",
+      "r1_ema995_seed1337",
+      "r1_control_seed2027",
+      "r1_ema995_seed2027"
+    ],
+    "all_completion_envelopes_preflight_before_payload_parsing": true,
+    "training_rerun_allowed": false,
+    "replacement_member_allowed": false,
+    "additional_member_allowed": false
+  },
+  "cohort": [
+    {
+      "member_id": "r1_control_seed1337",
+      "variant": "control",
+      "seed": 1337,
+      "completion": {
+        "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/receipts/r1_control_seed1337.completion.json",
+        "size_bytes": 1370,
+        "sha256": "5a38b9f7211155b7ce9ea71db8c6815a72940f8c999c53e7b2f0ef6d4bd65b4e"
+      },
+      "result": {
+        "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/results/r1_control_seed1337.json",
+        "size_bytes": 6148,
+        "sha256": "fecf817835e2794c3d9caae16a15a244ff6976636295530a34c59b5772c9b5e0"
+      },
+      "prediction": {
+        "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/predictions/r1_control_seed1337.parquet",
+        "size_bytes": 15779944,
+        "sha256": "3e5285e3d5b9e3dea7df8da3d121a0157fa83e91bbec371c30526a8539aced73"
+      }
+    },
+    {
+      "member_id": "r1_ema995_seed1337",
+      "variant": "ema995",
+      "seed": 1337,
+      "completion": {
+        "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/receipts/r1_ema995_seed1337.completion.json",
+        "size_bytes": 1365,
+        "sha256": "0b6d500c571abe376ae388ace4abc56430ac8df9c5bce71be7a41657a149431f"
+      },
+      "result": {
+        "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/results/r1_ema995_seed1337.json",
+        "size_bytes": 7678,
+        "sha256": "0aba98130c6d3f80b91731f59b130531f7792266338fe230ae02f581df43c194"
+      },
+      "prediction": {
+        "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/predictions/r1_ema995_seed1337.parquet",
+        "size_bytes": 15786841,
+        "sha256": "373110812795dc907e7ee8346b209204a73a3e242a6665cf14863aeb0abb467f"
+      }
+    },
+    {
+      "member_id": "r1_control_seed2027",
+      "variant": "control",
+      "seed": 2027,
+      "completion": {
+        "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/receipts/r1_control_seed2027.completion.json",
+        "size_bytes": 1369,
+        "sha256": "f33f40f537413fdd8fc80cb7d656192fbf02d906b6885723894e9fc1776653e4"
+      },
+      "result": {
+        "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/results/r1_control_seed2027.json",
+        "size_bytes": 6144,
+        "sha256": "4be1fc26f223275ea7dd9526706d348ca84c66aee5ecd69e3578ee11c5fa807c"
+      },
+      "prediction": {
+        "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/predictions/r1_control_seed2027.parquet",
+        "size_bytes": 15786216,
+        "sha256": "183e9f2d74f44e34a8b0bd36b34d86d76808ae501a1d06e46b3d33cc89ce0df0"
+      }
+    },
+    {
+      "member_id": "r1_ema995_seed2027",
+      "variant": "ema995",
+      "seed": 2027,
+      "completion": {
+        "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/receipts/r1_ema995_seed2027.completion.json",
+        "size_bytes": 1363,
+        "sha256": "c63793b84ef0e3fa03a9dc1a8c1aa167a1fb6a29863313e82259301f12f512ed"
+      },
+      "result": {
+        "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/results/r1_ema995_seed2027.json",
+        "size_bytes": 7673,
+        "sha256": "4852ad7788c13197f8a0c9ac6fc4a075974471a0db031d024a417d46332a80df"
+      },
+      "prediction": {
+        "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/predictions/r1_ema995_seed2027.parquet",
+        "size_bytes": 15787673,
+        "sha256": "763d8030056af4e83828ce952c86ec499452014dd9a14ba361e0daccd7f501f6"
+      }
+    }
+  ],
+  "external_inputs": [
+    {
+      "logical_id": "full_training_parquet",
+      "path_authority": "ender24_source_manifest",
+      "size_bytes": 1302848771,
+      "sha256": "476d561ba8515a0066e892c5489a5ae1db6443587e9d5d06a9a6280400a701b9"
+    },
+    {
+      "logical_id": "benchmark_models_parquet",
+      "path_authority": "ender24_source_manifest",
+      "size_bytes": 23325224,
+      "sha256": "c2db9a77811390e9b9c47926b62fbfb7a6c7af24bb9c4db63137798e61b955b6"
+    }
+  ],
+  "text_authority_law": {
+    "physical_identity_source": "future_sealed_source_manifest_evaluation_recovery.json",
+    "physical_identity_required_before_decode": true,
+    "decode": "UTF-8_STRICT",
+    "bom_allowed": false,
+    "nul_allowed": false,
+    "bare_cr_allowed": false,
+    "mixed_newline_styles_allowed": false,
+    "permitted_newline_profiles": [
+      "ALL_LF",
+      "ALL_CRLF"
+    ],
+    "normalization": "ALL_CRLF_TO_LF_OTHERWISE_IDENTITY",
+    "canonical_identity_required_after_normalization": true,
+    "exact_semantic_validation_required": true
+  },
+  "text_authorities": {
+    "era_allowlist": {
+      "path": "numerai/agents/experiments/ender21_residual_stability_v53/protocol/discovery_eras_through_0861.json",
+      "known_crlf_physical_identity": {
+        "size_bytes": 1941,
+        "sha256": "4ffd0ef68092d935c121b45c83a89ef67afe832b48fc259e425d3fe3f51deae7"
+      },
+      "canonical_lf_identity": {
+        "size_bytes": 1763,
+        "sha256": "be0c212a8e910f56dbdae4e1e134fa36ce7e5e1a95e43faa1ccc9e6330f544ca"
+      },
+      "semantics": {
+        "json_top_level_type": "list",
+        "count": 176,
+        "unique": true,
+        "ordered": true,
+        "first": "0161",
+        "last": "0861",
+        "exact_generation_law": "[f'{era:04d}' for era in range(161, 862, 4)]"
+      }
+    },
+    "feature_columns": {
+      "path": "numerai/agents/experiments/ender21_residual_stability_v53/protocol/feature_columns_all_v53.json",
+      "known_crlf_physical_identity": {
+        "size_bytes": 151736,
+        "sha256": "e4df25383aff5ddf9446df275f55a8a93ca64f926a842f4cf84a68280adf769d"
+      },
+      "canonical_lf_identity": {
+        "size_bytes": 148179,
+        "sha256": "663184191e17d2fa4fac6dae017890f0e762368e638d46cfaa489297b9b2049b"
+      },
+      "semantics": {
+        "json_top_level_type": "list",
+        "count": 3555,
+        "unique": true,
+        "ordered": true,
+        "order_authority": "EXISTING_COMMITTED_ORDER",
+        "reorder_allowed": false,
+        "substitution_allowed": false,
+        "duplicate_allowed": false
+      }
+    }
+  },
+  "future_execution": {
+    "source_manifest_path": "numerai/agents/experiments/ender25_ender24_evaluation_recovery_v53/source_manifest_evaluation_recovery.json",
+    "source_manifest_source_gate_state": "ABSENT",
+    "source_manifest_required_at_authorized_execution": "COMMITTED_CLEAN_MANIFEST_ONLY_SEAL",
+    "decision_path": "numerai/agents/experiments/ender25_ender24_evaluation_recovery_v53/receipts/ender24_round1_recovery_decision.json",
+    "decision_write_mode": "CREATE_NEW",
+    "allowed_invocation_count": 1,
+    "retry_allowed": false,
+    "training_rerun_allowed": false,
+    "scientific_terminal_states": [
+      "ENDER25_ROUND2_SOURCE_GATE_AUTHORIZED",
+      "ENDER25_NEGATIVE_NO_EMA_STABILITY_GAIN"
+    ],
+    "positive_state_authority": "AUTHOR_SEPARATELY_REVIEWED_ROUND2_SOURCE_GATE_ONLY",
+    "round2_launch_requires_later_explicit_authorization": true
+  },
+  "current_authority": {
+    "create_source_manifest": false,
+    "read_preserved_artifacts": false,
+    "read_numerai_data": false,
+    "evaluate": false,
+    "score": false,
+    "publish_decision": false,
+    "train": false,
+    "author_round2_source_gate": false,
+    "create_round2_manifest": false,
+    "launch_round2": false,
+    "submit": false,
+    "deploy": false,
+    "numerai_account_action": false
+  }
+}
