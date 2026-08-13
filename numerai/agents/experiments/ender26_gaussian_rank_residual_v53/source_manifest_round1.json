@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "frozen_at": "2026-08-13T19:55:02Z",
+  "git_head": "18ea8bbae1976fadf2574cce8c6c231c7fd2dc5d",
+  "hash_algorithm": "sha256",
+  "files": {
+    "numerai/agents/code/metrics/numerai_metrics.py": "c22774ce80b496a388036c16d42f71c75c962625cc2de26de3429ec09387bcc8",
+    "numerai/agents/code/modeling/__main__.py": "1afe751e1f1da1247c76318f1f376279cce9122cb22922911a1ff7b97d63ae49",
+    "numerai/agents/code/modeling/models/torch_tabular_regressor.py": "f0e881cb01dfbfd061d7fb2615b04b304d95e947481ef75d6b0a36c21f888294",
+    "numerai/agents/code/modeling/utils/cli.py": "79d8712f244ddd57820692242259fb76e0bceeed87a61f6e6c2c48487750a371",
+    "numerai/agents/code/modeling/utils/config.py": "5f99c6608eb33e11ab0d6ae886212de2828f13d669dafd26734e4fec128c59b0",
+    "numerai/agents/code/modeling/utils/constants.py": "3efc9621c52e7dc8cc0fd39e3c2ac576a2d3b55d6d0cb3008488ab404793a4d7",
+    "numerai/agents/code/modeling/utils/data.py": "4a16ee681bebd3e7e456bed34490e636268afbe199c235d02e369854930f9409",
+    "numerai/agents/code/modeling/utils/model_data.py": "2ef96af4ac8c30ed613e8c25f95d897c84e4c6ae955acfdb5719277111919077",
+    "numerai/agents/code/modeling/utils/model_factory.py": "2b913deb53d223aaf21028eb4ab0cceb10f4e09fecffe9e8fce4682a8bab9cff",
+    "numerai/agents/code/modeling/utils/numerai_cv.py": "1d08e19d8ed7208ecd0ce03c0e21a0677e6a836fac80ea59bcf9ff2b592245f4",
+    "numerai/agents/code/modeling/utils/pipeline.py": "7dac7e0c169264a71e4063fec1912312b622e0847788a54ddf95766d7bf32458",
+    "numerai/agents/code/modeling/utils/target_transforms.py": "210c4d78d6e4ed19ea518454e852662ab080f0724121c689b98f0fe8aaec225f",
+    "numerai/agents/experiments/ender21_residual_stability_v53/protocol/discovery_eras_through_0861.json": "4ffd0ef68092d935c121b45c83a89ef67afe832b48fc259e425d3fe3f51deae7",
+    "numerai/agents/experiments/ender21_residual_stability_v53/protocol/feature_columns_all_v53.json": "e4df25383aff5ddf9446df275f55a8a93ca64f926a842f4cf84a68280adf769d",
+    "numerai/agents/experiments/ender26_gaussian_rank_residual_v53/configs/base_r1.py": "f89ee1de7f5c39324c5c04c5b39ff86d34e4607e92a5724133c6042cd8518047",
+    "numerai/agents/experiments/ender26_gaussian_rank_residual_v53/configs/r1_control_rawresid_seed1337.py": "97091413c0f61387549ea997f3a5a1144213fb5d46d0b2778c0e23a307b3edcf",
+    "numerai/agents/experiments/ender26_gaussian_rank_residual_v53/configs/r1_control_rawresid_seed2027.py": "bf11ac77e8cc9373c378e90bae399598c41aeb17498241c3d3169776f77bce5f",
+    "numerai/agents/experiments/ender26_gaussian_rank_residual_v53/configs/r1_grank_resid_seed1337.py": "0a79882293782a65b656a57aea0947cc16a4ac93225ae8a4a62944f1d10c0442",
+    "numerai/agents/experiments/ender26_gaussian_rank_residual_v53/configs/r1_grank_resid_seed2027.py": "a04b92bfed03d4437d78a169763cacdfdb375ab92131220738493e347335ddcb",
+    "numerai/agents/experiments/ender26_gaussian_rank_residual_v53/evaluate_round1.py": "15552905a4446317f8607c50c097a9fd4a2e48c83e6c54d750150956ee5ea429",
+    "numerai/agents/experiments/ender26_gaussian_rank_residual_v53/evaluate_round1_impl.py": "66fae7f913838668a4bb8c5bc1c4a7afa44737d8e83d6eb879e1dcda9d34408d",
+    "numerai/agents/experiments/ender26_gaussian_rank_residual_v53/evaluation_common.py": "f4d2dd8a261016b4b19c02f902a8484b6b7c9e53aa360d03946b84707b98eb85",
+    "numerai/agents/experiments/ender26_gaussian_rank_residual_v53/experiment.md": "0169ccdaa2d662afc0fba8525f50ae432e2de8317cac3905d4c1e06d8f5e9556",
+    "numerai/agents/experiments/ender26_gaussian_rank_residual_v53/gate.md": "d2b7365cb2e48ef16de05155ef0921cf0eeab1a25ef8101e2ba2490ef5321bd1",
+    "numerai/agents/experiments/ender26_gaussian_rank_residual_v53/protocol/discovery_data_authority.json": "8ddce78ce4495829919374ecc02bf996ccf930d2aba5fdeec56577eb55670652",
+    "numerai/agents/experiments/ender26_gaussian_rank_residual_v53/run_round1.py": "9c9d2e12e421b4c7d6fce0dbc69a9f32686bc9579f12da1e2d27dbc238ab99d9",
+    "numerai/agents/experiments/ender26_gaussian_rank_residual_v53/training_bootstrap.py": "51c57e07069e5b3e1cd84c240646d9e85a93aba27836dc5c5994c2bd766314de",
+    "numerai/agents/tests/test_ender26_evaluator.py": "8ea5146802a6c1a31997e8e11e46cfac457e550179648ce91a1145f3e0111e75",
+    "numerai/agents/tests/test_ender26_gaussian_rank_residual.py": "c6307d562eae2bb02d6d9f3f13cc7cab7b26436164fd9bfcd082ed8b8bf75991",
+    "numerai/agents/tests/test_ender26_pipeline_custody.py": "00165bb6954326ed0754e8558fea3df16f4716fff5f8d5580e580fd7ed323713",
+    "numerai/agents/tests/test_target_transforms.py": "eade347cb76250ba1be7600dbd7a77b7c7829843753b9c343fde4950a5100b85"
+  },
+  "external_artifacts": {
+    "numerai/v5.3/ender21_discovery_benchmark_models_through_0861.parquet": {
+      "last_era": "0861",
+      "sha256": "c2db9a77811390e9b9c47926b62fbfb7a6c7af24bb9c4db63137798e61b955b6",
+      "size_bytes": 23325224
+    },
+    "numerai/v5.3/ender21_discovery_full_through_0861.parquet": {
+      "last_era": "0861",
+      "sha256": "476d561ba8515a0066e892c5489a5ae1db6443587e9d5d06a9a6280400a701b9",
+      "size_bytes": 1302848771
+    }
+  },
+  "runtime": {
+    "python": "3.13.14",
+    "packages": {
+      "numpy": "2.5.1",
+      "pandas": "3.0.5",
+      "pyarrow": "25.0.0",
+      "numerai-tools": "0.6.0",
+      "numerapi": "2.23.3",
+      "torch": "2.13.0+cu130",
+      "tabm": "0.0.3",
+      "rtdl-num-embeddings": "0.0.12",
+      "scipy": "1.18.0",
+      "scikit-learn": "1.9.0"
+    }
+  }
+}
