@@ -11,6 +11,14 @@ staking, submission, or Numerai account mutation is authorized. Ender20,
 Ender21, Ender22, and Ender23 are closed research families; their frozen
 artifacts and decision records must not be overwritten or reused as new runs.
 
+## Active source-only design
+
+[Ender24 EMA seed stability](ender24_ema_seed_stability_v53/experiment.md) is
+the only active research design. It tests one fixed EMA weight-stabilization
+procedure against matched model seeds. Its current scaffold authorizes source
+review and synthetic tests only: it has no source manifest, data access,
+training, scoring, output, confirmation, deployment, or account authority.
+
 ## Ender20-23 outcome chain
 
 | Family | Terminal state | Key conclusion | Canonical record | Archival point |

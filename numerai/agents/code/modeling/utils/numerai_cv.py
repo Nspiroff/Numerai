@@ -171,6 +171,18 @@ def build_oof_predictions(
             model_diagnostics["final_train_loss"] = float(
                 training_history[-1]["train_loss"]
             )
+        ema_decay = getattr(model, "ema_decay", None)
+        if ema_decay is not None:
+            model_diagnostics["ema_decay"] = float(ema_decay)
+            model_diagnostics["ema_updates"] = int(model.ema_updates_)
+            for attribute, key in (
+                ("ema_live_state_sha256_", "ema_live_state_sha256"),
+                ("ema_shadow_state_sha256_", "ema_shadow_state_sha256"),
+                ("ema_inference_state_sha256_", "ema_inference_state_sha256"),
+            ):
+                value = getattr(model, attribute, None)
+                if value is not None:
+                    model_diagnostics[key] = str(value)
         effective_device_type = getattr(model, "effective_device_type_", None)
         if effective_device_type is not None:
             model_diagnostics["effective_device_type"] = str(
