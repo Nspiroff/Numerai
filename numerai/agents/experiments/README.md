@@ -15,15 +15,19 @@ artifacts and decision records must not be overwritten or reused as new runs.
 
 [Ender24 EMA seed stability](ender24_ema_seed_stability_v53/experiment.md) is
 the only active research design. It tests one fixed EMA weight-stabilization
-procedure against matched model seeds. Its Round-1 execution/evaluation source
-layer is being reviewed under GitHub issue #5, but it still authorizes source
-review and synthetic tests only: it has no source manifest, data access,
-training, scoring, output, confirmation, deployment, or account authority.
+procedure against matched model seeds. Round 1 is source-reviewed and sealed:
+the [mechanical-activity receipt](ender24_ema_seed_stability_v53/protocol/mechanical_activity_receipt.json)
+records 12/12 passing proofs, and the
+[source manifest](ender24_ema_seed_stability_v53/source_manifest_round1.json)
+binds the exact 31-file source/evidence set, runtime, and two discovery-input
+receipts. The immutable Git chain is source merge `aebc577`, receipt-only
+`a2bfe0f`, manifest-only `5a1a75d`, and seal merge `789a91f`.
 
-The next admissible checkpoint is a reviewed source-only pull request. A later
-manifest-only seal must separately bind the exact source, mechanical-activity
-evidence, runtime, and discovery inputs. Even that seal will not authorize a
-run without a new explicit launch decision.
+Current state: `ROUND1_SEALED_AWAITING_EXPLICIT_LAUNCH_AUTHORITY`. No Ender24
+training or scoring has occurred. The next admissible action is a separate
+pre-launch audit and explicit launch decision for exactly four one-shot
+Round-1 runs. The seal itself grants no data access, output reservation,
+training, scoring, confirmation, deployment, or account authority.
 
 ## Ender20-23 outcome chain
 
