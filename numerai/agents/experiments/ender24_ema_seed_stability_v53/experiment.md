@@ -1,7 +1,8 @@
 # Ender24 EMA model-seed stability experiment
 
-Status: **frozen source-only scaffold; no manifest, data access, training, or
-scoring is authorized by this document**.
+Status: **frozen source-only Round-1 execution scaffold; the required source
+manifest and mechanical-activity receipt do not exist, so no data access,
+training, scoring, or evaluation is authorized by this document**.
 
 ## Hypothesis and boundary
 
@@ -56,6 +57,39 @@ Before any source manifest is created, deterministic synthetic tests must prove:
 
 Failure of any proof ends the family before data access.
 
+The future manifest-only seal must bind a create-new
+`protocol/mechanical_activity_receipt.json` that records those proofs against
+the exact frozen source. This source-only step does not create that receipt.
+
+## Frozen future Round-1 execution contract
+
+`run_round1.py` and `training_bootstrap.py` are inert source until the separate
+manifest-only seal and later explicit launch authority exist. The bootstrap
+accepts only the four Round-1 names below. It reserves each run's exact
+`predictions/<name>.parquet`, `results/<name>.json`, and
+`receipts/<name>.completion.json` paths with create-new handles before opening
+the manifest or either target-bearing discovery artifact. A failed, partial,
+or duplicate reservation permanently invalidates the indivisible matched
+round; it is not a retry opportunity. Every successful component completion
+uses stage `ender24-round1-training-completion` and binds the exact held
+manifest, config hash, and finalized prediction/result handle identities.
+
+The evaluator must reserve exactly
+`receipts/round1_ema_stability.json` before manifest access, validate all four
+completion receipts before reading any prediction or result, and emit stage
+`ender24-round1-ema-seed-stability`. Its only terminal states are
+`ROUND2_AUTHORIZED` and `NEGATIVE_NO_EMA_STABILITY_GAIN`. The pass state selects
+the predeclared EMA procedure, never a favorable seed.
+
+The proposed Round-1 manifest file set is exactly 31 paths: the 12 shared
+modeling/metric sources; the two reused Ender21 authority lists; this
+experiment, gate, discovery authority, and future mechanical-activity receipt;
+the base plus six exact configs; the Round-1 bootstrap, launcher, evaluator
+common/wrapper/implementation; and
+`test_ender24_ema_seed_stability.py`. Its external-artifact set is exactly the
+two Ender21 discovery Parquets through era 0861. Neither set may be broadened
+at seal time.
+
 ## Round 1: two matched seed pairs
 
 Exactly four one-shot runs are predeclared:
@@ -95,6 +129,9 @@ Round 2.
 Exactly two new runs are permitted only after a Round-1 pass:
 `r2_control_seed7331` and `r2_ema995_seed7331`, both with model seed 7331 and
 sample seed 1337. Round-1 artifacts remain immutable evidence and are not rerun.
+No Round-2 launcher, evaluator, bootstrap branch, or manifest is included in
+the Round-1 execution scaffold; those require a separate source review after
+the exact `ROUND2_AUTHORIZED` decision exists.
 
 Across exact model seeds `{1337, 2027, 7331}`, EMA passes only if:
 
