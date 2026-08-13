@@ -1,0 +1,348 @@
+{
+  "ensemble": {
+    "checks": {
+      "all_used_folds_bmc_positive": true,
+      "benchmark_corr_below_0_25": true,
+      "corr_at_least_0_005": true,
+      "corr_below_0_04": true,
+      "drawdown_no_greater_than_control": false,
+      "full_bmc_positive": true,
+      "full_bmc_retains_90pct_control": true,
+      "recent40_gain_at_least_0_00030": true,
+      "recent40_retains_80pct_candidate_full": true,
+      "sharpe_not_below_control_minus_0_05": false,
+      "three_of_four_recent_blocks_positive": true,
+      "worst_recent_block_above_minus_0_001": true
+    },
+    "definition": "equal mean of three within-era average percentile ranks; no rerank",
+    "metrics": {
+      "avg_corr_with_benchmark": 0.1430074698118185,
+      "bmc": {
+        "max_drawdown": 0.044283549474130615,
+        "mean": 0.006377607655115248,
+        "sharpe": 0.5919715368874023,
+        "std": 0.010773503889475549
+      },
+      "corr_mean": 0.012358663715254112,
+      "fold_bmc_mean": {
+        "1": 0.0017672377234637703,
+        "2": 0.00676699048974154,
+        "3": 0.009198085741637867,
+        "4": 0.007739213637548297
+      },
+      "recent40_bmc_mean": 0.007949862701643504,
+      "recent_blocks_bmc_mean": {
+        "0705-0741": 0.009668436831836383,
+        "0745-0781": 0.010642693396302302,
+        "0785-0821": 0.008422229071693623,
+        "0825-0861": 0.003066091506741704
+      }
+    },
+    "passed": false
+  },
+  "individual_requirement_passed": true,
+  "passed_count": 2,
+  "realizations": {
+    "r1_recent_window78": {
+      "checks": {
+        "all_used_folds_bmc_positive": true,
+        "benchmark_corr_below_0_25": true,
+        "corr_at_least_0_005": true,
+        "corr_below_0_04": true,
+        "drawdown_no_greater_than_base_control": true,
+        "full_bmc_retains_90pct_base_control": true,
+        "recent40_at_least_base_control": true,
+        "sharpe_not_below_base_control_minus_0_05": true,
+        "three_of_four_recent_blocks_positive": true,
+        "worst_recent_block_above_minus_0_001": true
+      },
+      "passed": true,
+      "record": {
+        "artifacts": {
+          "completion": {
+            "path": "C:/Users/Shadow/Desktop/example-scripts/numerai/agents/experiments/ender23_temporal_retention_v53/receipts/r1_recent_window78.completion.json",
+            "sha256": "4b3380cd64e41a4c13ae2a6d0f44bbe45884fb80cdb5b6627a3e0a99a5cbbf99",
+            "size_bytes": 1363
+          },
+          "config": {
+            "path": "C:/Users/Shadow/Desktop/example-scripts/numerai/agents/experiments/ender23_temporal_retention_v53/configs/r1_recent_window78.py",
+            "sha256": "b4f7070ec28c13609b9f1b2935996b960b2214ffe76b4e7af25caa0bdda379cf",
+            "size_bytes": 179
+          },
+          "prediction": {
+            "path": "C:/Users/Shadow/Desktop/example-scripts/numerai/agents/experiments/ender23_temporal_retention_v53/predictions/r1_recent_window78.parquet",
+            "sha256": "3e5285e3d5b9e3dea7df8da3d121a0157fa83e91bbec371c30526a8539aced73",
+            "size_bytes": 15779944
+          },
+          "result": {
+            "path": "C:/Users/Shadow/Desktop/example-scripts/numerai/agents/experiments/ender23_temporal_retention_v53/results/r1_recent_window78.json",
+            "sha256": "399d3bf16c9efae734a13653ee4b7f744080350fd774a4c94e8e6e02c2012d1c",
+            "size_bytes": 6147
+          }
+        },
+        "eras": 141,
+        "first_era": "0301",
+        "last_era": "0861",
+        "metrics": {
+          "avg_corr_with_benchmark": 0.09426613361228738,
+          "bmc": {
+            "max_drawdown": 0.04361362545889927,
+            "mean": 0.006664911685985717,
+            "sharpe": 0.6290597832999971,
+            "std": 0.010595037010667135
+          },
+          "corr_mean": 0.010706598203043503,
+          "fold_bmc_mean": {
+            "1": 0.0025533472216259,
+            "2": 0.007086776409377295,
+            "3": 0.008564303749308676,
+            "4": 0.008405488594807518
+          },
+          "recent40_bmc_mean": 0.008490224382548142,
+          "recent_blocks_bmc_mean": {
+            "0705-0741": 0.009938452293358671,
+            "0745-0781": 0.011171348584415475,
+            "0785-0821": 0.008998627719899554,
+            "0825-0861": 0.0038524689325188655
+          }
+        },
+        "provenance": {
+          "component": "r1_recent_window78",
+          "config": {
+            "path": "numerai/agents/experiments/ender23_temporal_retention_v53/configs/r1_recent_window78.py",
+            "sha256": "b4f7070ec28c13609b9f1b2935996b960b2214ffe76b4e7af25caa0bdda379cf"
+          },
+          "manifest": {
+            "git_head": "967cd78546c2d431759bea85a034750760d35775",
+            "path": "numerai/agents/experiments/ender23_temporal_retention_v53/source_manifest_round1.json",
+            "sha256": "3e96b4b80a1ae4f877c6418bd6655a055710641e7d5e10677d32478af6ae8952"
+          },
+          "outputs": {
+            "predictions": {
+              "device": 6109702118523114368,
+              "inode": 7318349395499382,
+              "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender23_temporal_retention_v53\\predictions\\r1_recent_window78.parquet",
+              "sha256": "3e5285e3d5b9e3dea7df8da3d121a0157fa83e91bbec371c30526a8539aced73",
+              "size_bytes": 15779944
+            },
+            "result": {
+              "device": 6109702118523114368,
+              "inode": 3096224744839543,
+              "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender23_temporal_retention_v53\\results\\r1_recent_window78.json",
+              "sha256": "399d3bf16c9efae734a13653ee4b7f744080350fd774a4c94e8e6e02c2012d1c",
+              "size_bytes": 6147
+            }
+          },
+          "schema_version": 1,
+          "stage": "ender23-round1-training-completion",
+          "state": "OUTPUTS_FINALIZED"
+        },
+        "rows": 768362
+      }
+    },
+    "r2_recent_window78_model_seed2027": {
+      "checks": {
+        "all_used_folds_bmc_positive": true,
+        "benchmark_corr_below_0_25": true,
+        "corr_at_least_0_005": true,
+        "corr_below_0_04": true,
+        "drawdown_no_greater_than_base_control": false,
+        "full_bmc_retains_90pct_base_control": false,
+        "recent40_at_least_base_control": false,
+        "sharpe_not_below_base_control_minus_0_05": false,
+        "three_of_four_recent_blocks_positive": true,
+        "worst_recent_block_above_minus_0_001": true
+      },
+      "passed": false,
+      "record": {
+        "artifacts": {
+          "completion": {
+            "path": "C:/Users/Shadow/Desktop/example-scripts/numerai/agents/experiments/ender23_temporal_retention_v53/receipts/r2_recent_window78_model_seed2027.completion.json",
+            "sha256": "f8b1dbc47826ea590e28e7591fc3692afdf4367b39928b6bd0ed92746034f311",
+            "size_bytes": 1424
+          },
+          "config": {
+            "path": "C:/Users/Shadow/Desktop/example-scripts/numerai/agents/experiments/ender23_temporal_retention_v53/configs/r2_recent_window78_model_seed2027.py",
+            "sha256": "c94ee69ab1c337e17c8ce5b0cb5e59d6ae6e71e6dcc35b60917498760476d01f",
+            "size_bytes": 226
+          },
+          "prediction": {
+            "path": "C:/Users/Shadow/Desktop/example-scripts/numerai/agents/experiments/ender23_temporal_retention_v53/predictions/r2_recent_window78_model_seed2027.parquet",
+            "sha256": "183e9f2d74f44e34a8b0bd36b34d86d76808ae501a1d06e46b3d33cc89ce0df0",
+            "size_bytes": 15786216
+          },
+          "result": {
+            "path": "C:/Users/Shadow/Desktop/example-scripts/numerai/agents/experiments/ender23_temporal_retention_v53/results/r2_recent_window78_model_seed2027.json",
+            "sha256": "1a101bcaaa7ca452587803fe101fa6aee3e78350b4db39939149988bf1a7a7f8",
+            "size_bytes": 6158
+          }
+        },
+        "eras": 141,
+        "first_era": "0301",
+        "last_era": "0861",
+        "metrics": {
+          "avg_corr_with_benchmark": 0.2140816674471981,
+          "bmc": {
+            "max_drawdown": 0.05825455222025591,
+            "mean": 0.004957941042692131,
+            "sharpe": 0.4406625489351802,
+            "std": 0.011251105987274234
+          },
+          "corr_mean": 0.013883286525787852,
+          "fold_bmc_mean": {
+            "1": 0.00027958917398765773,
+            "2": 0.004430976311528405,
+            "3": 0.009647265664754285,
+            "4": 0.0054595999100035646
+          },
+          "recent40_bmc_mean": 0.00585868436892766,
+          "recent_blocks_bmc_mean": {
+            "0705-0741": 0.007807250744614878,
+            "0745-0781": 0.007862119323628996,
+            "0785-0821": 0.006613825144808717,
+            "0825-0861": 0.0011515422626580515
+          }
+        },
+        "provenance": {
+          "component": "r2_recent_window78_model_seed2027",
+          "config": {
+            "path": "numerai/agents/experiments/ender23_temporal_retention_v53/configs/r2_recent_window78_model_seed2027.py",
+            "sha256": "c94ee69ab1c337e17c8ce5b0cb5e59d6ae6e71e6dcc35b60917498760476d01f"
+          },
+          "manifest": {
+            "git_head": "8bc9b4f172f1afa93754cfe94549b65c3e87ee2b",
+            "path": "numerai/agents/experiments/ender23_temporal_retention_v53/source_manifest_round2.json",
+            "sha256": "69e813bf5424aa7f83b1d034c6a460e86012b566cf7d086437ab3fc5a2ac764d"
+          },
+          "outputs": {
+            "predictions": {
+              "device": 6109702118523114368,
+              "inode": 66991044457289786,
+              "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender23_temporal_retention_v53\\predictions\\r2_recent_window78_model_seed2027.parquet",
+              "sha256": "183e9f2d74f44e34a8b0bd36b34d86d76808ae501a1d06e46b3d33cc89ce0df0",
+              "size_bytes": 15786216
+            },
+            "result": {
+              "device": 6109702118523114368,
+              "inode": 3377699721550244,
+              "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender23_temporal_retention_v53\\results\\r2_recent_window78_model_seed2027.json",
+              "sha256": "1a101bcaaa7ca452587803fe101fa6aee3e78350b4db39939149988bf1a7a7f8",
+              "size_bytes": 6158
+            }
+          },
+          "schema_version": 1,
+          "stage": "ender23-round2-training-completion",
+          "state": "OUTPUTS_FINALIZED"
+        },
+        "rows": 768362
+      }
+    },
+    "r2_recent_window78_sample_seed2027": {
+      "checks": {
+        "all_used_folds_bmc_positive": true,
+        "benchmark_corr_below_0_25": true,
+        "corr_at_least_0_005": true,
+        "corr_below_0_04": true,
+        "drawdown_no_greater_than_base_control": true,
+        "full_bmc_retains_90pct_base_control": true,
+        "recent40_at_least_base_control": true,
+        "sharpe_not_below_base_control_minus_0_05": true,
+        "three_of_four_recent_blocks_positive": true,
+        "worst_recent_block_above_minus_0_001": true
+      },
+      "passed": true,
+      "record": {
+        "artifacts": {
+          "completion": {
+            "path": "C:/Users/Shadow/Desktop/example-scripts/numerai/agents/experiments/ender23_temporal_retention_v53/receipts/r2_recent_window78_sample_seed2027.completion.json",
+            "sha256": "ce83ad4dc2060d4da1c59feea4cefeee1d8d3a8eb574de9915ffed359b90bc95",
+            "size_bytes": 1427
+          },
+          "config": {
+            "path": "C:/Users/Shadow/Desktop/example-scripts/numerai/agents/experiments/ender23_temporal_retention_v53/configs/r2_recent_window78_sample_seed2027.py",
+            "sha256": "ef7d318f2f27fb9808499f6e438bf67cf982c2b8fbe404c1641edf28e9b12dd7",
+            "size_bytes": 228
+          },
+          "prediction": {
+            "path": "C:/Users/Shadow/Desktop/example-scripts/numerai/agents/experiments/ender23_temporal_retention_v53/predictions/r2_recent_window78_sample_seed2027.parquet",
+            "sha256": "3e5285e3d5b9e3dea7df8da3d121a0157fa83e91bbec371c30526a8539aced73",
+            "size_bytes": 15779944
+          },
+          "result": {
+            "path": "C:/Users/Shadow/Desktop/example-scripts/numerai/agents/experiments/ender23_temporal_retention_v53/results/r2_recent_window78_sample_seed2027.json",
+            "sha256": "a8b6ae1b9539a45f95e2ad9aeed0fbbe4c0b5e57fd8a5a4c2de025acd8d123df",
+            "size_bytes": 6163
+          }
+        },
+        "eras": 141,
+        "first_era": "0301",
+        "last_era": "0861",
+        "metrics": {
+          "avg_corr_with_benchmark": 0.09426613361228738,
+          "bmc": {
+            "max_drawdown": 0.04361362545889927,
+            "mean": 0.006664911685985717,
+            "sharpe": 0.6290597832999971,
+            "std": 0.010595037010667135
+          },
+          "corr_mean": 0.010706598203043503,
+          "fold_bmc_mean": {
+            "1": 0.0025533472216259,
+            "2": 0.007086776409377295,
+            "3": 0.008564303749308676,
+            "4": 0.008405488594807518
+          },
+          "recent40_bmc_mean": 0.008490224382548142,
+          "recent_blocks_bmc_mean": {
+            "0705-0741": 0.009938452293358671,
+            "0745-0781": 0.011171348584415475,
+            "0785-0821": 0.008998627719899554,
+            "0825-0861": 0.0038524689325188655
+          }
+        },
+        "provenance": {
+          "component": "r2_recent_window78_sample_seed2027",
+          "config": {
+            "path": "numerai/agents/experiments/ender23_temporal_retention_v53/configs/r2_recent_window78_sample_seed2027.py",
+            "sha256": "ef7d318f2f27fb9808499f6e438bf67cf982c2b8fbe404c1641edf28e9b12dd7"
+          },
+          "manifest": {
+            "git_head": "8bc9b4f172f1afa93754cfe94549b65c3e87ee2b",
+            "path": "numerai/agents/experiments/ender23_temporal_retention_v53/source_manifest_round2.json",
+            "sha256": "69e813bf5424aa7f83b1d034c6a460e86012b566cf7d086437ab3fc5a2ac764d"
+          },
+          "outputs": {
+            "predictions": {
+              "device": 6109702118523114368,
+              "inode": 7881299348920729,
+              "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender23_temporal_retention_v53\\predictions\\r2_recent_window78_sample_seed2027.parquet",
+              "sha256": "3e5285e3d5b9e3dea7df8da3d121a0157fa83e91bbec371c30526a8539aced73",
+              "size_bytes": 15779944
+            },
+            "result": {
+              "device": 6109702118523114368,
+              "inode": 5348024558524842,
+              "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender23_temporal_retention_v53\\results\\r2_recent_window78_sample_seed2027.json",
+              "sha256": "a8b6ae1b9539a45f95e2ad9aeed0fbbe4c0b5e57fd8a5a4c2de025acd8d123df",
+              "size_bytes": 6163
+            }
+          },
+          "schema_version": 1,
+          "stage": "ender23-round2-training-completion",
+          "state": "OUTPUTS_FINALIZED"
+        },
+        "rows": 768362
+      }
+    }
+  },
+  "required_count": 2,
+  "round1_receipt": {
+    "path": "C:/Users/Shadow/Desktop/example-scripts/numerai/agents/experiments/ender23_temporal_retention_v53/receipts/round1_discovery.json",
+    "sha256": "8548c0cde2f518276a5253d397c1aa846b780943ca1dc27601b98e7c7efbb925",
+    "size_bytes": 13498
+  },
+  "schema_version": 1,
+  "selected": "r1_recent_window78",
+  "stage": "ender23-round2-seed-replication",
+  "state": "NEGATIVE_SEED_INSTABILITY"
+}

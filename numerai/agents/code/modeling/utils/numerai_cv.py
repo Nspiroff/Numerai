@@ -97,6 +97,17 @@ def build_oof_predictions(
     cv_embargo = int(cv_config.get("embargo", 13))
     cv_mode = cv_config.get("mode", "expanding")
     cv_min_train_size = int(cv_config.get("min_train_size", 0))
+    raw_max_train_eras = cv_config.get("max_train_eras")
+    if raw_max_train_eras is None:
+        max_train_eras = None
+    elif (
+        isinstance(raw_max_train_eras, (bool, np.bool_))
+        or not isinstance(raw_max_train_eras, (int, np.integer))
+        or int(raw_max_train_eras) <= 0
+    ):
+        raise ValueError("cv.max_train_eras must be a positive integer or null")
+    else:
+        max_train_eras = int(raw_max_train_eras)
 
     splits = era_cv_splits(
         eras,
@@ -112,6 +123,9 @@ def build_oof_predictions(
     for fold_idx, (train_eras, val_eras) in enumerate(splits):
         if not train_eras or not val_eras:
             continue
+        available_train_eras = list(train_eras)
+        if max_train_eras is not None:
+            train_eras = train_eras[-max_train_eras:]
         train_data = _load_data(data_loader, train_eras)
         val_data = _load_data(data_loader, val_eras)
 
@@ -128,10 +142,67 @@ def build_oof_predictions(
             )
 
         model = build_model(
-            model_type, model_params, model_config, feature_cols=feature_cols
+            model_type,
+            model_params,
+            model_config,
+            feature_cols=feature_cols,
+            disk_materialization_max_rows=(
+                max_train_samples
+                if getattr(train_data.X, "is_disk_feature_view", False)
+                else None
+            ),
         )
         model.fit(train_data.X, train_data.y)
         preds = model.predict(val_data.X)
+
+        model_diagnostics = {}
+        best_epoch = getattr(model, "best_epoch_", None)
+        if best_epoch is not None:
+            model_diagnostics["best_epoch"] = int(best_epoch)
+        n_parameters = getattr(model, "n_parameters_", None)
+        if n_parameters is not None:
+            model_diagnostics["n_parameters"] = int(n_parameters)
+        training_history = getattr(model, "training_history_", None)
+        if training_history:
+            model_diagnostics["epochs_ran"] = len(training_history)
+            model_diagnostics["best_val_loss"] = float(
+                min(row["val_loss"] for row in training_history)
+            )
+            model_diagnostics["final_train_loss"] = float(
+                training_history[-1]["train_loss"]
+            )
+        effective_device_type = getattr(model, "effective_device_type_", None)
+        if effective_device_type is not None:
+            model_diagnostics["effective_device_type"] = str(
+                effective_device_type
+            )
+        gpu_fallback_used = getattr(model, "gpu_fallback_used_", None)
+        if gpu_fallback_used is not None:
+            model_diagnostics["gpu_fallback_used"] = bool(gpu_fallback_used)
+        if getattr(model, "data_mode_", None) == "disk_feature_store":
+            model_diagnostics["data_mode"] = "disk_feature_store"
+            for attribute, key in (
+                ("disk_train_rows_", "disk_train_rows"),
+                ("disk_validation_rows_", "disk_validation_rows"),
+                (
+                    "disk_prediction_batch_size_",
+                    "disk_prediction_batch_size",
+                ),
+                ("disk_prediction_batches_", "disk_prediction_batches"),
+            ):
+                value = getattr(model, attribute, None)
+                if value is not None:
+                    model_diagnostics[key] = int(value)
+            batches_per_epoch = getattr(model, "disk_batches_per_epoch_", None)
+            rows_per_epoch = getattr(model, "disk_rows_per_epoch_", None)
+            if batches_per_epoch is not None:
+                model_diagnostics["disk_batches_per_epoch"] = [
+                    int(value) for value in batches_per_epoch
+                ]
+            if rows_per_epoch is not None:
+                model_diagnostics["disk_rows_per_epoch"] = [
+                    int(value) for value in rows_per_epoch
+                ]
 
         fold_predictions = {}
         if id_col and val_data.id is not None:
@@ -141,15 +212,24 @@ def build_oof_predictions(
         fold_predictions["prediction"] = np.asarray(preds).ravel()
         fold_predictions["cv_fold"] = fold_idx
         predictions.append(pd.DataFrame(fold_predictions))
-        fold_info.append(
-            {
-                "fold": fold_idx,
-                "train_eras": len(train_eras),
-                "val_eras": len(val_eras),
-                "train_rows": int(train_rows),
-                "val_rows": int(val_rows),
-            }
-        )
+        fold_receipt = {
+            "fold": fold_idx,
+            "train_eras": len(train_eras),
+            "val_eras": len(val_eras),
+            "train_rows": int(train_rows),
+            "val_rows": int(val_rows),
+            "model_diagnostics": model_diagnostics or None,
+        }
+        if max_train_eras is not None:
+            fold_receipt.update(
+                {
+                    "available_train_eras": len(available_train_eras),
+                    "max_train_eras": max_train_eras,
+                    "first_train_era": train_eras[0],
+                    "last_train_era": train_eras[-1],
+                }
+            )
+        fold_info.append(fold_receipt)
 
     if not predictions:
         raise ValueError("No CV folds produced predictions; check CV settings.")
@@ -166,6 +246,8 @@ def build_oof_predictions(
         "folds_used": len(fold_info),
         "folds": fold_info,
     }
+    if max_train_eras is not None:
+        cv_meta["max_train_eras"] = max_train_eras
     return oof, cv_meta
 
 
@@ -196,6 +278,8 @@ def _subset_data(data: ModelDataBatch, max_samples: int, seed: int) -> ModelData
 def _subset_value(value, indices):
     if value is None:
         return None
+    if getattr(value, "is_disk_feature_view", False):
+        return value.take(indices)
     if hasattr(value, "iloc"):
         return value.iloc[indices]
     return value[indices]

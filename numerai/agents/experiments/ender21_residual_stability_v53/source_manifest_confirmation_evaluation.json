@@ -1,0 +1,57 @@
+{
+  "external_artifacts": {
+    "numerai/v5.3/ender21_dev_benchmark_models_through_1021.parquet": {
+      "last_era": "1021",
+      "sha256": "f435b4aed17c759011709ff2d8a8a4f235a7444154a740733fb80b55d7350605",
+      "size_bytes": 29796569
+    },
+    "numerai/v5.3/ender21_dev_full_through_1021.parquet": {
+      "last_era": "1021",
+      "sha256": "952d043bf1673ff525124defd9f24a7e110a92909de1bc2feec35a119c45ae71",
+      "size_bytes": 1637635919
+    }
+  },
+  "files": {
+    "numerai/agents/code/analysis/ender21_confirmation_rules.py": "cb3136030867f57cf4c52fbeba90df2293adcc258aa3ccdf843a4a1ffcc33816",
+    "numerai/agents/code/metrics/numerai_metrics.py": "dd42c693758167555a0d8f0e6a0589263bb609577c1fb0e760afe78547023c29",
+    "numerai/agents/code/modeling/utils/constants.py": "3efc9621c52e7dc8cc0fd39e3c2ac576a2d3b55d6d0cb3008488ab404793a4d7",
+    "numerai/agents/experiments/ender21_residual_stability_v53/evaluate_confirmation.py": "d9f0972e3397031c63b2af0b6fa62dae67c3930ec3a86982315b6d2944719a26",
+    "numerai/agents/experiments/ender21_residual_stability_v53/protocol/confirmation_embargo_eras_0813_through_0861.json": "1a40980c2dd47a4f49da0b34bc4e33a0bd290ff0b53b07604340654326258c66",
+    "numerai/agents/experiments/ender21_residual_stability_v53/protocol/confirmation_eras_0865_through_1021.json": "832b402e1fe754a469b492ee4c4157c0cc3dcd0818dbb254598d99e518c92f46",
+    "numerai/agents/experiments/ender21_residual_stability_v53/protocol/confirmation_train_eras_through_0809.json": "b7630d3943ca939622283a5f2671dc2071fb183a8e9f838cefdf4a8564c3f406"
+  },
+  "frozen_at": "2026-08-11",
+  "git_head": "5a82483cfdf963a1e43cddf2c6f8e4d1a3ccad0c",
+  "hash_algorithm": "sha256",
+  "runtime": {
+    "packages": {
+      "numerai-tools": "0.6.0",
+      "numerapi": "2.23.3",
+      "numpy": "2.5.1",
+      "pandas": "3.0.5",
+      "pyarrow": "25.0.0"
+    },
+    "python": "3.13.14"
+  },
+  "schema_version": 1,
+  "training_authority": {
+    "evidence_blobs": {
+      "numerai/agents/experiments/ender21_residual_stability_v53/logs/c1_selected_tabm_k64_block_dro.log": "ff5836fd54996cd70912cfd325b1ca4f15e52dde",
+      "numerai/agents/experiments/ender21_residual_stability_v53/models/c1_selected_tabm_k64_block_dro/predictor_spec.json": "2abcb1a91d003918dddf28d600cb88b3a00166c6",
+      "numerai/agents/experiments/ender21_residual_stability_v53/models/c1_selected_tabm_k64_block_dro/provenance.json": "159ee9f4b8113dfa35bbf2a8f63ea738dbc1aa57",
+      "numerai/agents/experiments/ender21_residual_stability_v53/models/c1_selected_tabm_k64_block_dro/sample_manifest_positions.npy": "b62a7a1c85789ee4cdb3482ce04ad74904c37473",
+      "numerai/agents/experiments/ender21_residual_stability_v53/models/c1_selected_tabm_k64_block_dro/weights.npz": "e452dac30cc214bedf6ce65fe419a59656a65f81",
+      "numerai/agents/experiments/ender21_residual_stability_v53/predictions/c1_selected_tabm_k64_block_dro.parquet": "a86fe3d3dce44c53135f1a4a0fdfbebe8138d1f6",
+      "numerai/agents/experiments/ender21_residual_stability_v53/receipts/c1_selected_tabm_k64_block_dro.completion.json": "2448d8d776a11cb2afbd1f3700ec55dbe2ce63b0",
+      "numerai/agents/experiments/ender21_residual_stability_v53/results/c1_selected_tabm_k64_block_dro.json": "d1ce20d111530358685ecbca036053ee050b902e"
+    },
+    "evidence_commit": "366c1219fcff342efb124068b1690b4c2fb70f99",
+    "source_manifest": {
+      "git_blob": "b6889a09cea85a1b4fb3e3ec90548cd452971679",
+      "git_head": "dcd3dd10eff7b121d6fff6c285680f527e588207",
+      "manifest_commit": "2cc2bde920e980806d075266f06c561536c4c202",
+      "path": "numerai/agents/experiments/ender21_residual_stability_v53/source_manifest_confirmation.json",
+      "sha256": "186c5b92eda6400f218c31a301955126fe65a92c550167cd12fa8c31a45325ca"
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "captured_at": "2026-08-02T14:10:00-07:00",
+  "git_head": "2447005b3f2af1fd45b883f2e63d1ebb80f75981",
+  "hash_algorithm": "sha256",
+  "files": {
+    "agents/code/metrics/numerai_metrics.py": "dd42c693758167555a0d8f0e6a0589263bb609577c1fb0e760afe78547023c29",
+    "agents/code/modeling/models/torch_tabular_regressor.py": "bcf1e7691cba65934b2ad227a3d13b348de04f3d2aee5a913accc8b01464edd6",
+    "agents/code/modeling/utils/disk_feature_store.py": "2d38d486b82ba03204fca283194ff966b5faa464b2584b0f34c38cc032afd7f4",
+    "agents/code/modeling/utils/model_data.py": "b7f41b696bf8facd3ed19aadcc0bd94c11f5ed30e5b914392c6988b288406c74",
+    "agents/code/modeling/utils/model_factory.py": "acee8312c1f5743bf8e5ce4fca1ea95f809f4a51d32b82559da077885a6af26f",
+    "agents/code/modeling/utils/numerai_cv.py": "ee728d90fc661b349a4fe4576c001c344cb59002b9e9c8f013f0a05b94733d26",
+    "agents/code/modeling/utils/pipeline.py": "3b387a9b8671013ccf283c044f2921e4aec298589cf40dfb65be07be4d5611da",
+    "agents/code/modeling/utils/target_transforms.py": "6371a989c4ac18a9f1c2b1cfb71e9477cbccacfe7ccae87d288ec234c433ca05",
+    "agents/experiments/ender20_nn_architecture_v53/configs/r1_mlp_big_residual.py": "6d4155eaa72e7886b78ac5275d09ed118779214ae784c66d6b5fb90ccd87cb4f",
+    "agents/experiments/ender20_nn_architecture_v53/configs/r1_tabm_residual.py": "747b02c92978067b9b7b7439f6d51098a7e446fe3978b0ec765257568cba5428",
+    "agents/experiments/ender20_nn_architecture_v53/configs/r3_tabm_k32.py": "b6452ea55314751fb3561538156fefaae144f217964bf12428de8d64eed49e1d",
+    "agents/experiments/ender20_nn_architecture_v53/configs/r4_tabm_k64.py": "f305c6dca0360718ce2adc33cb377887114065fd24b8a2a1081bcd92259353f7",
+    "agents/experiments/ender20_nn_architecture_v53/configs/r5_tabm_k64_train500k.py": "6c41897465ff8b68c41c13f88c174d0d20648b7e045ab2acccd3c75bc7706c34",
+    "agents/experiments/ender20_nn_architecture_v53/configs/scale_disk_tabm_k64_train500k.py": "012b260e61f8a9d1b0cf33cfdc677b84a55483de1554633ee761b4857be04460",
+    "agents/experiments/ender20_nn_architecture_v53/configs/scale_disk_tabm_k64_train500k_sample_seed2027.py": "c118792e0d9866d57639df0aa7964dc86d60d7ffa4b9e8352ffecd2656fc76b9",
+    "agents/experiments/ender20_nn_architecture_v53/configs/scale_disk_tabm_k64_train500k_seed2027.py": "3f952a926136f1d810fbf0b3cacb59e026b1156ddf3402b384c9d12b895f98dd",
+    "agents/experiments/ender20_nn_architecture_v53/deployment_gate.md": "b61f1cfbbe4348cae65492b153164594597801d7394b9b040326375b712ab85f",
+    "v5.3/target_ender_20_feature_store/metadata.json": "a74cb317aa4e21d8d7dc60e7b318fce7ff350a0c67d33afa9ab1e545ddc41bd7"
+  }
+}

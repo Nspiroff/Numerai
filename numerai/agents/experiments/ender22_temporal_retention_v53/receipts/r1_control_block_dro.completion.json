@@ -1,0 +1,31 @@
+{
+  "component": "r1_control_block_dro",
+  "config": {
+    "path": "numerai/agents/experiments/ender22_temporal_retention_v53/configs/r1_control_block_dro.py",
+    "sha256": "8f5bcbda73d75bf7c984da68a5b139482c0bf1634c1c606c3b412947012f32a4"
+  },
+  "manifest": {
+    "git_head": "c08fc77dc4f28ae61d402eea4aaf9e01c4191512",
+    "path": "numerai/agents/experiments/ender22_temporal_retention_v53/source_manifest_round1.json",
+    "sha256": "c90428ead39286251b66f6c94287197a774d8da68882021c14d2e23f6ac59845"
+  },
+  "outputs": {
+    "predictions": {
+      "device": 6109702118523114368,
+      "inode": 2814749768164499,
+      "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender22_temporal_retention_v53\\predictions\\r1_control_block_dro.parquet",
+      "sha256": "a7f3a4bb717a02bcc49331a02ef44fd8525c01354b37dc1a6e192c533b10373b",
+      "size_bytes": 15779944
+    },
+    "result": {
+      "device": 6109702118523114368,
+      "inode": 2814749768164500,
+      "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender22_temporal_retention_v53\\results\\r1_control_block_dro.json",
+      "sha256": "e7acd3715c287173720aad54d4faf431e49d0ed715b71674cb5fa5b182e02fdf",
+      "size_bytes": 5556
+    }
+  },
+  "schema_version": 1,
+  "stage": "ender22-round1-training-completion",
+  "state": "OUTPUTS_FINALIZED"
+}

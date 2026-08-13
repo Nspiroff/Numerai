@@ -292,7 +292,8 @@ class TargetTransformWrapper:
     def fit(self, X, y, **kwargs):
         if not hasattr(y, "index") or not hasattr(X, "columns"):
             raise TypeError(
-                "TargetTransformWrapper requires pandas inputs (X DataFrame, y Series)."
+                "TargetTransformWrapper requires an indexed target and a "
+                "tabular metadata interface."
             )
         y_transformed = apply_target_transform(y, X, self._target_transform)
         self._model.fit(X, y_transformed, **kwargs)

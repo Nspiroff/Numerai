@@ -105,3 +105,7 @@ v5.1/
 v5.2/
 v5.3/
 .venv/
+.venv-runtime*/
+
+# Local trained-model bundles and upload candidates
+numerai/agents/experiments/**/artifacts/

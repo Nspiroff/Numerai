@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "frozen_at": "2026-08-11",
+  "git_head": "4f439a3b2198f825eaace80579a97b93bd44a10a",
+  "hash_algorithm": "sha256",
+  "files": {
+    "numerai/agents/code/modeling/models/torch_tabular_regressor.py": "7cefa5ab8f16cde4f6d6c20ee6c7cced422953cc2544fceec2b02b7a9b3687af",
+    "numerai/agents/code/modeling/utils/config.py": "5f99c6608eb33e11ab0d6ae886212de2828f13d669dafd26734e4fec128c59b0",
+    "numerai/agents/code/modeling/utils/constants.py": "3efc9621c52e7dc8cc0fd39e3c2ac576a2d3b55d6d0cb3008488ab404793a4d7",
+    "numerai/agents/code/modeling/utils/data.py": "337dd0b12031ce4bef8ac241ab3736c1c67b1bf9337db20d67280df25f16a687",
+    "numerai/agents/code/modeling/utils/model_data.py": "b7f41b696bf8facd3ed19aadcc0bd94c11f5ed30e5b914392c6988b288406c74",
+    "numerai/agents/code/modeling/utils/model_factory.py": "cd33d73167e7bd80d1de7e7be6cc30ad95ca5ed779da56039786b779341b8ba3",
+    "numerai/agents/code/modeling/utils/pipeline.py": "b5306827230cb87f02e51c1ada49acc1140829b1ddce779b4f2c70da7638e7bf",
+    "numerai/agents/code/modeling/utils/target_transforms.py": "6371a989c4ac18a9f1c2b1cfb71e9477cbccacfe7ccae87d288ec234c433ca05",
+    "numerai/agents/code/modeling/utils/numerai_cv.py": "ff000fffc956d15b488a9454ec4920a8f69800f500f6879e89afb25401075892",
+    "numerai/agents/code/metrics/numerai_metrics.py": "dd42c693758167555a0d8f0e6a0589263bb609577c1fb0e760afe78547023c29",
+    "numerai/agents/experiments/ender21_residual_stability_v53/experiment.md": "6594cfb129ab4ecf0adccf53e7ff97bb0791113580363ce3862154e7dd197498",
+    "numerai/agents/experiments/ender21_residual_stability_v53/gate.md": "3a1754759aeb193a570aae14cbb3469ba5e71b618b1e596c7e7d285df75077d6",
+    "numerai/agents/experiments/ender21_residual_stability_v53/development_extract_receipt.json": "8b41ece64abe4373bba31e7c273dd4efddc7fc6606c308f883ff67ad87f4584a",
+    "numerai/agents/experiments/ender21_residual_stability_v53/protocol/discovery_eras_through_0861.json": "be0c212a8e910f56dbdae4e1e134fa36ce7e5e1a95e43faa1ccc9e6330f544ca",
+    "numerai/agents/experiments/ender21_residual_stability_v53/protocol/confirmation_eras_0865_through_1021.json": "832b402e1fe754a469b492ee4c4157c0cc3dcd0818dbb254598d99e518c92f46",
+    "numerai/agents/experiments/ender21_residual_stability_v53/configs/base_r1.py": "baf42b0501e7196dfa0f5cc4096f3c07f16ad2374b4be52f0063a37c7f363f4b",
+    "numerai/agents/experiments/ender21_residual_stability_v53/configs/r1_control_tabm_k64.py": "4c8506d89379eb4ff1bb2adfd5c0196ca615fd4edbc0ea15d97e5df4ef2c0d58",
+    "numerai/agents/experiments/ender21_residual_stability_v53/configs/r1_tabm_mini_k64.py": "4ed205ef898ad05f1c1eee87da38e13ed87f9fac180a61ca306b12e51581d10c",
+    "numerai/agents/experiments/ender21_residual_stability_v53/configs/r1_tabm_k64_era_balanced.py": "a7b20b8bddf8c87865bf16792daa745db802dd57c8b78b342456e6736df0067c",
+    "numerai/agents/experiments/ender21_residual_stability_v53/configs/r1_tabm_k64_block_dro.py": "a08ef8c09d3a1f1dbcda59d3c3621df9507baf12d9058bdf4c20f7d3ff22c1f7",
+    "numerai/agents/experiments/ender21_residual_stability_v53/configs/r1_tabm_mini_k64_block_dro.py": "e23115a9b8de48b3131709a4922c9317737441a8ad6827fd7a9fb9b6583117f5",
+    "numerai/agents/experiments/ender21_residual_stability_v53/evaluate_round1.py": "243f2c04b09dab08bfd691bfdea13345ba38841cd7d406646b09a4fdb7371887",
+    "numerai/agents/experiments/ender21_residual_stability_v53/tools/build_development_extract.py": "fdffde219c88e283aff88f82808d161b60c6e775f3d8fb22894960d9c35b5f02"
+  },
+  "external_artifacts": {
+    "numerai/v5.3/ender21_discovery_full_through_0861.parquet": {
+      "size_bytes": 1302848771,
+      "sha256": "476d561ba8515a0066e892c5489a5ae1db6443587e9d5d06a9a6280400a701b9",
+      "last_era": "0861"
+    },
+    "numerai/v5.3/ender21_discovery_benchmark_models_through_0861.parquet": {
+      "size_bytes": 23325224,
+      "sha256": "c2db9a77811390e9b9c47926b62fbfb7a6c7af24bb9c4db63137798e61b955b6",
+      "last_era": "0861"
+    }
+  },
+  "runtime": {
+    "python": "3.13.14",
+    "packages": {
+      "numpy": "2.5.1",
+      "pandas": "3.0.5",
+      "pyarrow": "25.0.0",
+      "numerai-tools": "0.6.0",
+      "numerapi": "2.23.3",
+      "torch": "2.13.0+cu130",
+      "tabm": "0.0.3",
+      "rtdl-num-embeddings": "0.0.12"
+    }
+  }
+}
