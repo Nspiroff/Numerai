@@ -586,6 +586,192 @@ def _validate_ender23_bootstrap_custody(
     return custody
 
 
+_ENDER24_EXPERIMENT_NAME = "ender24_ema_seed_stability_v53"
+_ENDER24_ROUND1_NAMES = (
+    "r1_control_seed1337",
+    "r1_ema995_seed1337",
+    "r1_control_seed2027",
+    "r1_ema995_seed2027",
+)
+_ENDER24_ROUND2_NAMES = (
+    "r2_control_seed7331",
+    "r2_ema995_seed7331",
+)
+_ENDER24_TRAINING_NAMES = _ENDER24_ROUND1_NAMES + _ENDER24_ROUND2_NAMES
+_ENDER24_PREFIX = "numerai/agents/experiments/ender24_ema_seed_stability_v53"
+_ENDER24_ROUND1_MANIFEST_FILES = frozenset(
+    {
+        "numerai/agents/code/modeling/__main__.py",
+        "numerai/agents/code/modeling/models/torch_tabular_regressor.py",
+        "numerai/agents/code/modeling/utils/cli.py",
+        "numerai/agents/code/modeling/utils/config.py",
+        "numerai/agents/code/modeling/utils/constants.py",
+        "numerai/agents/code/modeling/utils/data.py",
+        "numerai/agents/code/modeling/utils/model_data.py",
+        "numerai/agents/code/modeling/utils/model_factory.py",
+        "numerai/agents/code/modeling/utils/numerai_cv.py",
+        "numerai/agents/code/modeling/utils/pipeline.py",
+        "numerai/agents/code/modeling/utils/target_transforms.py",
+        "numerai/agents/code/metrics/numerai_metrics.py",
+        (
+            "numerai/agents/experiments/ender21_residual_stability_v53/"
+            "protocol/discovery_eras_through_0861.json"
+        ),
+        (
+            "numerai/agents/experiments/ender21_residual_stability_v53/"
+            "protocol/feature_columns_all_v53.json"
+        ),
+        f"{_ENDER24_PREFIX}/experiment.md",
+        f"{_ENDER24_PREFIX}/gate.md",
+        f"{_ENDER24_PREFIX}/protocol/discovery_data_authority.json",
+        f"{_ENDER24_PREFIX}/protocol/mechanical_activity_receipt.json",
+        f"{_ENDER24_PREFIX}/configs/base_r1.py",
+        *(
+            f"{_ENDER24_PREFIX}/configs/{name}.py"
+            for name in _ENDER24_TRAINING_NAMES
+        ),
+        f"{_ENDER24_PREFIX}/run_round1.py",
+        f"{_ENDER24_PREFIX}/training_bootstrap.py",
+        f"{_ENDER24_PREFIX}/evaluation_common.py",
+        f"{_ENDER24_PREFIX}/evaluate_round1.py",
+        f"{_ENDER24_PREFIX}/evaluate_round1_impl.py",
+        "numerai/agents/tests/test_ender24_ema_seed_stability.py",
+    }
+)
+_ENDER24_EXTERNAL_ARTIFACTS = frozenset(
+    {
+        "numerai/v5.3/ender21_discovery_full_through_0861.parquet",
+        "numerai/v5.3/ender21_discovery_benchmark_models_through_0861.parquet",
+    }
+)
+
+
+@dataclass(frozen=True)
+class _Ender24BootstrapCustody:
+    round_number: int
+    config_name: str
+    manifest: dict
+    manifest_bytes: bytes
+    manifest_sha256: str
+    leases: tuple
+    reservations: object
+
+
+def _ender24_config_identity(
+    config_path: Path,
+    output_dir_override: Path | None,
+) -> tuple[int, str] | None:
+    """Classify a canonical Ender24 path without opening config or data."""
+
+    experiment = Path(
+        os.path.abspath(
+            REPO_DIR / "numerai/agents/experiments" / _ENDER24_EXPERIMENT_NAME
+        )
+    )
+    configs = experiment / "configs"
+    supplied = Path(config_path)
+    if any(part in {".", ".."} for part in supplied.parts):
+        raise ValueError("Ender24 config paths must be canonical.")
+    lexical = Path(os.path.abspath(supplied))
+    if lexical.parent != configs:
+        return None
+    if lexical.suffix != ".py" or lexical.stem not in _ENDER24_TRAINING_NAMES:
+        raise ValueError("Only frozen named Ender24 configs may execute.")
+    if lexical != configs / f"{lexical.stem}.py":
+        raise ValueError("Ender24 config path is not canonical.")
+    if output_dir_override is not None:
+        raise ValueError("Ender24 outputs may not be redirected.")
+    round_number = 1 if lexical.stem in _ENDER24_ROUND1_NAMES else 2
+    return round_number, lexical.stem
+
+
+def _validate_ender24_bootstrap_custody(
+    identity: tuple[int, str] | None,
+    custody: _Ender24BootstrapCustody | None,
+) -> _Ender24BootstrapCustody | None:
+    """Require held Round-1 bootstrap handles, never asserted metadata."""
+
+    if identity is None:
+        if custody is not None:
+            raise ValueError("Ender24 bootstrap custody was supplied for another config.")
+        return None
+    if custody is None:
+        raise ValueError(
+            "Canonical Ender24 configs require the isolated run_round bootstrap."
+        )
+    round_number, config_name = identity
+    if round_number != 1 or config_name not in _ENDER24_ROUND1_NAMES:
+        raise ValueError("Ender24 Round 2 is not authorized by the Round-1 custody API.")
+    manifest = custody.manifest
+    if (
+        custody.round_number != 1
+        or custody.config_name != config_name
+        or not isinstance(custody.manifest_bytes, bytes)
+        or hashlib.sha256(custody.manifest_bytes).hexdigest()
+        != custody.manifest_sha256
+        or not isinstance(manifest, dict)
+        or set(manifest.get("files", {})) != _ENDER24_ROUND1_MANIFEST_FILES
+        or set(manifest.get("external_artifacts", {}))
+        != _ENDER24_EXTERNAL_ARTIFACTS
+    ):
+        raise ValueError("Ender24 bootstrap custody does not match this run.")
+    manifest_filename = "source_manifest_round1.json"
+    expected_paths = {
+        Path(os.path.abspath(REPO_DIR / _ENDER24_PREFIX / manifest_filename)),
+        *(
+            Path(os.path.abspath(REPO_DIR / relative))
+            for relative in _ENDER24_ROUND1_MANIFEST_FILES
+        ),
+        *(
+            Path(os.path.abspath(REPO_DIR / relative))
+            for relative in _ENDER24_EXTERNAL_ARTIFACTS
+        ),
+    }
+    leases_by_path = {
+        Path(os.path.abspath(lease.path)): lease for lease in custody.leases
+    }
+    if set(leases_by_path) != expected_paths:
+        raise ValueError("Ender24 bootstrap custody lease set differs.")
+    manifest_lease = leases_by_path[
+        Path(os.path.abspath(REPO_DIR / _ENDER24_PREFIX / manifest_filename))
+    ]
+    if manifest_lease.read_bytes() != custody.manifest_bytes:
+        raise ValueError("Ender24 bootstrap manifest handle bytes changed.")
+    for relative, expected in manifest["files"].items():
+        lease = leases_by_path[Path(os.path.abspath(REPO_DIR / relative))]
+        if lease.sha256() != expected:
+            raise ValueError(f"Ender24 held source changed: {relative}")
+    for relative, expected in manifest["external_artifacts"].items():
+        lease = leases_by_path[Path(os.path.abspath(REPO_DIR / relative))]
+        if (
+            lease.size_bytes() != expected["size_bytes"]
+            or lease.sha256() != expected["sha256"]
+        ):
+            raise ValueError(f"Ender24 held artifact changed: {relative}")
+    experiment = Path(os.path.abspath(REPO_DIR / _ENDER24_PREFIX))
+    expected_outputs = (
+        experiment / "predictions" / f"{config_name}.parquet",
+        experiment / "results" / f"{config_name}.json",
+        experiment / "receipts" / f"{config_name}.completion.json",
+    )
+    reservations = custody.reservations
+    actual_outputs = (
+        getattr(reservations, "predictions_path", None),
+        getattr(reservations, "results_path", None),
+        getattr(reservations, "completion_path", None),
+    )
+    if actual_outputs != expected_outputs or any(
+        getattr(reservations, name, None) is None
+        for name in (
+            "predictions_stream",
+            "results_stream",
+            "completion_stream",
+        )
+    ):
+        raise ValueError("Ender24 bootstrap output reservations differ.")
+    return custody
+
+
 def _governed_output_paths() -> set[Path]:
     experiment = Path(
         os.path.abspath(
@@ -713,6 +899,31 @@ def _governed_output_paths() -> set[Path]:
             ),
             ender23_experiment / "receipts/round1_discovery.json",
             ender23_experiment / "receipts/round2_seed_replication.json",
+        }
+    )
+    ender24_experiment = Path(
+        os.path.abspath(
+            REPO_DIR
+            / "numerai/agents/experiments"
+            / _ENDER24_EXPERIMENT_NAME
+        )
+    )
+    governed.update(
+        {
+            *(
+                ender24_experiment / "predictions" / f"{name}.parquet"
+                for name in _ENDER24_TRAINING_NAMES
+            ),
+            *(
+                ender24_experiment / "results" / f"{name}.json"
+                for name in _ENDER24_TRAINING_NAMES
+            ),
+            *(
+                ender24_experiment / "receipts" / f"{name}.completion.json"
+                for name in _ENDER24_TRAINING_NAMES
+            ),
+            ender24_experiment / "receipts/round1_ema_stability.json",
+            ender24_experiment / "receipts/round2_seed_replication.json",
         }
     )
     return governed
@@ -1063,6 +1274,43 @@ def _ender23_output_reservations(
     lexical = configs / f"{config_name}.py"
     _bootstrap_require_plain_directory_chain(experiment)
     _bootstrap_require_plain_file(lexical, "Ender23 config")
+    predictions_dir = experiment / "predictions"
+    results_dir = experiment / "results"
+    receipts_dir = experiment / "receipts"
+    predictions_dir.mkdir(exist_ok=True)
+    results_dir.mkdir(exist_ok=True)
+    receipts_dir.mkdir(exist_ok=True)
+    _bootstrap_require_plain_directory_chain(predictions_dir)
+    _bootstrap_require_plain_directory_chain(results_dir)
+    _bootstrap_require_plain_directory_chain(receipts_dir)
+    return _ExclusiveOutputReservations(
+        predictions_dir / f"{lexical.stem}.parquet",
+        results_dir / f"{lexical.stem}.json",
+        receipts_dir / f"{lexical.stem}.completion.json",
+    )
+
+
+def _ender24_output_reservations(
+    config_path: Path,
+    output_dir_override: Path | None,
+) -> _ExclusiveOutputReservations | None:
+    """Reserve every canonical Ender24 output before governed input reads."""
+
+    experiment = Path(
+        os.path.abspath(
+            REPO_DIR / "numerai/agents/experiments" / _ENDER24_EXPERIMENT_NAME
+        )
+    )
+    configs = experiment / "configs"
+    identity = _ender24_config_identity(config_path, output_dir_override)
+    if identity is None:
+        return None
+    round_number, config_name = identity
+    if round_number != 1:
+        raise ValueError("Ender24 Round 2 has no output-reservation authority.")
+    lexical = configs / f"{config_name}.py"
+    _bootstrap_require_plain_directory_chain(experiment)
+    _bootstrap_require_plain_file(lexical, "Ender24 config")
     predictions_dir = experiment / "predictions"
     results_dir = experiment / "results"
     receipts_dir = experiment / "receipts"
@@ -1908,6 +2156,238 @@ def _acquire_ender23_round2_manifest_custody() -> tuple[dict, bytes, tuple]:
     )
 
 
+def _verify_ender24_manifest(
+    manifest_filename: str,
+    expected_files: frozenset[str],
+) -> dict:
+    """Verify Ender24 with held leases, then release after the check."""
+
+    manifest, _, leases = _acquire_ender24_manifest_custody(
+        manifest_filename, expected_files
+    )
+    for lease in reversed(leases):
+        lease.close()
+    return manifest
+
+
+def _acquire_ender24_manifest_custody(
+    manifest_filename: str,
+    expected_files: frozenset[str],
+) -> tuple[dict, bytes, tuple]:
+    """Pin the Ender24 manifest, source, and data inputs for Round 1."""
+
+    if manifest_filename != "source_manifest_round1.json":
+        raise ValueError("Unknown Ender24 source manifest.")
+    if expected_files != _ENDER24_ROUND1_MANIFEST_FILES:
+        raise ValueError("Unknown Ender24 manifest file contract.")
+    manifest_relative = Path(_ENDER24_PREFIX) / manifest_filename
+    manifest_path = Path(os.path.abspath(REPO_DIR / manifest_relative))
+    _bootstrap_require_plain_directory_chain(manifest_path.parent)
+    _bootstrap_require_plain_file(manifest_path, "Ender24 source manifest")
+    manifest_lease = _BootstrapReadOnlyFileLease(
+        manifest_path, "Ender24 source manifest"
+    )
+    leases = [manifest_lease]
+    try:
+        manifest_bytes = manifest_lease.read_bytes()
+        try:
+            manifest = json.loads(manifest_bytes)
+        except (UnicodeDecodeError, json.JSONDecodeError) as error:
+            raise ValueError(
+                "Ender24 held source manifest is invalid JSON."
+            ) from error
+        if not isinstance(manifest, dict) or set(manifest) != {
+            "schema_version",
+            "frozen_at",
+            "git_head",
+            "hash_algorithm",
+            "files",
+            "external_artifacts",
+            "runtime",
+        }:
+            raise ValueError("Ender24 source manifest schema differs from the freeze.")
+        if manifest["schema_version"] != 1 or manifest["hash_algorithm"] != "sha256":
+            raise ValueError("Ender24 source manifest version or hash differs.")
+        commit = manifest["git_head"]
+        files = manifest["files"]
+        external = manifest["external_artifacts"]
+        runtime = manifest["runtime"]
+        if not _is_lower_hex(commit, 40):
+            raise ValueError("Ender24 source manifest git_head is not a commit SHA.")
+        if not isinstance(files, dict) or set(files) != expected_files:
+            raise ValueError("Ender24 source manifest file set differs from the freeze.")
+        if (
+            not isinstance(external, dict)
+            or set(external) != _ENDER24_EXTERNAL_ARTIFACTS
+        ):
+            raise ValueError("Ender24 source manifest artifact set differs from the freeze.")
+        expected_runtime = {
+            "python": "3.13.14",
+            "packages": {
+                "numpy": "2.5.1",
+                "pandas": "3.0.5",
+                "pyarrow": "25.0.0",
+                "numerai-tools": "0.6.0",
+                "numerapi": "2.23.3",
+                "torch": "2.13.0+cu130",
+                "tabm": "0.0.3",
+                "rtdl-num-embeddings": "0.0.12",
+            },
+        }
+        if runtime != expected_runtime or platform.python_version() != runtime["python"]:
+            raise ValueError("Ender24 Python runtime differs from the freeze.")
+        for package, expected_version in runtime["packages"].items():
+            try:
+                actual_version = importlib_metadata.version(package)
+            except importlib_metadata.PackageNotFoundError as error:
+                raise ValueError(
+                    f"Ender24 runtime package is absent: {package}"
+                ) from error
+            if actual_version != expected_version:
+                raise ValueError(f"Ender24 runtime package drifted: {package}")
+
+        def git(*arguments: str, allow_one: bool = False) -> subprocess.CompletedProcess:
+            result = subprocess.run(
+                ["git", *arguments],
+                cwd=REPO_DIR,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if result.returncode not in ({0, 1} if allow_one else {0}):
+                detail = result.stderr.strip() or result.stdout.strip()
+                raise ValueError(f"Ender24 Git verification failed: {detail}")
+            return result
+
+        if git(
+            "rev-parse", "--verify", f"{commit}^{{commit}}"
+        ).stdout.strip() != commit:
+            raise ValueError("Ender24 frozen git_head does not resolve exactly.")
+        if git(
+            "merge-base", "--is-ancestor", commit, "HEAD", allow_one=True
+        ).returncode:
+            raise ValueError("Ender24 frozen git_head is not an ancestor of HEAD.")
+        if git(
+            "status",
+            "--porcelain=v1",
+            "--untracked-files=all",
+            "--",
+            manifest_relative.as_posix(),
+        ).stdout:
+            raise ValueError("Ender24 source manifest is not committed and clean.")
+        git("cat-file", "-e", f"HEAD:{manifest_relative.as_posix()}")
+
+        source_leases = {}
+        for relative_text in sorted(files):
+            expected = files[relative_text]
+            if not _is_lower_hex(expected, 64):
+                raise ValueError(f"Invalid Ender24 source digest: {relative_text}")
+            relative = Path(relative_text)
+            path = Path(os.path.abspath(REPO_DIR / relative))
+            _bootstrap_require_plain_directory_chain(path.parent)
+            _bootstrap_require_plain_file(path, f"Ender24 source {relative_text}")
+            source_lease = _BootstrapReadOnlyFileLease(
+                path, f"Ender24 source {relative_text}"
+            )
+            leases.append(source_lease)
+            source_leases[relative_text] = source_lease
+            if source_lease.sha256() != expected:
+                raise ValueError(f"Ender24 source hash drifted: {relative_text}")
+            git("cat-file", "-e", f"{commit}:{relative.as_posix()}")
+            if git(
+                "diff",
+                "--quiet",
+                commit,
+                "--",
+                relative.as_posix(),
+                allow_one=True,
+            ).returncode:
+                raise ValueError(
+                    f"Ender24 source differs from git_head: {relative_text}"
+                )
+
+        authority_relative = (
+            f"{_ENDER24_PREFIX}/protocol/discovery_data_authority.json"
+        )
+        authority_lease = source_leases.get(authority_relative)
+        if authority_lease is None:
+            raise ValueError("Ender24 discovery authority has no held source lease.")
+        try:
+            authority = json.loads(authority_lease.read_bytes())
+        except (UnicodeDecodeError, json.JSONDecodeError) as error:
+            raise ValueError(
+                "Ender24 discovery authority is not valid UTF-8 JSON."
+            ) from error
+        if (
+            not isinstance(authority, dict)
+            or authority.get("schema_version") != 1
+            or authority.get("authority") != "ender24-discovery-only"
+        ):
+            raise ValueError("Ender24 discovery authority envelope differs.")
+        authority_sections = {
+            authority.get("full", {}).get("path"): authority.get("full"),
+            authority.get("benchmark", {}).get("path"): authority.get("benchmark"),
+        }
+        if set(authority_sections) != _ENDER24_EXTERNAL_ARTIFACTS:
+            raise ValueError("Ender24 discovery authority artifact set differs.")
+
+        for relative_text in sorted(external):
+            receipt = external[relative_text]
+            if not isinstance(receipt, dict) or set(receipt) != {
+                "size_bytes",
+                "sha256",
+                "last_era",
+            }:
+                raise ValueError(f"Invalid Ender24 artifact receipt: {relative_text}")
+            if (
+                isinstance(receipt["size_bytes"], bool)
+                or not isinstance(receipt["size_bytes"], int)
+                or receipt["size_bytes"] <= 0
+                or not _is_lower_hex(receipt["sha256"], 64)
+                or receipt["last_era"] != "0861"
+            ):
+                raise ValueError(f"Malformed Ender24 artifact receipt: {relative_text}")
+            section = authority_sections[relative_text]
+            if (
+                not isinstance(section, dict)
+                or section.get("size_bytes") != receipt["size_bytes"]
+                or section.get("sha256") != receipt["sha256"]
+                or section.get("last_era") != receipt["last_era"]
+            ):
+                raise ValueError(
+                    "Ender24 manifest differs from discovery authority: "
+                    f"{relative_text}"
+                )
+            path = Path(os.path.abspath(REPO_DIR / relative_text))
+            _bootstrap_require_plain_directory_chain(path.parent)
+            _bootstrap_require_plain_file(path, f"Ender24 artifact {relative_text}")
+            artifact_lease = _BootstrapReadOnlyFileLease(
+                path, f"Ender24 artifact {relative_text}"
+            )
+            leases.append(artifact_lease)
+            if artifact_lease.size_bytes() != receipt["size_bytes"]:
+                raise ValueError(f"Ender24 artifact size drifted: {relative_text}")
+            if artifact_lease.sha256() != receipt["sha256"]:
+                raise ValueError(f"Ender24 artifact hash drifted: {relative_text}")
+    except BaseException:
+        for lease in reversed(leases):
+            lease.close()
+        raise
+    return manifest, manifest_bytes, tuple(leases)
+
+
+def _verify_ender24_round1_manifest() -> dict:
+    return _verify_ender24_manifest(
+        "source_manifest_round1.json", _ENDER24_ROUND1_MANIFEST_FILES
+    )
+
+
+def _acquire_ender24_round1_manifest_custody() -> tuple[dict, bytes, tuple]:
+    return _acquire_ender24_manifest_custody(
+        "source_manifest_round1.json", _ENDER24_ROUND1_MANIFEST_FILES
+    )
+
+
 def _write_ender21_round2_completion(
     config_path: Path,
     manifest: dict,
@@ -2040,6 +2520,55 @@ def _write_ender23_completion(
     payload = {
         "schema_version": 1,
         "stage": f"ender23-round{round_number}-training-completion",
+        "state": "OUTPUTS_FINALIZED",
+        "component": name,
+        "manifest": {
+            "path": manifest_path.relative_to(REPO_DIR).as_posix(),
+            "sha256": hashlib.sha256(manifest_bytes).hexdigest(),
+            "git_head": manifest["git_head"],
+        },
+        "config": {
+            "path": config_relative,
+            "sha256": manifest["files"][config_relative],
+        },
+        "outputs": reservations.completion_identities(),
+    }
+    payload_bytes = reservations.write_completion(payload)
+    return completion_path, payload, payload_bytes
+
+
+def _write_ender24_completion(
+    config_path: Path,
+    manifest: dict,
+    manifest_bytes: bytes,
+    reservations: _ExclusiveOutputReservations,
+) -> tuple[Path, dict, bytes]:
+    """Hash-bind one Ender24 Round-1 run to held CREATE_NEW outputs."""
+
+    name = Path(config_path).stem
+    if name not in _ENDER24_ROUND1_NAMES:
+        raise ValueError("Ender24 completion requires a frozen Round-1 config.")
+    experiment = Path(
+        os.path.abspath(
+            REPO_DIR / "numerai/agents/experiments" / _ENDER24_EXPERIMENT_NAME
+        )
+    )
+    completion_path = experiment / f"receipts/{name}.completion.json"
+    if reservations.completion_path != completion_path:
+        raise ValueError("Ender24 completion reservation path differs.")
+    config_absolute = Path(os.path.abspath(config_path))
+    config_relative = config_absolute.relative_to(REPO_DIR).as_posix()
+    manifest_path = experiment / "source_manifest_round1.json"
+    if not isinstance(manifest_bytes, bytes) or not manifest_bytes:
+        raise ValueError("Ender24 completion requires held manifest bytes.")
+    try:
+        if json.loads(manifest_bytes) != manifest:
+            raise ValueError("Ender24 completion manifest bytes differ from custody.")
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ValueError("Ender24 completion manifest bytes are invalid JSON.") from error
+    payload = {
+        "schema_version": 1,
+        "stage": "ender24-round1-training-completion",
         "state": "OUTPUTS_FINALIZED",
         "component": name,
         "manifest": {
@@ -3361,6 +3890,7 @@ def run_training(
     confirmation_pretraining_receipt_sha256: str | None = None,
     _ender22_bootstrap_custody: _Ender22BootstrapCustody | None = None,
     _ender23_bootstrap_custody: _Ender23BootstrapCustody | None = None,
+    _ender24_bootstrap_custody: _Ender24BootstrapCustody | None = None,
 ) -> tuple[Path, Path]:
     scout_authority_values = (
         scout_component,
@@ -3428,6 +3958,12 @@ def run_training(
     ender23_custody = _validate_ender23_bootstrap_custody(
         ender23_identity, _ender23_bootstrap_custody
     )
+    ender24_identity = _ender24_config_identity(
+        Path(config_path), output_dir_override
+    )
+    ender24_custody = _validate_ender24_bootstrap_custody(
+        ender24_identity, _ender24_bootstrap_custody
+    )
     ender21_reservations = _ender21_output_reservations(
         Path(config_path), output_dir_override
     )
@@ -3436,6 +3972,9 @@ def run_training(
     )
     ender23_reservations = (
         ender23_custody.reservations if ender23_custody is not None else None
+    )
+    ender24_reservations = (
+        ender24_custody.reservations if ender24_custody is not None else None
     )
     authority = None
     authority_checkpoint = None
@@ -3473,6 +4012,8 @@ def run_training(
     ender22_manifest_bytes = None
     ender23_input_leases = ()
     ender23_manifest_bytes = None
+    ender24_input_leases = ()
+    ender24_manifest_bytes = None
     try:
         if authority_checkpoint is not None:
             source_leases = _verify_frozen_training_source(
@@ -3507,7 +4048,10 @@ def run_training(
         if authority is not None and authority.checkpoint != authority_checkpoint:
             raise ValueError("Training authority checkpoint changed after leasing.")
         reservations = (
-            ender21_reservations or ender22_reservations or ender23_reservations
+            ender21_reservations
+            or ender22_reservations
+            or ender23_reservations
+            or ender24_reservations
         )
         if authority is not None:
             reservations = _ExclusiveOutputReservations(
@@ -3516,11 +4060,19 @@ def run_training(
             )
         reservation_scope = (
             nullcontext(reservations)
-            if ender22_custody is not None or ender23_custody is not None
+            if (
+                ender22_custody is not None
+                or ender23_custody is not None
+                or ender24_custody is not None
+            )
             else reservations if reservations is not None else nullcontext(None)
         )
         with reservation_scope as reserved_outputs:
-            if ender22_reservations is not None or ender23_reservations is not None:
+            if (
+                ender22_reservations is not None
+                or ender23_reservations is not None
+                or ender24_reservations is not None
+            ):
                 _require_frozen_python_runtime()
             ender21_manifest = None
             if ender21_reservations is not None:
@@ -3550,6 +4102,12 @@ def run_training(
                         Path(config_path).stem,
                         ender23_input_leases,
                     )
+            ender24_manifest = None
+            if ender24_reservations is not None:
+                assert ender24_custody is not None
+                ender24_manifest = ender24_custody.manifest
+                ender24_manifest_bytes = ender24_custody.manifest_bytes
+                ender24_input_leases = ender24_custody.leases
             marker_lease = None
             completion_claim_lease = None
             completion_receipt_lease = None
@@ -3692,6 +4250,28 @@ def run_training(
                                 sort_keys=True,
                             )
                         )
+                    if ender24_reservations is not None:
+                        assert ender24_manifest is not None
+                        assert ender24_manifest_bytes is not None
+                        completion_path, completion_payload, completion_bytes = (
+                            _write_ender24_completion(
+                                Path(config_path),
+                                ender24_manifest,
+                                ender24_manifest_bytes,
+                                reserved_outputs,
+                            )
+                        )
+                        print(
+                            json.dumps(
+                                {
+                                    "training_completion_receipt": str(completion_path),
+                                    "training_completion_receipt_sha256": hashlib.sha256(
+                                        completion_bytes
+                                    ).hexdigest(),
+                                },
+                                sort_keys=True,
+                            )
+                        )
                     if authority is not None:
                         completion_path, completion_payload = (
                             evaluator.complete_component_training_consumption(
@@ -3748,6 +4328,9 @@ def run_training(
                 lease.close()
         if ender23_custody is None:
             for lease in reversed(ender23_input_leases):
+                lease.close()
+        if ender24_custody is None:
+            for lease in reversed(ender24_input_leases):
                 lease.close()
         for lease in reversed(source_leases):
             lease.close()
@@ -3811,6 +4394,39 @@ def run_ender23_training_from_bootstrap(
     )
     return run_training(
         Path(config_path), _ender23_bootstrap_custody=custody
+    )
+
+
+def run_ender24_training_from_bootstrap(
+    config_path: Path,
+    *,
+    round_number: int,
+    manifest: dict,
+    manifest_bytes: bytes,
+    leases: tuple,
+    reservations: object,
+) -> tuple[Path, Path]:
+    """Dedicated Ender24 Round-1 entry after isolated source custody."""
+
+    identity = _ender24_config_identity(Path(config_path), None)
+    if (
+        identity is None
+        or identity[0] != 1
+        or round_number != 1
+        or identity[1] not in _ENDER24_ROUND1_NAMES
+    ):
+        raise ValueError("Ender24 bootstrap config/round identity differs.")
+    custody = _Ender24BootstrapCustody(
+        round_number=round_number,
+        config_name=identity[1],
+        manifest=manifest,
+        manifest_bytes=manifest_bytes,
+        manifest_sha256=hashlib.sha256(manifest_bytes).hexdigest(),
+        leases=leases,
+        reservations=reservations,
+    )
+    return run_training(
+        Path(config_path), _ender24_bootstrap_custody=custody
     )
 
 

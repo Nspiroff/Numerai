@@ -15,9 +15,15 @@ artifacts and decision records must not be overwritten or reused as new runs.
 
 [Ender24 EMA seed stability](ender24_ema_seed_stability_v53/experiment.md) is
 the only active research design. It tests one fixed EMA weight-stabilization
-procedure against matched model seeds. Its current scaffold authorizes source
+procedure against matched model seeds. Its Round-1 execution/evaluation source
+layer is being reviewed under GitHub issue #5, but it still authorizes source
 review and synthetic tests only: it has no source manifest, data access,
 training, scoring, output, confirmation, deployment, or account authority.
+
+The next admissible checkpoint is a reviewed source-only pull request. A later
+manifest-only seal must separately bind the exact source, mechanical-activity
+evidence, runtime, and discovery inputs. Even that seal will not authorize a
+run without a new explicit launch decision.
 
 ## Ender20-23 outcome chain
 
