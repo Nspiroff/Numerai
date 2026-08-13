@@ -1,0 +1,196 @@
+{
+  "ender24_authority": {
+    "completions": {
+      "r1_control_seed1337": {
+        "git_blob": "358b6e7bdfc481f294eecaacd7a9aea0168ff5fe",
+        "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/receipts/r1_control_seed1337.completion.json",
+        "sha256": "5a38b9f7211155b7ce9ea71db8c6815a72940f8c999c53e7b2f0ef6d4bd65b4e",
+        "size_bytes": 1370
+      },
+      "r1_control_seed2027": {
+        "git_blob": "58841af05d8f318a6cc1b5a1102228d5fba87dc0",
+        "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/receipts/r1_control_seed2027.completion.json",
+        "sha256": "f33f40f537413fdd8fc80cb7d656192fbf02d906b6885723894e9fc1776653e4",
+        "size_bytes": 1369
+      },
+      "r1_ema995_seed1337": {
+        "git_blob": "2ddd2d0e2c96d8767f98f0c19cf6dcae5d2624d5",
+        "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/receipts/r1_ema995_seed1337.completion.json",
+        "sha256": "0b6d500c571abe376ae388ace4abc56430ac8df9c5bce71be7a41657a149431f",
+        "size_bytes": 1365
+      },
+      "r1_ema995_seed2027": {
+        "git_blob": "6d7aba2a6d45d2e26140fd3466adcf8da5c1f7fb",
+        "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/receipts/r1_ema995_seed2027.completion.json",
+        "sha256": "c63793b84ef0e3fa03a9dc1a8c1aa167a1fb6a29863313e82259301f12f512ed",
+        "size_bytes": 1363
+      }
+    },
+    "evidence_commit": "e3c7b28be06e175b2d784082cd8606972140010a",
+    "launch_commit": "7adc6724bd41689e34e8d21effa088b0ff606022",
+    "manifest_commit": "5a1a75d1b00f639fb04a522dda6c390d5535732f",
+    "mechanical_receipt_commit": "a2bfe0fce7ac1a6a6b075a65b8538aa32165e3c6",
+    "old_decision": {
+      "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/receipts/round1_ema_stability.json",
+      "required_absent": true
+    },
+    "postmortem": {
+      "git_blob": "d23b7b27d85c3b57debb320213d3e3f4f09e67e7",
+      "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/receipts/round1_execution_postmortem.json",
+      "sha256": "60acca8896fab9e97d2c559b951019da901fc033fb2b2e65d35d0e7b5101ed03",
+      "size_bytes": 5922
+    },
+    "predictions": {
+      "r1_control_seed1337": {
+        "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/predictions/r1_control_seed1337.parquet",
+        "sha256": "3e5285e3d5b9e3dea7df8da3d121a0157fa83e91bbec371c30526a8539aced73",
+        "size_bytes": 15779944
+      },
+      "r1_control_seed2027": {
+        "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/predictions/r1_control_seed2027.parquet",
+        "sha256": "183e9f2d74f44e34a8b0bd36b34d86d76808ae501a1d06e46b3d33cc89ce0df0",
+        "size_bytes": 15786216
+      },
+      "r1_ema995_seed1337": {
+        "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/predictions/r1_ema995_seed1337.parquet",
+        "sha256": "373110812795dc907e7ee8346b209204a73a3e242a6665cf14863aeb0abb467f",
+        "size_bytes": 15786841
+      },
+      "r1_ema995_seed2027": {
+        "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/predictions/r1_ema995_seed2027.parquet",
+        "sha256": "763d8030056af4e83828ce952c86ec499452014dd9a14ba361e0daccd7f501f6",
+        "size_bytes": 15787673
+      }
+    },
+    "results": {
+      "r1_control_seed1337": {
+        "git_blob": "8d10219d3799e152035499148d9679bab3750fa1",
+        "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/results/r1_control_seed1337.json",
+        "sha256": "fecf817835e2794c3d9caae16a15a244ff6976636295530a34c59b5772c9b5e0",
+        "size_bytes": 6148
+      },
+      "r1_control_seed2027": {
+        "git_blob": "9a754c910032d853f897784ad7b86c41b68ba9f7",
+        "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/results/r1_control_seed2027.json",
+        "sha256": "4be1fc26f223275ea7dd9526706d348ca84c66aee5ecd69e3578ee11c5fa807c",
+        "size_bytes": 6144
+      },
+      "r1_ema995_seed1337": {
+        "git_blob": "f8efc4f912643ff3b4917b51e5999e22177efa0a",
+        "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/results/r1_ema995_seed1337.json",
+        "sha256": "0aba98130c6d3f80b91731f59b130531f7792266338fe230ae02f581df43c194",
+        "size_bytes": 7678
+      },
+      "r1_ema995_seed2027": {
+        "git_blob": "d15e9b3fdf1e94a51b14d096222b37f75c77043c",
+        "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/results/r1_ema995_seed2027.json",
+        "sha256": "4852ad7788c13197f8a0c9ac6fc4a075974471a0db031d024a417d46332a80df",
+        "size_bytes": 7673
+      }
+    },
+    "source_commit": "aebc577249d202ab9f32e4dac2bc939f496a6ddc",
+    "source_manifest": {
+      "git_blob": "c5654ca7a860d7381eadf06f4dfe033713a5d703",
+      "git_head": "a2bfe0fce7ac1a6a6b075a65b8538aa32165e3c6",
+      "manifest_commit": "5a1a75d1b00f639fb04a522dda6c390d5535732f",
+      "path": "numerai/agents/experiments/ender24_ema_seed_stability_v53/source_manifest_round1.json",
+      "sha256": "bd55280e4a99a1b45be87cc5af73aea2615da14a4de0e0662d1ac6c008ab1b35",
+      "size_bytes": 5491
+    },
+    "terminal_commit": "d12f75552d76ebceb7c73fa3ff0ef9c608105599",
+    "terminal_tag": "numerai-ender24-terminal",
+    "text_authority": {
+      "era_allowlist": {
+        "canonical_lf": {
+          "sha256": "be0c212a8e910f56dbdae4e1e134fa36ce7e5e1a95e43faa1ccc9e6330f544ca",
+          "size_bytes": 1763
+        },
+        "path": "numerai/agents/experiments/ender21_residual_stability_v53/protocol/discovery_eras_through_0861.json",
+        "sealed_physical": {
+          "sha256": "4ffd0ef68092d935c121b45c83a89ef67afe832b48fc259e425d3fe3f51deae7",
+          "size_bytes": 1941
+        }
+      },
+      "feature_columns": {
+        "canonical_lf": {
+          "sha256": "663184191e17d2fa4fac6dae017890f0e762368e638d46cfaa489297b9b2049b",
+          "size_bytes": 148179
+        },
+        "path": "numerai/agents/experiments/ender21_residual_stability_v53/protocol/feature_columns_all_v53.json",
+        "sealed_physical": {
+          "sha256": "e4df25383aff5ddf9446df275f55a8a93ca64f926a842f4cf84a68280adf769d",
+          "size_bytes": 151736
+        }
+      }
+    }
+  },
+  "external_artifacts": {
+    "numerai/agents/experiments/ender24_ema_seed_stability_v53/predictions/r1_control_seed1337.parquet": {
+      "git_ignored": true,
+      "sha256": "3e5285e3d5b9e3dea7df8da3d121a0157fa83e91bbec371c30526a8539aced73",
+      "size_bytes": 15779944
+    },
+    "numerai/agents/experiments/ender24_ema_seed_stability_v53/predictions/r1_control_seed2027.parquet": {
+      "git_ignored": true,
+      "sha256": "183e9f2d74f44e34a8b0bd36b34d86d76808ae501a1d06e46b3d33cc89ce0df0",
+      "size_bytes": 15786216
+    },
+    "numerai/agents/experiments/ender24_ema_seed_stability_v53/predictions/r1_ema995_seed1337.parquet": {
+      "git_ignored": true,
+      "sha256": "373110812795dc907e7ee8346b209204a73a3e242a6665cf14863aeb0abb467f",
+      "size_bytes": 15786841
+    },
+    "numerai/agents/experiments/ender24_ema_seed_stability_v53/predictions/r1_ema995_seed2027.parquet": {
+      "git_ignored": true,
+      "sha256": "763d8030056af4e83828ce952c86ec499452014dd9a14ba361e0daccd7f501f6",
+      "size_bytes": 15787673
+    },
+    "numerai/v5.3/ender21_discovery_benchmark_models_through_0861.parquet": {
+      "last_era": "0861",
+      "sha256": "c2db9a77811390e9b9c47926b62fbfb7a6c7af24bb9c4db63137798e61b955b6",
+      "size_bytes": 23325224
+    },
+    "numerai/v5.3/ender21_discovery_full_through_0861.parquet": {
+      "last_era": "0861",
+      "sha256": "476d561ba8515a0066e892c5489a5ae1db6443587e9d5d06a9a6280400a701b9",
+      "size_bytes": 1302848771
+    }
+  },
+  "files": {
+    "numerai/agents/code/metrics/numerai_metrics.py": "c22774ce80b496a388036c16d42f71c75c962625cc2de26de3429ec09387bcc8",
+    "numerai/agents/code/modeling/utils/constants.py": "3efc9621c52e7dc8cc0fd39e3c2ac576a2d3b55d6d0cb3008488ab404793a4d7",
+    "numerai/agents/experiments/ender21_residual_stability_v53/protocol/discovery_eras_through_0861.json": "4ffd0ef68092d935c121b45c83a89ef67afe832b48fc259e425d3fe3f51deae7",
+    "numerai/agents/experiments/ender21_residual_stability_v53/protocol/feature_columns_all_v53.json": "e4df25383aff5ddf9446df275f55a8a93ca64f926a842f4cf84a68280adf769d",
+    "numerai/agents/experiments/ender24_ema_seed_stability_v53/configs/base_r1.py": "e74024cf35d43a90f5330391f182844ad501cddaabea2748f7b31e05a4f27a14",
+    "numerai/agents/experiments/ender24_ema_seed_stability_v53/configs/r1_control_seed1337.py": "4aa28eb6cccd3ceb376b3e2a0d439b715c087beacd6c96a865a7069aadefccc4",
+    "numerai/agents/experiments/ender24_ema_seed_stability_v53/configs/r1_control_seed2027.py": "fbf91f7817807368bbadb4c24de0d33501107fbda1bdd222c8f132d51b56453a",
+    "numerai/agents/experiments/ender24_ema_seed_stability_v53/configs/r1_ema995_seed1337.py": "ae064a2cbdf8aad663d30cfa4b4d200bdaec5513383213420d7e26884b91ed30",
+    "numerai/agents/experiments/ender24_ema_seed_stability_v53/configs/r1_ema995_seed2027.py": "c42c6f8e00ab2b67cecc2683e16245dc581de77af638a210285561c93c7cd16d",
+    "numerai/agents/experiments/ender24_ema_seed_stability_v53/evaluation_common.py": "d4267e37dfc411b7c7fd6a985b24ffc3277af3158583845302375471a6f5c0d3",
+    "numerai/agents/experiments/ender25_ender24_evaluation_recovery_v53/evaluate_recovery.py": "5864cd6a2b492a388fdc90dce6b2cf54c67c06abb5e6287ec398a17c27c08451",
+    "numerai/agents/experiments/ender25_ender24_evaluation_recovery_v53/evaluate_recovery_impl.py": "951eaf533f8c4f05252f765d44a0be1e23f0f1e751e33716570f1efb484c77aa",
+    "numerai/agents/experiments/ender25_ender24_evaluation_recovery_v53/evaluation_bootstrap.py": "34ee95847cc39e59af4f088fe736970d1caf7c1a4a1af965ec1b79c50d736d97",
+    "numerai/agents/experiments/ender25_ender24_evaluation_recovery_v53/evaluation_common.py": "97efa036eb28085d4fd6ec4edf542465891739ed922c50dcb3a04a1521d7591d",
+    "numerai/agents/experiments/ender25_ender24_evaluation_recovery_v53/experiment.md": "d2d1c4fc61787ccbd45aaa5e9027e6be2d8687cf7d5ad7da9a55ca5b17bca52a",
+    "numerai/agents/experiments/ender25_ender24_evaluation_recovery_v53/gate.md": "0b4ea82ed29b8be332f754c144157f5c6acbea860660d627aa7d66790d6e5ac1",
+    "numerai/agents/experiments/ender25_ender24_evaluation_recovery_v53/protocol/ender24_input_authority.json": "f0942f002c7007031b1d3cdb6c7307ff9775321fad2a63bfdcecbb55be2efa89",
+    "numerai/agents/experiments/ender25_ender24_evaluation_recovery_v53/receipts/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "numerai/agents/tests/test_ender25_ema_evaluation_recovery.py": "044d54c6f9c448b732cce477bd75cd384ca2d901eb3245f6ff410e4a0aeeb938"
+  },
+  "frozen_at": "2026-08-13T15:29:00Z",
+  "git_head": "cf6873623be4cc5826000ae4c214b553960091e4",
+  "hash_algorithm": "sha256",
+  "runtime": {
+    "packages": {
+      "numerai-tools": "0.6.0",
+      "numerapi": "2.23.3",
+      "numpy": "2.5.1",
+      "pandas": "3.0.5",
+      "pyarrow": "25.0.0",
+      "scikit-learn": "1.9.0",
+      "scipy": "1.18.0"
+    },
+    "python": "3.13.14"
+  },
+  "schema_version": 1
+}
