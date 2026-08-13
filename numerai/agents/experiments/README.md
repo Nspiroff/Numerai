@@ -22,6 +22,16 @@ bytes against LF Git-blob fingerprints. No scientific decision was produced;
 Round 2 is unauthorized. The immutable training artifacts are preserved for a
 separately reviewed recovery gate, not for an Ender24 retry.
 
+## Active source gate
+
+[Ender25 Ender24 evaluation recovery](ender25_ender24_evaluation_recovery_v53/experiment.md)
+is the source-only recovery gate for those four preserved runs. It introduces
+a new evaluator stage and create-only decision namespace, while keeping the
+old Ender24 evaluator and decision path closed. Its protocol binds physical
+bytes independently from strict LF/CRLF-canonical JSON authority. No Ender25
+manifest, artifact read, evaluation, score, Round-2 execution, deployment, or
+account action is authorized by the source scaffold.
+
 ## Ender20-24 outcome chain
 
 | Family | Terminal state | Key conclusion | Canonical record | Archival point |
@@ -52,10 +62,11 @@ separately reviewed recovery gate, not for an Ender24 retry.
 
 1. Do not retry Ender24 training or evaluation, populate its old decision path,
    infer an EMA winner from its stored results, or launch its Round 2.
-2. If recovery is authorized, create a newly named evaluation-recovery family
-   that binds the immutable Ender24 completions and artifacts as held inputs.
-3. Give that family a new evaluator stage, create-only decision path, source
-   review, manifest-only seal, and explicit launch authorization.
+2. Review the Ender25 evaluation-recovery source and its synthetic portability
+   and custody regressions independently.
+3. Only after that review, create a separate manifest-only seal for the exact
+   Ender25 source set. Evaluation still requires later explicit launch
+   authorization.
 4. Treat the manifest as raw-byte custody while validating JSON authority by
    canonical semantics, with regressions for LF/CRLF equivalence and semantic
    mutation rejection.
