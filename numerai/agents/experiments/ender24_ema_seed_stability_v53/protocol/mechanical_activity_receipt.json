@@ -1,0 +1,117 @@
+{
+  "authority": {
+    "account_mutation": false,
+    "data_access": false,
+    "deployment": false,
+    "evaluation": false,
+    "manifest_only_seal": true,
+    "output_reservation": false,
+    "round1_launch": false,
+    "round2": false,
+    "scoring": false,
+    "training": false
+  },
+  "observed_at": "2026-08-13T11:59:10Z",
+  "proofs": {
+    "compatibility": {
+      "eager_disk_ema_parity": true,
+      "non_ema_optimizer_path_unchanged": true,
+      "prediction_uses_restored_ema_state": true,
+      "tests": [
+        "test_control_optimizer_path_never_queries_scale",
+        "test_fit_records_active_terminal_and_inference_hashes",
+        "test_full_disk_fit_validation_and_prediction_match_eager_ema"
+      ]
+    },
+    "ema_fold_activity": {
+      "all_live_shadow_hashes_differ": true,
+      "all_updates_positive": true,
+      "synthetic_fold_count": 3,
+      "test": "test_oof_diagnostics_bind_ema_activity"
+    },
+    "matched_control_ema_activity": {
+      "batch_order_identical": true,
+      "ema_decay": 0.995,
+      "initial_parameters_identical": true,
+      "model_seed": 1337,
+      "test": "test_model_seeds_are_active_and_matched_initialization_is_exact"
+    },
+    "model_seed_activity": {
+      "batch_order_hashes_all_distinct": true,
+      "initial_parameter_hashes_all_distinct": true,
+      "model_seeds": [
+        1337,
+        2027,
+        7331
+      ],
+      "test": "test_model_seeds_are_active_and_matched_initialization_is_exact"
+    },
+    "sample_seed_inactive": {
+      "evidence": {
+        "canonical_lf_sha256": "399d3bf16c9efae734a13653ee4b7f744080350fd774a4c94e8e6e02c2012d1c",
+        "path": "numerai/agents/experiments/ender23_temporal_retention_v53/results/r1_recent_window78.json"
+      },
+      "fold_train_eras": [
+        22,
+        57,
+        78,
+        78
+      ],
+      "fold_train_rows": [
+        117820,
+        290284,
+        394883,
+        415481
+      ],
+      "max_observed_train_rows": 415481,
+      "replication_axis": false,
+      "row_cap": 500000,
+      "sample_seed": 1337,
+      "test": "test_ender24_config_matrix_is_exact"
+    }
+  },
+  "schema_version": 1,
+  "stage": "ender24-mechanical-activity-preseal",
+  "state": "PASS_MANIFEST_SEAL_ONLY",
+  "test_run": {
+    "argv": [
+      "../.venv/Scripts/python.exe",
+      "-B",
+      "-X",
+      "pycache_prefix=C:\\Users\\Shadow\\AppData\\Local\\Temp\\ender24-receipt-c0d71bb9ded44a158a2febfae50182e9",
+      "-m",
+      "unittest",
+      "-v",
+      "agents.tests.test_ender24_ema_seed_stability"
+    ],
+    "cwd": "numerai",
+    "elapsed_seconds": 1249.54,
+    "exit_code": 0,
+    "pycache_policy": {
+      "dont_write_bytecode": true,
+      "outside_repository": true,
+      "prefix_was_fresh_and_empty": true
+    },
+    "result": "OK",
+    "runtime": {
+      "packages": {
+        "numerai-tools": "0.6.0",
+        "numerapi": "2.23.3",
+        "numpy": "2.5.1",
+        "pandas": "3.0.5",
+        "pyarrow": "25.0.0",
+        "rtdl-num-embeddings": "0.0.12",
+        "tabm": "0.0.3",
+        "torch": "2.13.0+cu130"
+      },
+      "python": "3.13.14"
+    },
+    "tests_run": 12
+  },
+  "tested_source": {
+    "git_head": "aebc577249d202ab9f32e4dac2bc939f496a6ddc",
+    "hash_algorithm": "sha256",
+    "test_path": "numerai/agents/tests/test_ender24_ema_seed_stability.py",
+    "test_sha256": "e144d58ee34a0a615fe8c05c65ed7ffcb80b42bb39e00f8a77ea00ec1bce93b1"
+  }
+}
