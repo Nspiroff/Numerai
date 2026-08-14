@@ -8,29 +8,24 @@ decisions.
 
 No Ender20-family model is approved for deployment. No upload, assignment,
 staking, submission, or Numerai account mutation is authorized. Ender20
-through Ender25 are closed research families; their frozen artifacts and
+through Ender26 are closed research families; their frozen artifacts and
 decision records must not be overwritten or reused as new runs.
 
 ## Latest terminal experiment
 
-[Ender25 Ender24 evaluation recovery](ender25_ender24_evaluation_recovery_v53/terminal_postmortem.md)
-is closed at `ENDER25_NEGATIVE_NO_EMA_STABILITY_GAIN`. The one authorized
-recovery evaluation completed successfully over the exact four preserved
-Ender24 runs. EMA 0.995 compressed the seed gap, but retained only 88.03% of
-control mean full BMC and 91.99% of control recent-40 BMC; seed 1337 also failed
-the matched Sharpe and drawdown guards. Round 2 is unauthorized.
+[Ender26 Gaussian-rank benchmark residual](ender26_gaussian_rank_residual_v53/terminal_postmortem.md)
+is closed at `ENDER26_NEGATIVE_NO_BMC_ALIGNMENT_GAIN`. Mean full and recent-40
+BMC improved and benchmark correlation fell, but seed 1337 lost recent-40 BMC
+and exceeded its matched drawdown allowance. The predeclared cross-seed gate
+therefore rejected the procedure. Round 2 is unauthorized.
 
-## Active research gate
+## No active research gate
 
-[Ender26 Gaussian-rank benchmark residual](ender26_gaussian_rank_residual_v53/experiment.md)
-is an active **source-only** Round-1 gate. It tests whether moving Numerai's
-rank-Gaussian benchmark projection to the target side improves stable BMC over
-the fixed non-EMA window-78 control. The exact four-run, two-seed comparison,
-source custody, evaluator, and stop rules are implemented, but no manifest,
-data access, training, scoring, output reservation, Round 2, deployment, or
-account action is authorized.
+No research gate is active. Ender26 is terminal, and no Ender27 source,
+manifest, training, scoring, Round 2, deployment, or account action is
+authorized.
 
-## Ender20-25 outcome chain
+## Ender20-26 outcome chain
 
 | Family | Terminal state | Key conclusion | Canonical record | Archival point |
 | --- | --- | --- | --- | --- |
@@ -40,6 +35,7 @@ account action is authorized.
 | Ender23 | `NEGATIVE_SEED_INSTABILITY` | The memory repair worked and window-78 won Round 1. Two of three Round-2 realizations qualified, but the fixed ensemble failed its Sharpe and drawdown gates. | [Terminal postmortem](ender23_temporal_retention_v53/round2_terminal_postmortem.md) | `aff188b`, tag `numerai-ender23-terminal` |
 | Ender24 | No decision; evaluator precondition failure | Four matched control/EMA runs finalized, but a CRLF/LF authority-fingerprint defect stopped the evaluator before metrics. Round 2 was not authorized. | [Round-1 execution postmortem](ender24_ema_seed_stability_v53/round1_execution_postmortem.md) | `d12f755`, tag `numerai-ender24-terminal` |
 | Ender25 | `ENDER25_NEGATIVE_NO_EMA_STABILITY_GAIN` | The repaired one-shot evaluator produced the missing scientific decision. EMA greatly compressed seed variance, but lost average full and recent BMC and worsened seed-1337 Sharpe/drawdown. | [Terminal postmortem](ender25_ender24_evaluation_recovery_v53/terminal_postmortem.md) | `9f6a08c`, tags `numerai-ender25-terminal` and `numerai-ender25-terminal-custody` |
+| Ender26 | `ENDER26_NEGATIVE_NO_BMC_ALIGNMENT_GAIN` | Gaussian-rank target residualization improved aggregate full/recent BMC and decorrelated from the benchmark, but seed 1337 failed the matched recent-40 and drawdown guards. | [Terminal postmortem](ender26_gaussian_rank_residual_v53/terminal_postmortem.md) | tag `numerai-ender26-terminal` |
 
 ## What the sequence established
 
@@ -60,18 +56,23 @@ account action is authorized.
   decision without retraining. EMA reduced seed dispersion, but the lower mean
   BMC and seed-1337 risk regression proved that variance compression alone was
   not a stronger modeling procedure.
+- Ender26 directly improved mean benchmark-unique contribution and reduced
+  benchmark correlation. The gain was nevertheless non-robust: seed 1337 lost
+  recent-40 BMC and breached the matched drawdown guard, so aggregate gains did
+  not justify promotion.
 
 ## Next admissible work
 
-1. Do not retry Ender24 or Ender25, populate the old Ender24 decision path,
-   add EMA seeds, change the EMA decay or thresholds, or launch Round 2.
-2. Review and merge the Ender26 source-only gate. Its sole new scientific
-   variable is the target-side Gaussian-rank benchmark projection; do not add
-   another architecture, temporal window, seed, transform, or threshold.
-3. Only after source review may Ender26 receive a separate manifest-only seal.
-   Training and evaluation still require later explicit user authorization.
-4. Do not reuse consumed eras `0865`-`1021` for model selection. Historical
-   eras `1022`-`1230` are not a substitute confirmation cohort.
+1. Do not retry Ender24, Ender25, or Ender26; replace cohort members; add or
+   select seeds; loosen thresholds; or launch Round 2.
+2. A future Ender27 may begin only as a new source-only family with one fixed,
+   preregistered hypothesis. The current evidence suggests testing
+   `lambda=0.5` partial Gaussianization while holding the architecture,
+   training procedure, seeds, cohort, and gates fixed. Do not sweep lambda.
+3. Ender27 source review, a manifest-only seal, training, and evaluation each
+   require separate authorization. No such authority exists now.
+4. Do not reuse consumed eras `0301`-`1021` for post-hoc model selection.
+   Historical eras `1022`-`1230` are not a substitute confirmation cohort.
 5. Keep deployment separate: it requires a successful, separately frozen
    prospective validation and explicit user authorization for any account
    action.
