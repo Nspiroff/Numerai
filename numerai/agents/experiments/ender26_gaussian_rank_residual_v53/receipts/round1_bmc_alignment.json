@@ -1,0 +1,493 @@
+{
+  "account_actions_authorized": false,
+  "aggregate_checks": {
+    "mean_full_bmc_at_least_control_plus_0_00020": true,
+    "mean_recent40_bmc_at_least_control_plus_0_00030": true
+  },
+  "aggregates": {
+    "control": {
+      "full_bmc": {
+        "absolute_two_seed_gap": 0.0017069706432935863,
+        "mean": 0.005811426364338923,
+        "worst_seed": 0.004957941042692131
+      },
+      "recent40_bmc": {
+        "absolute_two_seed_gap": 0.0026315400136204814,
+        "mean": 0.007174454375737901,
+        "worst_seed": 0.00585868436892766
+      }
+    },
+    "gaussian_rank_residual": {
+      "full_bmc": {
+        "absolute_two_seed_gap": 0.0012465039039003707,
+        "mean": 0.006696542612103755,
+        "worst_seed": 0.006073290660153569
+      },
+      "recent40_bmc": {
+        "absolute_two_seed_gap": 0.00032519557214282305,
+        "mean": 0.0077901649929698336,
+        "worst_seed": 0.007627567206898422
+      }
+    }
+  },
+  "challenger_run_checks": {
+    "r1_grank_resid_seed1337": {
+      "all_used_folds_bmc_positive": true,
+      "benchmark_corr_below_0_25": true,
+      "corr_at_least_0_008": true,
+      "corr_below_0_04": true,
+      "drawdown_no_greater_than_matched_control_plus_0_01": false,
+      "full_bmc_retains_95pct_matched_control": true,
+      "matched_recent40_bmc_at_least_control": false,
+      "sharpe_not_below_matched_control_minus_0_05": true,
+      "three_of_four_recent_blocks_positive": true,
+      "worst_recent_block_above_minus_0_001": true
+    },
+    "r1_grank_resid_seed2027": {
+      "all_used_folds_bmc_positive": true,
+      "benchmark_corr_below_0_25": true,
+      "corr_at_least_0_008": true,
+      "corr_below_0_04": true,
+      "drawdown_no_greater_than_matched_control_plus_0_01": true,
+      "full_bmc_retains_95pct_matched_control": true,
+      "matched_recent40_bmc_at_least_control": true,
+      "sharpe_not_below_matched_control_minus_0_05": true,
+      "three_of_four_recent_blocks_positive": true,
+      "worst_recent_block_above_minus_0_001": true
+    }
+  },
+  "continuation_authorized": false,
+  "deployment_authorized": false,
+  "inputs": {
+    "authority": {
+      "path": "C:/Users/Shadow/Desktop/example-scripts/numerai/agents/experiments/ender26_gaussian_rank_residual_v53/protocol/discovery_data_authority.json",
+      "sha256": "8ddce78ce4495829919374ecc02bf996ccf930d2aba5fdeec56577eb55670652",
+      "size_bytes": 1840
+    },
+    "benchmark": {
+      "path": "C:/Users/Shadow/Desktop/example-scripts/numerai/v5.3/ender21_discovery_benchmark_models_through_0861.parquet",
+      "sha256": "c2db9a77811390e9b9c47926b62fbfb7a6c7af24bb9c4db63137798e61b955b6",
+      "size_bytes": 23325224
+    },
+    "full": {
+      "path": "C:/Users/Shadow/Desktop/example-scripts/numerai/v5.3/ender21_discovery_full_through_0861.parquet",
+      "sha256": "476d561ba8515a0066e892c5489a5ae1db6443587e9d5d06a9a6280400a701b9",
+      "size_bytes": 1302848771
+    },
+    "manifest": {
+      "path": "C:/Users/Shadow/Desktop/example-scripts/numerai/agents/experiments/ender26_gaussian_rank_residual_v53/source_manifest_round1.json",
+      "sha256": "942afcbdb23f246dba337cad16086c9a4c938b07abdb7bde6932c2b03a4c6909",
+      "size_bytes": 5504
+    }
+  },
+  "matched_pairs": {
+    "1337": {
+      "challenger": "r1_grank_resid_seed1337",
+      "checks": {
+        "exact_cohort": true,
+        "exact_common_provenance": true,
+        "exact_config_delta": true
+      },
+      "cohort": {
+        "eras": 141,
+        "first_era": "0301",
+        "last_era": "0861",
+        "rows": 768362,
+        "sha256": "46b98f2474af29f13b0f39f9320782f4371580a0a82da1d480bf1743253665df"
+      },
+      "config_delta": [
+        "model.target_transform.benchmark_transform",
+        "output.results_name"
+      ],
+      "control": "r1_control_rawresid_seed1337",
+      "model_seed": 1337,
+      "sample_seed": 1337
+    },
+    "2027": {
+      "challenger": "r1_grank_resid_seed2027",
+      "checks": {
+        "exact_cohort": true,
+        "exact_common_provenance": true,
+        "exact_config_delta": true
+      },
+      "cohort": {
+        "eras": 141,
+        "first_era": "0301",
+        "last_era": "0861",
+        "rows": 768362,
+        "sha256": "46b98f2474af29f13b0f39f9320782f4371580a0a82da1d480bf1743253665df"
+      },
+      "config_delta": [
+        "model.target_transform.benchmark_transform",
+        "output.results_name"
+      ],
+      "control": "r1_control_rawresid_seed2027",
+      "model_seed": 2027,
+      "sample_seed": 1337
+    }
+  },
+  "passed": false,
+  "round2_authorized": false,
+  "round2_source_gate_authorized": false,
+  "round2_source_gate_eligible": false,
+  "runs": {
+    "r1_control_rawresid_seed1337": {
+      "artifacts": {
+        "completion": {
+          "path": "C:/Users/Shadow/Desktop/example-scripts/numerai/agents/experiments/ender26_gaussian_rank_residual_v53/receipts/r1_control_rawresid_seed1337.completion.json",
+          "sha256": "c14b899e88332b7d1e6c87afc1f01b313ce14d71afed294eb84204c9431f2778",
+          "size_bytes": 1421
+        },
+        "config": {
+          "path": "C:/Users/Shadow/Desktop/example-scripts/numerai/agents/experiments/ender26_gaussian_rank_residual_v53/configs/r1_control_rawresid_seed1337.py",
+          "sha256": "97091413c0f61387549ea997f3a5a1144213fb5d46d0b2778c0e23a307b3edcf",
+          "size_bytes": 193
+        },
+        "prediction": {
+          "path": "C:/Users/Shadow/Desktop/example-scripts/numerai/agents/experiments/ender26_gaussian_rank_residual_v53/predictions/r1_control_rawresid_seed1337.parquet",
+          "sha256": "3e5285e3d5b9e3dea7df8da3d121a0157fa83e91bbec371c30526a8539aced73",
+          "size_bytes": 15779944
+        },
+        "result": {
+          "path": "C:/Users/Shadow/Desktop/example-scripts/numerai/agents/experiments/ender26_gaussian_rank_residual_v53/results/r1_control_rawresid_seed1337.json",
+          "sha256": "eba837ea35b58a5c7b4d21d93c00f7229201122a1020305b67cc7513304e5570",
+          "size_bytes": 6161
+        }
+      },
+      "eras": 141,
+      "first_era": "0301",
+      "last_era": "0861",
+      "metrics": {
+        "avg_corr_with_benchmark": 0.09426613361228738,
+        "bmc": {
+          "max_drawdown": 0.04361362545889927,
+          "mean": 0.006664911685985717,
+          "sharpe": 0.6290597832999971,
+          "std": 0.010595037010667135
+        },
+        "corr_mean": 0.010706598203043503,
+        "fold_bmc_mean": {
+          "1": 0.0025533472216259,
+          "2": 0.007086776409377295,
+          "3": 0.008564303749308676,
+          "4": 0.008405488594807518
+        },
+        "recent40_bmc_mean": 0.008490224382548142,
+        "recent_blocks_bmc_mean": {
+          "0705-0741": 0.009938452293358671,
+          "0745-0781": 0.011171348584415475,
+          "0785-0821": 0.008998627719899554,
+          "0825-0861": 0.0038524689325188655
+        }
+      },
+      "parameter_count": 2866944,
+      "procedure": {
+        "benchmark_transform": "identity",
+        "model_seed": 1337,
+        "sample_seed": 1337
+      },
+      "provenance": {
+        "component": "r1_control_rawresid_seed1337",
+        "config": {
+          "path": "numerai/agents/experiments/ender26_gaussian_rank_residual_v53/configs/r1_control_rawresid_seed1337.py",
+          "sha256": "97091413c0f61387549ea997f3a5a1144213fb5d46d0b2778c0e23a307b3edcf"
+        },
+        "manifest": {
+          "git_head": "18ea8bbae1976fadf2574cce8c6c231c7fd2dc5d",
+          "path": "numerai/agents/experiments/ender26_gaussian_rank_residual_v53/source_manifest_round1.json",
+          "sha256": "942afcbdb23f246dba337cad16086c9a4c938b07abdb7bde6932c2b03a4c6909"
+        },
+        "outputs": {
+          "predictions": {
+            "device": 6109702118523114368,
+            "inode": 56857945297054303,
+            "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender26_gaussian_rank_residual_v53\\predictions\\r1_control_rawresid_seed1337.parquet",
+            "sha256": "3e5285e3d5b9e3dea7df8da3d121a0157fa83e91bbec371c30526a8539aced73",
+            "size_bytes": 15779944
+          },
+          "result": {
+            "device": 6109702118523114368,
+            "inode": 53761720553237089,
+            "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender26_gaussian_rank_residual_v53\\results\\r1_control_rawresid_seed1337.json",
+            "sha256": "eba837ea35b58a5c7b4d21d93c00f7229201122a1020305b67cc7513304e5570",
+            "size_bytes": 6161
+          }
+        },
+        "schema_version": 1,
+        "stage": "ender26-round1-training-completion",
+        "state": "OUTPUTS_FINALIZED"
+      },
+      "rows": 768362
+    },
+    "r1_control_rawresid_seed2027": {
+      "artifacts": {
+        "completion": {
+          "path": "C:/Users/Shadow/Desktop/example-scripts/numerai/agents/experiments/ender26_gaussian_rank_residual_v53/receipts/r1_control_rawresid_seed2027.completion.json",
+          "sha256": "3159fe19966e83712592639f92dd46cff634ee93ca0ce31d40ff1d4a9081fceb",
+          "size_bytes": 1422
+        },
+        "config": {
+          "path": "C:/Users/Shadow/Desktop/example-scripts/numerai/agents/experiments/ender26_gaussian_rank_residual_v53/configs/r1_control_rawresid_seed2027.py",
+          "sha256": "bf11ac77e8cc9373c378e90bae399598c41aeb17498241c3d3169776f77bce5f",
+          "size_bytes": 193
+        },
+        "prediction": {
+          "path": "C:/Users/Shadow/Desktop/example-scripts/numerai/agents/experiments/ender26_gaussian_rank_residual_v53/predictions/r1_control_rawresid_seed2027.parquet",
+          "sha256": "183e9f2d74f44e34a8b0bd36b34d86d76808ae501a1d06e46b3d33cc89ce0df0",
+          "size_bytes": 15786216
+        },
+        "result": {
+          "path": "C:/Users/Shadow/Desktop/example-scripts/numerai/agents/experiments/ender26_gaussian_rank_residual_v53/results/r1_control_rawresid_seed2027.json",
+          "sha256": "eebc67405a65885404e893a16515ddde40af71e7aa44b977ab9d155fd879f7f4",
+          "size_bytes": 6157
+        }
+      },
+      "eras": 141,
+      "first_era": "0301",
+      "last_era": "0861",
+      "metrics": {
+        "avg_corr_with_benchmark": 0.2140816674471981,
+        "bmc": {
+          "max_drawdown": 0.05825455222025591,
+          "mean": 0.004957941042692131,
+          "sharpe": 0.4406625489351802,
+          "std": 0.011251105987274234
+        },
+        "corr_mean": 0.013883286525787852,
+        "fold_bmc_mean": {
+          "1": 0.00027958917398765773,
+          "2": 0.004430976311528405,
+          "3": 0.009647265664754285,
+          "4": 0.0054595999100035646
+        },
+        "recent40_bmc_mean": 0.00585868436892766,
+        "recent_blocks_bmc_mean": {
+          "0705-0741": 0.007807250744614878,
+          "0745-0781": 0.007862119323628996,
+          "0785-0821": 0.006613825144808717,
+          "0825-0861": 0.0011515422626580515
+        }
+      },
+      "parameter_count": 2866944,
+      "procedure": {
+        "benchmark_transform": "identity",
+        "model_seed": 2027,
+        "sample_seed": 1337
+      },
+      "provenance": {
+        "component": "r1_control_rawresid_seed2027",
+        "config": {
+          "path": "numerai/agents/experiments/ender26_gaussian_rank_residual_v53/configs/r1_control_rawresid_seed2027.py",
+          "sha256": "bf11ac77e8cc9373c378e90bae399598c41aeb17498241c3d3169776f77bce5f"
+        },
+        "manifest": {
+          "git_head": "18ea8bbae1976fadf2574cce8c6c231c7fd2dc5d",
+          "path": "numerai/agents/experiments/ender26_gaussian_rank_residual_v53/source_manifest_round1.json",
+          "sha256": "942afcbdb23f246dba337cad16086c9a4c938b07abdb7bde6932c2b03a4c6909"
+        },
+        "outputs": {
+          "predictions": {
+            "device": 6109702118523114368,
+            "inode": 22236523160196171,
+            "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender26_gaussian_rank_residual_v53\\predictions\\r1_control_rawresid_seed2027.parquet",
+            "sha256": "183e9f2d74f44e34a8b0bd36b34d86d76808ae501a1d06e46b3d33cc89ce0df0",
+            "size_bytes": 15786216
+          },
+          "result": {
+            "device": 6109702118523114368,
+            "inode": 104990166314576875,
+            "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender26_gaussian_rank_residual_v53\\results\\r1_control_rawresid_seed2027.json",
+            "sha256": "eebc67405a65885404e893a16515ddde40af71e7aa44b977ab9d155fd879f7f4",
+            "size_bytes": 6157
+          }
+        },
+        "schema_version": 1,
+        "stage": "ender26-round1-training-completion",
+        "state": "OUTPUTS_FINALIZED"
+      },
+      "rows": 768362
+    },
+    "r1_grank_resid_seed1337": {
+      "artifacts": {
+        "completion": {
+          "path": "C:/Users/Shadow/Desktop/example-scripts/numerai/agents/experiments/ender26_gaussian_rank_residual_v53/receipts/r1_grank_resid_seed1337.completion.json",
+          "sha256": "3e9850084b67730377037e8d32b5fffb8f2524d03b3cfba7d50f43e16169c316",
+          "size_bytes": 1400
+        },
+        "config": {
+          "path": "C:/Users/Shadow/Desktop/example-scripts/numerai/agents/experiments/ender26_gaussian_rank_residual_v53/configs/r1_grank_resid_seed1337.py",
+          "sha256": "0a79882293782a65b656a57aea0947cc16a4ac93225ae8a4a62944f1d10c0442",
+          "size_bytes": 253
+        },
+        "prediction": {
+          "path": "C:/Users/Shadow/Desktop/example-scripts/numerai/agents/experiments/ender26_gaussian_rank_residual_v53/predictions/r1_grank_resid_seed1337.parquet",
+          "sha256": "8d44bd8bda0dda99b56f6ee1b697e15eef7578fb5dda9a8b6958d0e34e50445f",
+          "size_bytes": 15777522
+        },
+        "result": {
+          "path": "C:/Users/Shadow/Desktop/example-scripts/numerai/agents/experiments/ender26_gaussian_rank_residual_v53/results/r1_grank_resid_seed1337.json",
+          "sha256": "125610c7d23a20e24fd0306d79e7bb924cf77524cea263f4af7fce102e4c7a5d",
+          "size_bytes": 6268
+        }
+      },
+      "eras": 141,
+      "first_era": "0301",
+      "last_era": "0861",
+      "metrics": {
+        "avg_corr_with_benchmark": 0.08010390911750788,
+        "bmc": {
+          "max_drawdown": 0.06198157371018209,
+          "mean": 0.00731979456405394,
+          "sharpe": 0.6756185930105725,
+          "std": 0.010834211254365813
+        },
+        "corr_mean": 0.010679250069693036,
+        "fold_bmc_mean": {
+          "1": 0.0034481209421988583,
+          "2": 0.007424660850484961,
+          "3": 0.010624116614851395,
+          "4": 0.007769433035218697
+        },
+        "recent40_bmc_mean": 0.007952762779041245,
+        "recent_blocks_bmc_mean": {
+          "0705-0741": 0.009037339903884434,
+          "0745-0781": 0.012409214396976658,
+          "0785-0821": 0.007955065718994065,
+          "0825-0861": 0.0024094310963098165
+        }
+      },
+      "parameter_count": 2866944,
+      "procedure": {
+        "benchmark_transform": "tie_kept_rank_gaussian",
+        "model_seed": 1337,
+        "sample_seed": 1337
+      },
+      "provenance": {
+        "component": "r1_grank_resid_seed1337",
+        "config": {
+          "path": "numerai/agents/experiments/ender26_gaussian_rank_residual_v53/configs/r1_grank_resid_seed1337.py",
+          "sha256": "0a79882293782a65b656a57aea0947cc16a4ac93225ae8a4a62944f1d10c0442"
+        },
+        "manifest": {
+          "git_head": "18ea8bbae1976fadf2574cce8c6c231c7fd2dc5d",
+          "path": "numerai/agents/experiments/ender26_gaussian_rank_residual_v53/source_manifest_round1.json",
+          "sha256": "942afcbdb23f246dba337cad16086c9a4c938b07abdb7bde6932c2b03a4c6909"
+        },
+        "outputs": {
+          "predictions": {
+            "device": 6109702118523114368,
+            "inode": 16325548649230484,
+            "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender26_gaussian_rank_residual_v53\\predictions\\r1_grank_resid_seed1337.parquet",
+            "sha256": "8d44bd8bda0dda99b56f6ee1b697e15eef7578fb5dda9a8b6958d0e34e50445f",
+            "size_bytes": 15777522
+          },
+          "result": {
+            "device": 6109702118523114368,
+            "inode": 8725724279080646,
+            "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender26_gaussian_rank_residual_v53\\results\\r1_grank_resid_seed1337.json",
+            "sha256": "125610c7d23a20e24fd0306d79e7bb924cf77524cea263f4af7fce102e4c7a5d",
+            "size_bytes": 6268
+          }
+        },
+        "schema_version": 1,
+        "stage": "ender26-round1-training-completion",
+        "state": "OUTPUTS_FINALIZED"
+      },
+      "rows": 768362
+    },
+    "r1_grank_resid_seed2027": {
+      "artifacts": {
+        "completion": {
+          "path": "C:/Users/Shadow/Desktop/example-scripts/numerai/agents/experiments/ender26_gaussian_rank_residual_v53/receipts/r1_grank_resid_seed2027.completion.json",
+          "sha256": "31e02a76e7ade198a34f9ddd8b09c4ac8474099d70456a7cce6cd1fd1539d77f",
+          "size_bytes": 1401
+        },
+        "config": {
+          "path": "C:/Users/Shadow/Desktop/example-scripts/numerai/agents/experiments/ender26_gaussian_rank_residual_v53/configs/r1_grank_resid_seed2027.py",
+          "sha256": "a04b92bfed03d4437d78a169763cacdfdb375ab92131220738493e347335ddcb",
+          "size_bytes": 253
+        },
+        "prediction": {
+          "path": "C:/Users/Shadow/Desktop/example-scripts/numerai/agents/experiments/ender26_gaussian_rank_residual_v53/predictions/r1_grank_resid_seed2027.parquet",
+          "sha256": "08025c6ea8ad25b74e9ecd3fba4ca2585cc22cfd6d6f1c0c6e57f609344f0599",
+          "size_bytes": 15787116
+        },
+        "result": {
+          "path": "C:/Users/Shadow/Desktop/example-scripts/numerai/agents/experiments/ender26_gaussian_rank_residual_v53/results/r1_grank_resid_seed2027.json",
+          "sha256": "98713a78b02a1eb0fe58d0a435b4d929256ea97cb879765b9f633801e00e8217",
+          "size_bytes": 6272
+        }
+      },
+      "eras": 141,
+      "first_era": "0301",
+      "last_era": "0861",
+      "metrics": {
+        "avg_corr_with_benchmark": 0.12251105471802784,
+        "bmc": {
+          "max_drawdown": 0.057593732097390854,
+          "mean": 0.006073290660153569,
+          "sharpe": 0.5382882144609336,
+          "std": 0.011282600096001806
+        },
+        "corr_mean": 0.010858507473129587,
+        "fold_bmc_mean": {
+          "1": 0.0007096658811702305,
+          "2": 0.005978161104843063,
+          "3": 0.009825192468149493,
+          "4": 0.0077327306162765464
+        },
+        "recent40_bmc_mean": 0.007627567206898422,
+        "recent_blocks_bmc_mean": {
+          "0705-0741": 0.007830469891216904,
+          "0745-0781": 0.010233252368944202,
+          "0785-0821": 0.009279214573928338,
+          "0825-0861": 0.0031673319935042452
+        }
+      },
+      "parameter_count": 2866944,
+      "procedure": {
+        "benchmark_transform": "tie_kept_rank_gaussian",
+        "model_seed": 2027,
+        "sample_seed": 1337
+      },
+      "provenance": {
+        "component": "r1_grank_resid_seed2027",
+        "config": {
+          "path": "numerai/agents/experiments/ender26_gaussian_rank_residual_v53/configs/r1_grank_resid_seed2027.py",
+          "sha256": "a04b92bfed03d4437d78a169763cacdfdb375ab92131220738493e347335ddcb"
+        },
+        "manifest": {
+          "git_head": "18ea8bbae1976fadf2574cce8c6c231c7fd2dc5d",
+          "path": "numerai/agents/experiments/ender26_gaussian_rank_residual_v53/source_manifest_round1.json",
+          "sha256": "942afcbdb23f246dba337cad16086c9a4c938b07abdb7bde6932c2b03a4c6909"
+        },
+        "outputs": {
+          "predictions": {
+            "device": 6109702118523114368,
+            "inode": 73183493945230917,
+            "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender26_gaussian_rank_residual_v53\\predictions\\r1_grank_resid_seed2027.parquet",
+            "sha256": "08025c6ea8ad25b74e9ecd3fba4ca2585cc22cfd6d6f1c0c6e57f609344f0599",
+            "size_bytes": 15787116
+          },
+          "result": {
+            "device": 6109702118523114368,
+            "inode": 87820192734185098,
+            "path": "C:\\Users\\Shadow\\Desktop\\example-scripts\\numerai\\agents\\experiments\\ender26_gaussian_rank_residual_v53\\results\\r1_grank_resid_seed2027.json",
+            "sha256": "98713a78b02a1eb0fe58d0a435b4d929256ea97cb879765b9f633801e00e8217",
+            "size_bytes": 6272
+          }
+        },
+        "schema_version": 1,
+        "stage": "ender26-round1-training-completion",
+        "state": "OUTPUTS_FINALIZED"
+      },
+      "rows": 768362
+    }
+  },
+  "schema_version": 1,
+  "scoring_authorized": false,
+  "stage": "ender26-round1-bmc-alignment",
+  "state": "ENDER26_NEGATIVE_NO_BMC_ALIGNMENT_GAIN",
+  "submission_authorized": false,
+  "training_authorized": false
+}
