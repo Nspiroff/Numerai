@@ -19,11 +19,14 @@ BMC improved and benchmark correlation fell, but seed 1337 lost recent-40 BMC
 and exceeded its matched drawdown allowance. The predeclared cross-seed gate
 therefore rejected the procedure. Round 2 is unauthorized.
 
-## No active research gate
+## Active research gate
 
-No research gate is active. Ender26 is terminal, and no Ender27 source,
-manifest, training, scoring, Round 2, deployment, or account action is
-authorized.
+[Ender27 tempered Gaussian-rank benchmark residual](ender27_tempered_gaussian_rank_residual_v53/experiment.md)
+is an active **source-only** Round-1 gate. It tests one preregistered midpoint
+target-residual blend (`lambda=0.5`) while holding the Ender26 control,
+architecture, training procedure, matched seeds, cohort, and decision law
+fixed. No manifest, data access, output reservation, training, scoring,
+evaluation, Round 2, deployment, or account action is authorized.
 
 ## Ender20-26 outcome chain
 
@@ -65,12 +68,11 @@ authorized.
 
 1. Do not retry Ender24, Ender25, or Ender26; replace cohort members; add or
    select seeds; loosen thresholds; or launch Round 2.
-2. A future Ender27 may begin only as a new source-only family with one fixed,
-   preregistered hypothesis. The current evidence suggests testing
-   `lambda=0.5` partial Gaussianization while holding the architecture,
-   training procedure, seeds, cohort, and gates fixed. Do not sweep lambda.
-3. Ender27 source review, a manifest-only seal, training, and evaluation each
-   require separate authorization. No such authority exists now.
+2. Review and merge the Ender27 source-only gate. Its sole new scientific
+   variable is the fixed `lambda=0.5` target-residual midpoint; do not add a
+   strength sweep, architecture, temporal window, seed, or threshold.
+3. Only after source review may Ender27 receive a separate manifest-only seal.
+   Training and evaluation still require later explicit user authorization.
 4. Do not reuse consumed eras `0301`-`1021` for post-hoc model selection.
    Historical eras `1022`-`1230` are not a substitute confirmation cohort.
 5. Keep deployment separate: it requires a successful, separately frozen

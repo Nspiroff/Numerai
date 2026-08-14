@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from numbers import Real
 from typing import Any
 
 import numpy as np
@@ -44,6 +45,9 @@ def apply_target_transform(
         fit_intercept = bool(transform.get("fit_intercept", True))
         proportion = float(transform.get("proportion", 1.0))
         benchmark_transform = transform.get("benchmark_transform", "identity")
+        benchmark_transform_strength = transform.get(
+            "benchmark_transform_strength", 1.0
+        )
         return residualize_to_column(
             y,
             X,
@@ -53,6 +57,7 @@ def apply_target_transform(
             fit_intercept=fit_intercept,
             proportion=proportion,
             benchmark_transform=benchmark_transform,
+            benchmark_transform_strength=benchmark_transform_strength,
         )
 
     if transform_type in {"subtract_benchmark", "subtract_benchmark_zscore"}:
@@ -84,6 +89,7 @@ def residualize_to_column(
     fit_intercept: bool = True,
     proportion: float = 1.0,
     benchmark_transform: str = "identity",
+    benchmark_transform_strength: float = 1.0,
 ) -> pd.Series:
     if benchmark_col not in X.columns:
         raise ValueError(
@@ -106,10 +112,16 @@ def residualize_to_column(
             "benchmark_transform must be one of: identity, "
             "tie_kept_rank_gaussian."
         )
+    transform_strength = _require_benchmark_transform_strength(
+        benchmark_transform_strength
+    )
 
     benchmark = X[benchmark_col]
     eras = X[era_col] if per_era else None
-    if benchmark_transform == "tie_kept_rank_gaussian":
+    if (
+        benchmark_transform == "tie_kept_rank_gaussian"
+        and transform_strength != 0.0
+    ):
         target_numeric = _require_finite_numeric(y, "target")
         benchmark_numeric = _require_finite_numeric(benchmark, "benchmark")
         if eras is not None and eras.isna().any():
@@ -118,12 +130,22 @@ def residualize_to_column(
             )
         benchmark = _tie_kept_rank_gaussian(benchmark_numeric, groups=eras)
         _require_positive_gaussian_norm(benchmark, groups=eras)
-        residual = _target_side_projection_residual(
+        gaussian_residual = _target_side_projection_residual(
             target_numeric,
             benchmark,
             groups=eras,
             center_target=fit_intercept,
         )
+        if transform_strength == 1.0:
+            residual = gaussian_residual
+        else:
+            identity_residual = _linear_residual(
+                y, X[benchmark_col], groups=eras, fit_intercept=fit_intercept
+            )
+            residual = (
+                (1.0 - transform_strength) * identity_residual
+                + transform_strength * gaussian_residual
+            )
     else:
         residual = _linear_residual(
             y, benchmark, groups=eras, fit_intercept=fit_intercept
@@ -131,6 +153,18 @@ def residualize_to_column(
     if proportion == 1.0:
         return residual
     return (1.0 - proportion) * y.astype("float64") + proportion * residual
+
+
+def _require_benchmark_transform_strength(value: Any) -> float:
+    """Return a finite convex-blend weight without coercing config strings."""
+
+    message = "benchmark_transform_strength must be a finite number in [0, 1]."
+    if isinstance(value, (bool, np.bool_)) or not isinstance(value, Real):
+        raise TypeError(message)
+    strength = float(value)
+    if not np.isfinite(strength) or not 0.0 <= strength <= 1.0:
+        raise ValueError(message)
+    return strength
 
 
 def _require_finite_numeric(values: pd.Series, label: str) -> pd.Series:
