@@ -185,6 +185,132 @@ class TestTargetTransforms(unittest.TestCase):
         self.assertTrue(omitted.index.equals(y.index))
         self.assertEqual(omitted.name, y.name)
 
+    def test_tempered_residual_endpoints_exactly_match_existing_paths(self) -> None:
+        X = pd.DataFrame(
+            {
+                "era": ["0002", "0001", "0002", "0001", "0002", "0001"],
+                "benchmark": [0.9, 0.1, 0.5, 0.3, 0.2, 0.8],
+            },
+            index=[7, 2, 9, 1, 8, 3],
+        )
+        y = pd.Series(
+            [0.7, 0.1, 0.4, 0.6, 0.2, 0.9],
+            index=X.index,
+            name="target",
+        )
+        base = {
+            "type": "residual_to_benchmark",
+            "benchmark_col": "benchmark",
+            "era_col": "era",
+            "per_era": True,
+            "fit_intercept": True,
+            "proportion": 1.0,
+        }
+        identity = apply_target_transform(y, X, base)
+        ender26 = apply_target_transform(
+            y, X, {**base, "benchmark_transform": "tie_kept_rank_gaussian"}
+        )
+
+        strength_zero = apply_target_transform(
+            y,
+            X,
+            {
+                **base,
+                "benchmark_transform": "tie_kept_rank_gaussian",
+                "benchmark_transform_strength": 0.0,
+            },
+        )
+        strength_one = apply_target_transform(
+            y,
+            X,
+            {
+                **base,
+                "benchmark_transform": "tie_kept_rank_gaussian",
+                "benchmark_transform_strength": 1.0,
+            },
+        )
+
+        np.testing.assert_array_equal(
+            strength_zero.to_numpy(), identity.to_numpy()
+        )
+        np.testing.assert_array_equal(strength_one.to_numpy(), ender26.to_numpy())
+
+    def test_tempered_residual_is_exact_target_space_convex_blend(self) -> None:
+        X = pd.DataFrame(
+            {
+                "era": ["b", "a", "b", "a", "b", "a", "b", "a"],
+                "benchmark": [0.95, 0.10, 0.25, 0.70, 0.60, 0.35, 0.05, 0.90],
+            },
+            index=[19, 4, 17, 2, 13, 8, 11, 6],
+        )
+        y = pd.Series(
+            [0.80, 0.15, 0.30, 0.65, 0.45, 0.40, 0.20, 0.95],
+            index=X.index,
+            name="target",
+        )
+        base = {
+            "type": "residual_to_benchmark",
+            "benchmark_col": "benchmark",
+            "era_col": "era",
+            "per_era": True,
+            "fit_intercept": True,
+            "proportion": 1.0,
+        }
+        identity = apply_target_transform(y, X, base)
+        gaussian = apply_target_transform(
+            y, X, {**base, "benchmark_transform": "tie_kept_rank_gaussian"}
+        )
+        tempered = apply_target_transform(
+            y,
+            X,
+            {
+                **base,
+                "benchmark_transform": "tie_kept_rank_gaussian",
+                "benchmark_transform_strength": np.float64(0.5),
+            },
+        )
+        expected = 0.5 * identity + 0.5 * gaussian
+
+        np.testing.assert_array_equal(tempered.to_numpy(), expected.to_numpy())
+        self.assertTrue(tempered.index.equals(y.index))
+        self.assertEqual(tempered.name, y.name)
+        self.assertFalse(np.array_equal(tempered.to_numpy(), identity.to_numpy()))
+        self.assertFalse(np.array_equal(tempered.to_numpy(), gaussian.to_numpy()))
+
+    def test_tempered_residual_rejects_invalid_strengths(self) -> None:
+        X = pd.DataFrame(
+            {"era": ["0001", "0001"], "benchmark": [0.2, 0.8]}
+        )
+        y = pd.Series([0.1, 0.9])
+        base = {
+            "type": "residual_to_benchmark",
+            "benchmark_col": "benchmark",
+            "benchmark_transform": "tie_kept_rank_gaussian",
+        }
+        invalid = (
+            "0.5",
+            None,
+            True,
+            np.bool_(False),
+            0.5 + 0.0j,
+            np.nan,
+            np.inf,
+            -np.inf,
+            -0.0001,
+            1.0001,
+        )
+
+        for strength in invalid:
+            with self.subTest(strength=strength), self.assertRaisesRegex(
+                (TypeError, ValueError),
+                r"benchmark_transform_strength must be a finite number in \[0, 1\]",
+            ):
+                apply_target_transform(
+                    y,
+                    X,
+                    {**base, "benchmark_transform_strength": strength},
+                )
+
     def test_tie_kept_rank_gaussian_is_per_era_finite_and_order_preserving(self) -> None:
         benchmark = pd.Series(
             [4.0, 1.0, np.nan, 1.0, 9.0, 4.0, 9.0, 5.0, 5.0],
