@@ -10,9 +10,12 @@ Its current control-plane summary is in [PROJECT_STATUS.md](PROJECT_STATUS.md),
 and the canonical experiment navigation ledger is in
 [`numerai/agents/experiments/README.md`](numerai/agents/experiments/README.md).
 
-As of 2026-08-16, Ender27's exact four-run Round-1 training cohort is complete.
-Its one-shot evaluator remains separately gated and pending. No Ender-family
-model is approved for deployment or Numerai account action.
+As of 2026-08-16, the Ender27 family is terminal at
+`ENDER27_NEGATIVE_NO_TEMPERED_ALIGNMENT_GAIN`. Its canonical decision and
+terminal postmortem are merged and archived on `main` (evidence PR #27,
+archival tag `numerai-ender27-terminal`). Ender20 through Ender27 are all
+closed; there is currently no active scientific gate. No Ender-family model is
+approved for deployment or Numerai account action.
 
 ## Using Agents
 Numerai is quickly developing open-source agent skills for you to use in the tournament. You can start architecting your very own AI scientist. For example:

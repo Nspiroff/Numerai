@@ -1,8 +1,8 @@
 # Numerai governed research status
 
-**Last verified:** 2026-08-16  
-**Live default-branch checkpoint:** `c63e0465426c580d6144bcc092e199bc2f1dbbe4`  
-**Active lifecycle issue:** [#22 — Ender27](https://github.com/Nspiroff/Numerai/issues/22)
+- **Last verified:** 2026-08-16
+- **Live remote `main` checkpoint:** `99df04ff07ca7cdc9b02bc0cd275d3ecb105a520` (Ender27 evidence merge)
+- **Lifecycle issue:** [#22 — Ender27 terminal](https://github.com/Nspiroff/Numerai/issues/22) (closed as completed)
 
 This document is a human-readable control-plane summary for the repository. It
 does not replace any experiment's `experiment.md`, `gate.md`, manifest,
@@ -17,33 +17,59 @@ No model is approved for deployment. No pickle upload, model assignment,
 staking, submission, model creation, or Numerai account mutation is currently
 authorized.
 
-Ender20 through Ender26 are terminal research families. Ender27 is the only
-active scientific gate.
+**Ender20 through Ender27 are all terminal research families. There is
+currently no active scientific gate.** Any successor modeling requires a newly
+named, separately frozen hypothesis and fresh explicit user authorization.
 
-## Current Ender27 state
+## Ender27 terminal state
 
 Lifecycle state:
 
-`ENDER27_ROUND1_FOUR_RUN_COHORT_COMPLETE_AWAITING_SEPARATE_EVALUATOR_AUTHORITY`
+`ENDER27_NEGATIVE_NO_TEMPERED_ALIGNMENT_GAIN`
 
-The exact four-run Round-1 cohort completed locally, once per component, in the
-frozen order and under the sealed source/runtime/data custody packet:
+The separately authorized one-shot evaluator was invoked exactly once, exited
+0, and durably committed the canonical decision. It was not retried. The
+canonical decision and terminal postmortem are merged and archived on `main`:
 
-| Run | Exit | Prediction bytes | Result bytes | Completion bytes |
-| --- | ---: | ---: | ---: | ---: |
-| `r1_control_rawresid_seed1337` | 0 | 15,779,944 | 6,170 | 1,455 |
-| `r1_tempered_grank_resid_seed1337` | 0 | 15,772,440 | 6,374 | 1,471 |
-| `r1_control_rawresid_seed2027` | 0 | 15,786,216 | 6,166 | 1,455 |
-| `r1_tempered_grank_resid_seed2027` | 0 | 15,788,359 | 6,379 | 1,471 |
+| Item | Identity |
+| --- | --- |
+| Decision path | `numerai/agents/experiments/ender27_tempered_gaussian_rank_residual_v53/receipts/round1_tempered_alignment.json` |
+| Decision size | 21,670 bytes |
+| Decision SHA-256 | `261ed2661dbc282388498ecd2fd8fec668a14ef78bf256b7549bbbdda73fc007` |
+| Decision Git blob | `b6613f93a8bea18c06c60b5f7e26c2e09e2f7748` |
+| Terminal postmortem | `numerai/agents/experiments/ender27_tempered_gaussian_rank_residual_v53/terminal_postmortem.md` |
+| Evidence PR | [#27](https://github.com/Nspiroff/Numerai/pull/27) (merged) |
+| Evidence merge commit | `99df04ff07ca7cdc9b02bc0cd275d3ecb105a520` |
+| Archival tag | `numerai-ender27-terminal` |
 
-The twelve generated training artifacts are intentionally Git-ignored. No run
-was retried. No output was deleted, repaired, redirected, or manually scored.
+Exact result under the frozen 22-condition decision law:
 
-The canonical decision path remains absent:
+- **20 of 22 checks passed; exactly two failed**, both in the recent-40
+  window: the aggregate recent-40 uplift gate
+  (`mean_recent40_bmc_at_least_control_plus_0_00030`) and seed 1337's
+  matched recent-40 gate (`matched_recent40_bmc_at_least_control`).
+- Mean full BMC improved **+5.855608759689358%**
+  (0.005811426364338923 → 0.00615172075559205); the aggregate full-BMC gate
+  passed.
+- Mean recent-40 BMC declined **-4.209843297506477%**
+  (0.007174454375737901 → 0.006872421089068239) instead of clearing the
+  required +0.00030 uplift.
+- Seed 1337's matched recent-40 check failed
+  (0.006780431226718131 < 0.008490224382548142).
+- Seed 1337's drawdown gate **passed**, so tempering repaired one of
+  Ender26's two seed-1337 failures — but not the decisive recent-window
+  failure.
+- The recent-window two-seed gap contracted from
+  0.0026315400136204814 to 0.00018397972470021468.
 
-`numerai/agents/experiments/ender27_tempered_gaussian_rank_residual_v53/receipts/round1_tempered_alignment.json`
+The scientifically correct interpretation is **promising but non-robust
+negative evidence**, not a no-signal result. Under the frozen all-conditions
+law the family is terminal.
 
-Therefore Ender27 has no scientific verdict yet.
+The four training runs each completed exactly once, serially, exit 0; the
+twelve generated training artifacts remain local, nonempty, and intentionally
+Git-ignored, with their identities bound by the completion envelopes and the
+canonical decision's input receipts.
 
 ## Ender27 authority chain
 
@@ -52,52 +78,52 @@ Therefore Ender27 has no scientific verdict yet.
 | Reviewed source commit | `a23ed023f3d592b05cb5368ca68b8a84a83658d8` |
 | Merged source checkpoint A | `f578fef884b1c38a0c7141cd65f7fe3f221b6c59` |
 | Manifest-only commit B | `2d95e361dbc7f724a14835c3b4c491112e80f2bb` |
-| Merged seal checkpoint M / `main` | `c63e0465426c580d6144bcc092e199bc2f1dbbe4` |
+| Merged seal checkpoint M | `c63e0465426c580d6144bcc092e199bc2f1dbbe4` |
 | Manifest Git blob | `4942af7b5576d465678e07ad004e329555c7cf0e` |
 | Source PR | #23 |
 | Manifest PR | #24 |
-| Lifecycle issue | #22 |
+| Evidence PR | #27 |
+| Evidence merge / live `main` | `99df04ff07ca7cdc9b02bc0cd275d3ecb105a520` |
+| Archival tag | `numerai-ender27-terminal` |
+| Lifecycle issue | #22 (closed as completed) |
 
 The sealed inventory contains exactly 31 governed source files, two external
 Parquet identities, Python 3.13.14, and ten exact package versions.
 
-## Frozen Ender27 question
+## Frozen Ender27 question (as tested)
 
-Ender27 tests a single preregistered midpoint between two completed target
+Ender27 tested a single preregistered midpoint between two completed target
 residuals:
 
 `r_0.5 = 0.5 * r_identity + 0.5 * r_grank`
 
-The challenger changes only:
+The challenger changed only:
 
 - `model.target_transform.benchmark_transform = tie_kept_rank_gaussian`
 - `model.target_transform.benchmark_transform_strength = 0.5`
 
-There is no strength sweep, alternate seed selection, adaptive rule, rescue
-blend, architecture change, or threshold change.
-
-The historical scoring cohort is exactly 768,362 OOF rows across 141 eras
-`0301`-`0861`, with recent-40 `0705`-`0861`. Those eras are consumed discovery
-evidence; even a pass would be a historical source gate, not fresh
-confirmation.
+There was no strength sweep, alternate seed selection, adaptive rule, rescue
+blend, architecture change, or threshold change. The historical scoring cohort
+was exactly 768,362 OOF rows across 141 eras `0301`-`0861`, with recent-40
+`0705`-`0861`. Those eras are consumed discovery evidence; even a pass would
+have been a historical source gate, not fresh confirmation.
 
 ## Exact next action
 
-Do not launch the evaluator while another machine job may start Unreal Engine,
-Blender, another trainer, or another substantial workload.
+There is no pending scientific action.
 
-After the competing job finishes:
-
-1. keep local HEAD and `origin/main` exactly at
-   `c63e0465426c580d6144bcc092e199bc2f1dbbe4`;
-2. perform a fresh read-only evaluator preflight;
-3. verify the sealed source/runtime envelope, both governed Parquets, all twelve
-   training artifact identities, resource posture, and decision-path absence;
-4. obtain separate explicit user authorization for exactly one canonical
-   evaluator invocation;
-5. preserve the first truthful evaluator result or failure without retry;
-6. review the scientific decision before publishing any terminal evidence or
-   authoring any Round-2 proposal.
+1. Independent review and merge of the control-ledger documentation in draft
+   PR #25 (this branch).
+2. Repository maintenance tracked in
+   [Issue #26](https://github.com/Nspiroff/Numerai/issues/26), separately
+   gated from any research authority.
+3. Any successor modeling requires a newly named, separately frozen,
+   preregistered hypothesis and fresh explicit user authorization. Consumed
+   eras `0301`-`1021` must not be reused for selection; eras `1022`-`1230` are
+   not a substitute confirmation cohort.
+4. Deployment remains separately gated behind a successful, separately frozen
+   prospective validation and explicit account-action authorization. No such
+   authority exists.
 
 ## Research lineage
 
@@ -110,7 +136,7 @@ After the competing job finishes:
 | Ender24 | Evaluator precondition failure | Training completed, but CRLF/LF authority fingerprints prevented a scientific decision. |
 | Ender25 | `ENDER25_NEGATIVE_NO_EMA_STABILITY_GAIN` | EMA compressed seed variance but weakened mean signal and worsened seed-1337 risk. |
 | Ender26 | `ENDER26_NEGATIVE_NO_BMC_ALIGNMENT_GAIN` | Gaussian-rank target residualization improved aggregate BMC, but seed 1337 failed recent-window and drawdown guards. |
-| Ender27 | Evaluator pending | Tests whether fixed half-strength attenuation preserves Ender26's gains while repairing its matched-seed failures. |
+| Ender27 | `ENDER27_NEGATIVE_NO_TEMPERED_ALIGNMENT_GAIN` | Half-strength tempering kept the full-period BMC gain and repaired seed-1337 drawdown, and it compressed recent-window seed dispersion — but seed-1337 recent-40 BMC and the aggregate recent-40 uplift still failed, so the attenuation was insufficient where it mattered. |
 
 The canonical navigation ledger is
 [`numerai/agents/experiments/README.md`](numerai/agents/experiments/README.md).
@@ -143,34 +169,21 @@ The canonical navigation ledger is
 
 ## Current GitHub hygiene posture
 
-- `main` is intentionally pinned for the pending Ender27 evaluator.
-- Issue #22 is the live active-gate record and is updated through the completed
-  four-run cohort.
-- Draft PR #25 stages only ungoverned status documentation on a separate remote
-  branch. It must not be merged before the Ender27 evaluator gate is complete.
-- Historical source/seal/evidence branches remain available as redundant review
-  anchors. Branch cleanup should occur only after merge ancestry and archival
-  tags are independently confirmed.
+- Remote `main` is at the verified Ender27 evidence merge
+  `99df04ff07ca7cdc9b02bc0cd275d3ecb105a520`, tagged
+  `numerai-ender27-terminal`.
+- Issue #22 is closed as completed and records the full terminal evidence
+  chain. It grants no successor-research authority.
+- Issue #26 is the active repository-maintenance tracker (CI trigger
+  modernization, branch review, labels, protection). Maintenance remains
+  separately gated from research authority.
+- Draft PR #25 stages only ungoverned status documentation on
+  `docs/numerai-control-ledger-2026-08-16`. It remains draft and unmerged
+  pending independent review.
+- Historical source/seal/evidence branches remain available as redundant
+  review anchors. Branch cleanup should occur only after merge ancestry and
+  archival tags are independently confirmed, under Issue #26.
 - The inherited GitHub Actions workflow still targets `master` rather than
-  `main`; CI modernization is repository maintenance, not part of the sealed
-  Ender27 evaluator gate.
+  `main`; CI modernization is repository maintenance under Issue #26.
 - Branch protection is currently disabled on `main`. A future maintenance gate
   should add safeguards compatible with required merge-commit topology.
-
-## Maintenance work that must remain separate from Ender27
-
-The following work is useful but must not change `main` before the evaluator:
-
-- correct the inherited Actions trigger from `master` to `main`;
-- add a lightweight source/test workflow that does not require local Numerai
-  datasets or GPUs;
-- add a repository description and topics;
-- review historical branches for safe deletion after verifying merge/tag
-  custody;
-- add governance-oriented issue labels and milestones;
-- consider branch protection that permits merge commits and blocks force-pushes;
-- publish the final Ender27 decision, postmortem, ledger update, and archival
-  tag only after the evaluator result is reviewed.
-
-These items should be tracked and merged independently from scientific source,
-manifest, execution, evaluator, and account-action gates.
