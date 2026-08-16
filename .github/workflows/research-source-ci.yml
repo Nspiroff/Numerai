@@ -9,6 +9,14 @@
 # exception-envelope divergence are documented in
 # `.github/ci/research-source-scope.md`.
 #
+# BP26 (Issue #26, Phase 2 readiness): the `pull_request` trigger is
+# deliberately path-unfiltered so that BOTH check contexts are reported on
+# every pull request targeting `main`. GitHub leaves a path-skipped required
+# workflow's checks in a permanent "Pending" state, which would block merging
+# once these contexts become required. Push runs on `main` remain path-scoped.
+# Branch protection itself is NOT enabled by this workflow; the proposed
+# configuration lives in `.github/BRANCH_PROTECTION.md`.
+#
 # Two jobs, one contract each:
 #   * `portable-source-contract` (ubuntu-24.04): in-memory compile of the
 #     whole `numerai/agents` tree plus the four platform-portable
@@ -38,13 +46,15 @@
 name: Research Source CI
 
 on:
+  # BP26: no `paths`/`paths-ignore` here. Every PR targeting `main` —
+  # documentation-only, one-file manifest, terminal-evidence, CI-only, and
+  # maintenance PRs included — must emit both check contexts so they can
+  # safely become required checks later. The same complete two-job platform
+  # contract runs on every PR; there is no conditional job skipping, no
+  # fake-success job, and no `continue-on-error`.
   pull_request:
     branches:
       - main
-    paths:
-      - "numerai/agents/**"
-      - ".github/workflows/research-source-ci.yml"
-      - ".github/ci/**"
   push:
     branches:
       - main
