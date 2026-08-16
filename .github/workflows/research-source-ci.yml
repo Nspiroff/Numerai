@@ -1,22 +1,39 @@
-# Research Source CI — deterministic, CPU-only source-contract checks.
+# Research Source CI — deterministic, CPU-only source-contract checks,
+# split by governed platform.
 #
-# CI26 (Issue #26, Phase 1). This workflow validates the governed
+# CI26/PX26 (Issue #26, Phase 1). This workflow validates the governed
 # `numerai/agents` source tree with synthetic, mock-based unit tests only.
 # It is not training, scoring, confirmation, prospective validation,
 # deployment, or account authority, and a passing run grants none of those.
-# Scope, module selection, and exclusions are documented in
+# Scope, module allocation, exclusions, and the known Ender26/27 POSIX
+# exception-envelope divergence are documented in
 # `.github/ci/research-source-scope.md`.
 #
+# Two jobs, one contract each:
+#   * `portable-source-contract` (ubuntu-24.04): in-memory compile of the
+#     whole `numerai/agents` tree plus the four platform-portable
+#     source-contract test modules (38 tests).
+#   * `windows-terminal-custody-contract` (windows-2022): the complete,
+#     unmodified Ender26 and Ender27 archived evaluator custody suites
+#     (38 tests). Those terminal packets were governed and executed on
+#     Windows, and their frozen tests encode the Windows `ValueError`
+#     reservation-refusal envelope; on POSIX the archived bootstrap leaks
+#     `FileExistsError` instead (still fail-closed CREATE_NEW custody).
+#     The archived source and tests are immutable, so their contract runs
+#     on the platform whose behavior they froze. No test method is
+#     skipped, and no `continue-on-error` is used anywhere.
+#
 # Security posture:
-#   * `permissions: contents: read`; no repository write, no secrets, no
+#   * `permissions: contents: read`; checkout with
+#     `persist-credentials: false`; no repository write, no secrets, no
 #     Numerai API credential, no `pull_request_target`.
 #   * Official GitHub actions only, pinned to immutable full commit SHAs.
-#   * Fresh GitHub-hosted Ubuntu runner, fixed Python 3.13.14 (the sealed
+#   * Fresh GitHub-hosted runners, fixed Python 3.13.14 (the sealed
 #     Ender27 runtime Python), exact dependency pins from
 #     `.github/ci/research-source-requirements.txt`.
-#   * No GPU, no CUDA package, no local Numerai dataset, no ignored artifact,
-#     no notebook execution, no canonical one-shot runner or evaluator
-#     invocation, no network API operation by the tests.
+#   * No GPU, no CUDA package, no local Numerai dataset, no ignored
+#     artifact, no notebook execution, no canonical one-shot runner or
+#     evaluator invocation, no network API operation by the tests.
 
 name: Research Source CI
 
@@ -46,8 +63,8 @@ permissions:
   contents: read
 
 jobs:
-  source-contract:
-    name: "Compile and source-contract tests"
+  portable-source-contract:
+    name: "Portable compile and source-contract tests"
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
@@ -55,6 +72,8 @@ jobs:
       PYTHONDONTWRITEBYTECODE: "1"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.13.14"
@@ -64,14 +83,32 @@ jobs:
           pip install -r .github/ci/research-source-requirements.txt
           pip freeze
       - name: Compile governed numerai/agents Python tree
+        run: python -c "import pathlib; files = sorted(pathlib.Path('numerai/agents').rglob('*.py')); [compile(f.read_bytes(), str(f), 'exec') for f in files]; print(f'compiled {len(files)} python files under numerai/agents')"
+      - name: Run portable source-contract test modules
+        # The Ender26/27 archived evaluator suites are deliberately NOT run
+        # here: their frozen custody tests encode the Windows reservation
+        # error envelope and run in the windows-terminal-custody-contract
+        # job instead. See .github/ci/research-source-scope.md.
+        run: python -m unittest -v agents.tests.test_target_transforms agents.tests.test_ender22_evaluators agents.tests.test_ender23_protocol agents.tests.test_ender24_evaluator
+
+  windows-terminal-custody-contract:
+    name: "Windows terminal evaluator custody contracts"
+    runs-on: windows-2022
+    timeout-minutes: 20
+    env:
+      PYTHONPATH: numerai
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13.14"
+      - name: Install exact CI dependency pins
         run: |
-          python -c "import pathlib; files = sorted(pathlib.Path('numerai/agents').rglob('*.py')); [compile(f.read_bytes(), str(f), 'exec') for f in files]; print(f'compiled {len(files)} python files under numerai/agents')"
-      - name: Run selected source-contract test modules
-        run: |
-          python -m unittest -v \
-            agents.tests.test_target_transforms \
-            agents.tests.test_ender22_evaluators \
-            agents.tests.test_ender23_protocol \
-            agents.tests.test_ender24_evaluator \
-            agents.tests.test_ender26_evaluator \
-            agents.tests.test_ender27_evaluator
+          python -m pip install --upgrade pip
+          pip install -r .github/ci/research-source-requirements.txt
+          pip freeze
+      - name: Run complete Ender26 and Ender27 archived custody suites
+        run: python -m unittest -v agents.tests.test_ender26_evaluator agents.tests.test_ender27_evaluator
