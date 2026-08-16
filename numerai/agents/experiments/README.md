@@ -12,13 +12,13 @@ staking, submission, model creation, or Numerai account mutation is authorized.
 artifacts and decision records must not be overwritten, renamed, deleted, or
 reused as new runs.
 
-The live remote `main` checkpoint is:
+The Ender27 terminal-evidence checkpoint is:
 
 `99df04ff07ca7cdc9b02bc0cd275d3ecb105a520`
 
-That checkpoint is the Ender27 terminal-evidence merge (evidence PR #27,
-archival tag `numerai-ender27-terminal`). **There is currently no active
-scientific gate.**
+That checkpoint is the evidence merge (evidence PR #27) and is archived by
+tag `numerai-ender27-terminal`. **There is currently no active scientific
+gate.**
 
 ## Latest terminal experiment
 
@@ -115,17 +115,16 @@ user authorization. Repository maintenance is tracked separately in Issue #26.
 
 ## Next admissible work
 
-1. Independent review and merge of the control-ledger documentation (draft
-   PR #25). Documentation is not research authority.
-2. Repository maintenance under Issue #26 (CI trigger modernization, branch
+1. Repository maintenance under Issue #26 (CI trigger modernization, branch
    review after custody verification, labels, protection). Maintenance is
-   housekeeping, never evidence deletion, and grants no research authority.
-3. Any successor modeling requires a genuinely new, newly named,
+   housekeeping, never evidence deletion, is separately gated from research,
+   and grants no research authority.
+2. Any successor modeling requires a genuinely new, newly named,
    separately frozen, preregistered hypothesis and fresh explicit user
    authorization. This ledger deliberately does not design one.
-4. Do not reuse consumed eras `0301`-`1021` for post-hoc model selection.
+3. Do not reuse consumed eras `0301`-`1021` for post-hoc model selection.
    Historical eras `1022`-`1230` are not a substitute confirmation cohort.
-5. Keep deployment separate. It requires a successful, separately frozen
+4. Keep deployment separate. It requires a successful, separately frozen
    prospective validation and explicit authorization for every account action.
    No such authority exists.
 

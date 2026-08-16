@@ -1,7 +1,7 @@
 # Numerai governed research status
 
 - **Last verified:** 2026-08-16
-- **Live remote `main` checkpoint:** `99df04ff07ca7cdc9b02bc0cd275d3ecb105a520` (Ender27 evidence merge)
+- **Ender27 terminal-evidence checkpoint:** `99df04ff07ca7cdc9b02bc0cd275d3ecb105a520` (archived by tag `numerai-ender27-terminal`)
 - **Lifecycle issue:** [#22 — Ender27 terminal](https://github.com/Nspiroff/Numerai/issues/22) (closed as completed)
 
 This document is a human-readable control-plane summary for the repository. It
@@ -83,7 +83,7 @@ canonical decision's input receipts.
 | Source PR | #23 |
 | Manifest PR | #24 |
 | Evidence PR | #27 |
-| Evidence merge / live `main` | `99df04ff07ca7cdc9b02bc0cd275d3ecb105a520` |
+| Evidence merge (terminal-evidence checkpoint) | `99df04ff07ca7cdc9b02bc0cd275d3ecb105a520` |
 | Archival tag | `numerai-ender27-terminal` |
 | Lifecycle issue | #22 (closed as completed) |
 
@@ -110,18 +110,16 @@ have been a historical source gate, not fresh confirmation.
 
 ## Exact next action
 
-There is no pending scientific action.
+There is no pending scientific action. Ender27 is terminal.
 
-1. Independent review and merge of the control-ledger documentation in draft
-   PR #25 (this branch).
-2. Repository maintenance tracked in
-   [Issue #26](https://github.com/Nspiroff/Numerai/issues/26), separately
-   gated from any research authority.
-3. Any successor modeling requires a newly named, separately frozen,
+1. Repository maintenance is tracked separately in
+   [Issue #26](https://github.com/Nspiroff/Numerai/issues/26) and requires its
+   own bounded authorization; it grants no research authority.
+2. Any successor modeling requires a newly named, separately frozen,
    preregistered hypothesis and fresh explicit user authorization. Consumed
    eras `0301`-`1021` must not be reused for selection; eras `1022`-`1230` are
    not a substitute confirmation cohort.
-4. Deployment remains separately gated behind a successful, separately frozen
+3. Deployment remains separately gated behind a successful, separately frozen
    prospective validation and explicit account-action authorization. No such
    authority exists.
 
@@ -169,7 +167,7 @@ The canonical navigation ledger is
 
 ## Current GitHub hygiene posture
 
-- Remote `main` is at the verified Ender27 evidence merge
+- The Ender27 terminal evidence is archived at merge
   `99df04ff07ca7cdc9b02bc0cd275d3ecb105a520`, tagged
   `numerai-ender27-terminal`.
 - Issue #22 is closed as completed and records the full terminal evidence
@@ -177,9 +175,10 @@ The canonical navigation ledger is
 - Issue #26 is the active repository-maintenance tracker (CI trigger
   modernization, branch review, labels, protection). Maintenance remains
   separately gated from research authority.
-- Draft PR #25 stages only ungoverned status documentation on
-  `docs/numerai-control-ledger-2026-08-16`. It remains draft and unmerged
-  pending independent review.
+- The control-plane documents (this file, the root README status note, and
+  the experiment ledger) are current through the Ender27 terminal archive;
+  PR #25 is their publication vehicle and carries only ungoverned status
+  documentation.
 - Historical source/seal/evidence branches remain available as redundant
   review anchors. Branch cleanup should occur only after merge ancestry and
   archival tags are independently confirmed, under Issue #26.
