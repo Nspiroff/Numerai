@@ -1,34 +1,74 @@
 # Numerai research ledger
 
-This file is a navigation index. The linked experiment records remain the
-canonical sources for protocols, metrics, artifact hashes, and terminal
-decisions.
+This file is the navigation index for the governed Numerai research program.
+The linked experiment records remain the canonical sources for protocols,
+metrics, artifact hashes, custody rules, and terminal decisions.
 
 ## Current program state
 
-No Ender20-family model is approved for deployment. No upload, assignment,
-staking, submission, or Numerai account mutation is authorized. Ender20
-through Ender26 are closed research families; their frozen artifacts and
-decision records must not be overwritten or reused as new runs.
+No Ender-family model is approved for deployment. No upload, assignment,
+staking, submission, model creation, or Numerai account mutation is authorized.
+**Ender20 through Ender27 are closed research families**; their frozen
+artifacts and decision records must not be overwritten, renamed, deleted, or
+reused as new runs.
+
+The Ender27 terminal-evidence checkpoint is:
+
+`99df04ff07ca7cdc9b02bc0cd275d3ecb105a520`
+
+That checkpoint is the evidence merge (evidence PR #27) and is archived by
+tag `numerai-ender27-terminal`. **There is currently no active scientific
+gate.**
 
 ## Latest terminal experiment
 
-[Ender26 Gaussian-rank benchmark residual](ender26_gaussian_rank_residual_v53/terminal_postmortem.md)
-is closed at `ENDER26_NEGATIVE_NO_BMC_ALIGNMENT_GAIN`. Mean full and recent-40
-BMC improved and benchmark correlation fell, but seed 1337 lost recent-40 BMC
-and exceeded its matched drawdown allowance. The predeclared cross-seed gate
-therefore rejected the procedure. Round 2 is unauthorized.
+[Ender27 tempered Gaussian-rank benchmark residual](ender27_tempered_gaussian_rank_residual_v53/terminal_postmortem.md)
+is closed at:
+
+`ENDER27_NEGATIVE_NO_TEMPERED_ALIGNMENT_GAIN`
+
+The separately authorized one-shot evaluator ran exactly once, exited 0, and
+committed the canonical decision
+([`round1_tempered_alignment.json`](ender27_tempered_gaussian_rank_residual_v53/receipts/round1_tempered_alignment.json),
+21,670 bytes, SHA-256
+`261ed2661dbc282388498ecd2fd8fec668a14ef78bf256b7549bbbdda73fc007`).
+20 of 22 frozen checks passed. Exactly two failed, both in the recent-40
+window: the aggregate recent-40 uplift gate and seed 1337's matched recent-40
+gate. Mean full BMC improved about +5.86% and seed-1337 drawdown passed, but
+aggregate recent-40 BMC fell about -4.21% and seed 1337 stayed below its
+matched control, so the frozen all-conditions law rejected the tempered
+procedure. Round 2 is unauthorized.
+
+The reviewed lifecycle chain is:
+
+- source PR #23, reviewed source commit
+  `a23ed023f3d592b05cb5368ca68b8a84a83658d8`;
+- merged source checkpoint A
+  `f578fef884b1c38a0c7141cd65f7fe3f221b6c59`;
+- manifest-only commit B
+  `2d95e361dbc7f724a14835c3b4c491112e80f2bb`;
+- merged seal checkpoint M
+  `c63e0465426c580d6144bcc092e199bc2f1dbbe4`;
+- exact manifest Git blob
+  `4942af7b5576d465678e07ad004e329555c7cf0e`;
+- evidence PR #27, evidence commit
+  `8916a9a57d0ba6c0634b989d592f222e88f11edc`, evidence merge
+  `99df04ff07ca7cdc9b02bc0cd275d3ecb105a520`, tag
+  `numerai-ender27-terminal`.
+
+The twelve generated training artifacts remain local, nonempty, and
+intentionally Git-ignored; their identities are bound by the completion
+envelopes and the canonical decision's input receipts. No run or evaluator
+invocation was retried, and no artifact was repaired or redirected.
 
 ## Active research gate
 
-[Ender27 tempered Gaussian-rank benchmark residual](ender27_tempered_gaussian_rank_residual_v53/experiment.md)
-is an active **source-only** Round-1 gate. It tests one preregistered midpoint
-target-residual blend (`lambda=0.5`) while holding the Ender26 control,
-architecture, training procedure, matched seeds, cohort, and decision law
-fixed. No manifest, data access, output reservation, training, scoring,
-evaluation, Round 2, deployment, or account action is authorized.
+There is currently no active scientific gate. Issue #22 (the Ender27
+lifecycle record) is closed as completed. Any successor modeling requires a
+newly named, separately frozen, preregistered hypothesis and fresh explicit
+user authorization. Repository maintenance is tracked separately in Issue #26.
 
-## Ender20-26 outcome chain
+## Ender20-27 outcome chain
 
 | Family | Terminal state | Key conclusion | Canonical record | Archival point |
 | --- | --- | --- | --- | --- |
@@ -38,7 +78,8 @@ evaluation, Round 2, deployment, or account action is authorized.
 | Ender23 | `NEGATIVE_SEED_INSTABILITY` | The memory repair worked and window-78 won Round 1. Two of three Round-2 realizations qualified, but the fixed ensemble failed its Sharpe and drawdown gates. | [Terminal postmortem](ender23_temporal_retention_v53/round2_terminal_postmortem.md) | `aff188b`, tag `numerai-ender23-terminal` |
 | Ender24 | No decision; evaluator precondition failure | Four matched control/EMA runs finalized, but a CRLF/LF authority-fingerprint defect stopped the evaluator before metrics. Round 2 was not authorized. | [Round-1 execution postmortem](ender24_ema_seed_stability_v53/round1_execution_postmortem.md) | `d12f755`, tag `numerai-ender24-terminal` |
 | Ender25 | `ENDER25_NEGATIVE_NO_EMA_STABILITY_GAIN` | The repaired one-shot evaluator produced the missing scientific decision. EMA greatly compressed seed variance, but lost average full and recent BMC and worsened seed-1337 Sharpe/drawdown. | [Terminal postmortem](ender25_ender24_evaluation_recovery_v53/terminal_postmortem.md) | `9f6a08c`, tags `numerai-ender25-terminal` and `numerai-ender25-terminal-custody` |
-| Ender26 | `ENDER26_NEGATIVE_NO_BMC_ALIGNMENT_GAIN` | Gaussian-rank target residualization improved aggregate full/recent BMC and decorrelated from the benchmark, but seed 1337 failed the matched recent-40 and drawdown guards. | [Terminal postmortem](ender26_gaussian_rank_residual_v53/terminal_postmortem.md) | tag `numerai-ender26-terminal` |
+| Ender26 | `ENDER26_NEGATIVE_NO_BMC_ALIGNMENT_GAIN` | Gaussian-rank target residualization improved aggregate full/recent BMC and decorrelated from the benchmark, but seed 1337 failed the matched recent-40 and drawdown guards. | [Terminal postmortem](ender26_gaussian_rank_residual_v53/terminal_postmortem.md) | `f5ef885`, tag `numerai-ender26-terminal` |
+| Ender27 | `ENDER27_NEGATIVE_NO_TEMPERED_ALIGNMENT_GAIN` | Half-strength tempering kept the full-period BMC gain, repaired seed-1337 drawdown, and compressed recent-window seed dispersion, but seed-1337 recent-40 BMC and the aggregate recent-40 uplift still failed the frozen law. | [Terminal postmortem](ender27_tempered_gaussian_rank_residual_v53/terminal_postmortem.md), [canonical decision](ender27_tempered_gaussian_rank_residual_v53/receipts/round1_tempered_alignment.json) | `99df04f`, tag `numerai-ender27-terminal` |
 
 ## What the sequence established
 
@@ -63,33 +104,44 @@ evaluation, Round 2, deployment, or account action is authorized.
   benchmark correlation. The gain was nevertheless non-robust: seed 1337 lost
   recent-40 BMC and breached the matched drawdown guard, so aggregate gains did
   not justify promotion.
+- Ender27 preserved the exact Ender26 procedure and tested only the fixed
+  half-strength target-residual midpoint. The full-period BMC improvement
+  survived tempering, recent-window two-seed dispersion compressed sharply
+  (0.0026315400136204814 to 0.00018397972470021468), and seed-1337 drawdown
+  was repaired — but seed-1337 recent-40 BMC and the aggregate recent-40
+  uplift both failed, so the repair was insufficient in the window that
+  decides the gate. The result is promising but non-robust negative evidence,
+  not a no-signal result.
 
 ## Next admissible work
 
-1. Do not retry Ender24, Ender25, or Ender26; replace cohort members; add or
-   select seeds; loosen thresholds; or launch Round 2.
-2. Review and merge the Ender27 source-only gate. Its sole new scientific
-   variable is the fixed `lambda=0.5` target-residual midpoint; do not add a
-   strength sweep, architecture, temporal window, seed, or threshold.
-3. Only after source review may Ender27 receive a separate manifest-only seal.
-   Training and evaluation still require later explicit user authorization.
-4. Do not reuse consumed eras `0301`-`1021` for post-hoc model selection.
+1. Repository maintenance under Issue #26 (CI trigger modernization, branch
+   review after custody verification, labels, protection). Maintenance is
+   housekeeping, never evidence deletion, is separately gated from research,
+   and grants no research authority.
+2. Any successor modeling requires a genuinely new, newly named,
+   separately frozen, preregistered hypothesis and fresh explicit user
+   authorization. This ledger deliberately does not design one.
+3. Do not reuse consumed eras `0301`-`1021` for post-hoc model selection.
    Historical eras `1022`-`1230` are not a substitute confirmation cohort.
-5. Keep deployment separate: it requires a successful, separately frozen
-   prospective validation and explicit user authorization for any account
-   action.
+4. Keep deployment separate. It requires a successful, separately frozen
+   prospective validation and explicit authorization for every account action.
+   No such authority exists.
 
 ## Repository hygiene
 
 - One directory represents one line of inquiry. Its canonical terminal
   decision and postmortem stay inside that directory.
-- This ledger links outcomes; it does not duplicate full metrics, receipts, or
-  source manifests.
+- This ledger links outcomes; it does not replace experiment protocols,
+  decisions, receipts, or full metric records.
 - Large datasets, ignored predictions, logs, model bundles, and protected GPU
   build residue remain outside normal Git history unless a frozen protocol
   explicitly requires a small evidence artifact.
 - Preserve the archival commits and tags above. Do not squash, rebase, or
   rewrite the research chain because manifests and receipts bind historical
   commit identities.
-- A future family must use new output and receipt paths; prior terminal
-  artifacts are immutable evidence, not reusable workspace.
+- Historical feature/source branches may be removed only after their merge and
+  archival identities have been independently verified. Deleting a branch is
+  repository housekeeping, never evidence deletion.
+- A future family must use new output and receipt paths. Prior terminal or
+  consumed artifacts are immutable evidence, not reusable workspace.

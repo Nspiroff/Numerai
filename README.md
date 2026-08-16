@@ -3,6 +3,20 @@ The official place to start playing the Numerai tournaments.
 
 Need help? [Find us on Discord.](https://discord.gg/numerai)
 
+## Status of this fork
+
+This fork contains a governed Numerai research program under `numerai/agents/`.
+Its current control-plane summary is in [PROJECT_STATUS.md](PROJECT_STATUS.md),
+and the canonical experiment navigation ledger is in
+[`numerai/agents/experiments/README.md`](numerai/agents/experiments/README.md).
+
+As of 2026-08-16, the Ender27 family is terminal at
+`ENDER27_NEGATIVE_NO_TEMPERED_ALIGNMENT_GAIN`. Its canonical decision and
+terminal postmortem are merged and archived on `main` (evidence PR #27,
+archival tag `numerai-ender27-terminal`). Ender20 through Ender27 are all
+closed; there is currently no active scientific gate. No Ender-family model is
+approved for deployment or Numerai account action.
+
 ## Using Agents
 Numerai is quickly developing open-source agent skills for you to use in the tournament. You can start architecting your very own AI scientist. For example:
 
