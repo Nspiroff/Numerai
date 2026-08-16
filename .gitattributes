@@ -3,3 +3,4 @@
 /numerai/agents/experiments/ender24_ema_seed_stability_v53/receipts/*.json -text
 /numerai/agents/experiments/ender25_ender24_evaluation_recovery_v53/receipts/ender24_round1_recovery_decision.json -text
 /numerai/agents/experiments/ender26_gaussian_rank_residual_v53/receipts/round1_bmc_alignment.json -text
+/numerai/agents/experiments/ender27_tempered_gaussian_rank_residual_v53/receipts/round1_tempered_alignment.json -text
