@@ -3,6 +3,17 @@ The official place to start playing the Numerai tournaments.
 
 Need help? [Find us on Discord.](https://discord.gg/numerai)
 
+## Status of this fork
+
+This fork contains a governed Numerai research program under `numerai/agents/`.
+Its current control-plane summary is in [PROJECT_STATUS.md](PROJECT_STATUS.md),
+and the canonical experiment navigation ledger is in
+[`numerai/agents/experiments/README.md`](numerai/agents/experiments/README.md).
+
+As of 2026-08-16, Ender27's exact four-run Round-1 training cohort is complete
+and its separately authorized one-shot evaluator is pending. No Ender-family
+model is approved for deployment or Numerai account action.
+
 ## Using Agents
 Numerai is quickly developing open-source agent skills for you to use in the tournament. You can start architecting your very own AI scientist. For example:
 
