@@ -146,7 +146,8 @@ The canonical navigation ledger is
 - `main` is intentionally pinned for the pending Ender27 evaluator.
 - Issue #22 is the live active-gate record and is updated through the completed
   four-run cohort.
-- There are no open pull requests on `main` at the pinned checkpoint.
+- Draft PR #25 stages only ungoverned status documentation on a separate remote
+  branch. It must not be merged before the Ender27 evaluator gate is complete.
 - Historical source/seal/evidence branches remain available as redundant review
   anchors. Branch cleanup should occur only after merge ancestry and archival
   tags are independently confirmed.
