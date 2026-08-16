@@ -1,35 +1,62 @@
+# Build Example Model Pickles — manual-only tutorial notebook builder.
+#
+# CI26 modernization (Issue #26, Phase 1). This workflow keeps its inherited
+# identity — it executes the six inherited example notebooks and produces the
+# four numerai example pickles — but it is intentionally manual-only and
+# repository-read-only:
+#
+#   * The automatic `push` trigger to the obsolete `master` branch was removed.
+#     No `push` or `pull_request` trigger to `main` (or any branch) was added,
+#     so ordinary pushes and PRs never start this long-running notebook job.
+#   * The `EndBug/add-and-commit` step was removed. This workflow can no longer
+#     commit anything to the repository. Generated pickles are published as a
+#     downloadable workflow artifact instead, and the tracked `cached-pickles/`
+#     directory is never modified by this job.
+#   * Permissions are least-privilege (`contents: read`). No repository secret
+#     is requested or exposed. The notebooks download public, unauthenticated
+#     Numerai tournament datasets over HTTPS; they perform no Numerai API
+#     credentialed call, model upload, assignment, staking, or submission.
+#   * All actions are official GitHub actions pinned to immutable full commit
+#     SHAs, and the Python dependency set is taken from an immutable
+#     numerai/numerai-predict commit instead of its mutable `master` branch.
+#
+# Known limitation (documented, fail-closed by construction): notebook
+# execution requires live downloads of public Numerai datasets. If those
+# public downloads are unavailable, the affected notebook step fails and the
+# run fails; nothing is retried, committed, or uploaded from a failed build.
+
 name: Build Example Model Pickles
 
 on:
   workflow_dispatch:
-  push:
-    # paths:
-    #   - example_model.ipynb
-    #   - hello_numerai.ipynb
-    #   - feature_neutralization.ipynb
-    #   - target_ensemble.ipynb
-    #   - signals/example_model.ipynb
-    #   - crypto/example_model.ipynb
-    branches:
-      - master
 
-concurrency: build-example-models
+# One manual build at a time. A duplicate dispatch queues behind the running
+# build instead of cancelling a build that is already producing pickles.
+concurrency:
+  group: build-example-models
+  cancel-in-progress: false
+
+permissions:
+  contents: read
 
 jobs:
 
   build_and_test:
     name: "Build Example Model Pickles"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: "3.12"
-      - name: Install jupyter
+          python-version: "3.12.14"
+      - name: Install pinned notebook dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install jupyter
-          pip install -r https://raw.githubusercontent.com/numerai/numerai-predict/refs/heads/master/py3.12/requirements.txt
+          pip install "jupyter==1.1.1"
+          # Immutable commit of numerai/numerai-predict master as of 2026-08-16,
+          # replacing the previous mutable refs/heads/master requirements URL.
+          pip install -r https://raw.githubusercontent.com/numerai/numerai-predict/2b6eb43612db25bcf047608b4c1fd61cc3ff3c06/py3.12/requirements.txt
       - name: build-example-model
         run: |
           jupyter nbconvert \
@@ -78,14 +105,19 @@ jobs:
           rm -f crypto/example_model.html
           rm -f crypto/crypto_example_preds.csv
           rm -f crypto_example_preds.csv
-      - name: move-numerai-pickles-to-cached-pickles-dir
+      - name: stage-pickles-for-artifact-upload
+        # Staged in an untracked directory. The tracked cached-pickles/
+        # directory is intentionally left untouched; refreshing it is a
+        # human-reviewed pull-request decision, not a CI side effect.
         run: |
-          mkdir -p cached-pickles/
-          mv -f numerai/example_model.pkl cached-pickles/
-          mv -f numerai/hello_numerai.pkl cached-pickles/
-          mv -f numerai/feature_neutralization.pkl cached-pickles/
-          mv -f numerai/target_ensemble.pkl cached-pickles/
-      - name: commit-to-master
-        uses: EndBug/add-and-commit@v9
+          mkdir -p pickle-artifacts/
+          mv -f numerai/example_model.pkl pickle-artifacts/
+          mv -f numerai/hello_numerai.pkl pickle-artifacts/
+          mv -f numerai/feature_neutralization.pkl pickle-artifacts/
+          mv -f numerai/target_ensemble.pkl pickle-artifacts/
+      - name: upload-pickles-artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          add: "cached-pickles/*"
+          name: example-model-pickles
+          path: pickle-artifacts/
+          if-no-files-found: error

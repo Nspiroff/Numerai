@@ -1,0 +1,26 @@
+# Exact dependency pins for the Research Source CI workflow
+# (.github/workflows/research-source-ci.yml). See
+# .github/ci/research-source-scope.md for the selection rationale.
+#
+# Every package below is required by the selected source-contract test
+# modules, directly or transitively. Direct-import versions match the sealed
+# Ender27 runtime (numerai/agents/experiments/
+# ender27_tempered_gaussian_rank_residual_v53, Python 3.13.14) where the
+# packages overlap. No Torch, CUDA, pyarrow, numerapi, lightgbm, dataset, or
+# credentialed package is required or installed.
+#
+# Directly imported by the selected tests and the modules under test:
+numpy==2.5.1
+pandas==3.0.5
+scipy==1.18.0
+numerai-tools==0.6.0
+# Required by numerai-tools; pinned to the sealed Ender27 runtime version:
+scikit-learn==1.9.0
+# Transitive closure, frozen exactly as resolved during clean-environment
+# validation on Python 3.13.14 (2026-08-16):
+joblib==1.5.3
+narwhals==2.24.0
+python-dateutil==2.9.0.post0
+six==1.17.0
+threadpoolctl==3.6.0
+tzdata==2026.3
