@@ -10,8 +10,8 @@ Its current control-plane summary is in [PROJECT_STATUS.md](PROJECT_STATUS.md),
 and the canonical experiment navigation ledger is in
 [`numerai/agents/experiments/README.md`](numerai/agents/experiments/README.md).
 
-As of 2026-08-16, Ender27's exact four-run Round-1 training cohort is complete
-and its separately authorized one-shot evaluator is pending. No Ender-family
+As of 2026-08-16, Ender27's exact four-run Round-1 training cohort is complete.
+Its one-shot evaluator remains separately gated and pending. No Ender-family
 model is approved for deployment or Numerai account action.
 
 ## Using Agents
