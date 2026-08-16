@@ -28,6 +28,39 @@ ignored local artifacts, the sealed CUDA Torch runtime, and separately
 authorized one-shot runners and evaluators — remain entirely separate and are
 never executed here.
 
+## Triggers — universal pull-request coverage (BP26 readiness)
+
+- **Pull requests:** Research Source CI runs on **every pull request
+  targeting `main`**, with **no `paths` or `paths-ignore` filter**. This
+  universal PR trigger is deliberate branch-protection readiness (Issue #26,
+  Phase 2 preparation): both check contexts —
+  `Portable compile and source-contract tests` and
+  `Windows terminal evaluator custody contracts` — must always be emitted
+  for any PR, including documentation-only, one-file manifest,
+  terminal-evidence, CI-only, and maintenance PRs.
+  GitHub documents that a required workflow skipped by path filtering leaves
+  its checks in a permanent "Pending" state, which blocks merging; universal
+  PR coverage removes that deadlock before either context is ever configured
+  as a required status check.
+- **Documentation-only PRs therefore still run the complete 76-test platform
+  contract.** The workload is intentionally small: the Ubuntu job compiles
+  the governed `numerai/agents` tree and runs the 38 portable tests, and the
+  Windows job runs the 38 archived custody tests. There is **no job-level
+  conditional skipping, no lightweight fake-success job, and no
+  `continue-on-error` anywhere** — a reported success is always the real
+  two-job contract.
+- **Pushes:** `push` runs on `main` remain path-scoped to
+  `numerai/agents/**`, `.github/workflows/research-source-ci.yml`, and
+  `.github/ci/**`. The branch-protection requirement applies to pull-request
+  heads, so it is acceptable for a documentation-only post-merge push not to
+  trigger the source workflow: the pull-request checks already ran and
+  passed before the merge.
+- **Manual runs:** `workflow_dispatch` remains available.
+- The Ubuntu/Windows platform split below is unchanged by the trigger
+  change, the known POSIX exception-envelope divergence remains documented
+  and unresolved, and a passing run remains only a source contract — never
+  scientific, confirmation, deployment, or account authority.
+
 ## Platform split
 
 The workflow contains **two jobs**. Across both jobs the selected suite is
