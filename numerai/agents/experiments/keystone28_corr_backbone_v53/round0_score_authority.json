@@ -1,0 +1,43 @@
+{
+ "record": "keystone28_round0_score_authority",
+ "retrieved_utc": "2026-08-17T14:32:27+00:00",
+ "documentation_authority": [
+  "https://docs.numer.ai/numerai-tournament/scoring (retrieved 2026-08-17: CORR20V2/CORR60/CORJ60/CORT20 roster; 'Starting with the separately coordinated Ender-60 scoring cutover round, CORR and MMC use the 60-day Ender target')",
+  "https://docs.numer.ai/numerai-tournament/scoring/correlation-corr (retrieved 2026-08-17: CORR20V2 definition \u2014 tie-kept rank, gaussianize, 1.5 power on predictions and centered target, Pearson)",
+  "https://docs.numer.ai/numerai-tournament/scoring/meta-model-contribution-mmc (retrieved 2026-08-17: MMC = covariance with target after neutralization to the stake-weighted Meta Model)",
+  "https://docs.numer.ai/numerai-tournament/data (retrieved 2026-08-17: v5.3 latest recommended; bare `target` aliases target_ender_60 in v5.3)",
+  "https://docs.numer.ai/numerai-tournament/staking (retrieved 2026-08-17: score = corr20*corr_multiplier + mmc20*mmc_multiplier; payout = stake*clip(payout_factor*score, -0.05, 0.05); payout_factor = min(1, stake_threshold/total_at_risk), Numerai threshold 72,000 NMR)",
+  "https://blog.numer.ai/numerai-monthly-numercon-speakers-new-dataset-target-2026-payout-updates/ (Ender20 is the scoring/payout/leaderboard target effective 2026-01-01, first payout-target change since 2023; CORR multiplier 0.5->0.75 and MMC multiplier 2.0->2.25 effective 2026-01-01)",
+  "https://forum.numer.ai/t/numerai-v5-3-quantum-data-release/8321 (v5.3 'Quantum' released 2026-07-15; 807 new features; same target list; 'The payout target is remaining the same'; new benchmarks v53_lgbm_ender20 and v53_lgbm_ender60)",
+  "https://forum.numer.ai/t/new-target-for-payouts-and-data-v5-2-faith-ii/8209 (v5.2 Faith II introduced Ender/Jasper targets, Dec 2025)"
+ ],
+ "dataset_version": "v5.3",
+ "payout_target": "target_ender_20",
+ "corr_score_version": "CORR20V2",
+ "mmc_score_version": "MMC20",
+ "corr_multiplier": 0.75,
+ "mmc_multiplier": 2.25,
+ "weighted_score_formula": "score = corr * corr_multiplier + mmc * mmc_multiplier; payout = stake * clip(payout_factor * score, -0.05, +0.05); payout_factor = min(1, stake_threshold / total_at_risk)",
+ "meta_model_column": "numerai_meta_model",
+ "meta_model_first_supported_era": "1133",
+ "meta_model_last_supported_era_at_retrieval": "1219",
+ "bmc": {
+  "available": false,
+  "status": "BMC_AGGREGATE_NOT_REPRODUCIBLE_FROM_PUBLISHED_FILES",
+  "bmm_aggregate_authority": null,
+  "detail": "v5.3 validation_benchmark_models.parquet publishes exactly two single-model benchmark columns (v53_lgbm_ender20, v53_lgbm_ender60). No official historical Benchmark Meta Model aggregate column and no historical benchmark stake weights are published, so official BMC cannot be reproduced from published files. A single benchmark or an equal-weight average is NOT the BMM and is not reported as BMC."
+ },
+ "target_authority_resolution": {
+  "mr28_asserted": "target_ender_20",
+  "orchestrator_expected": "target_cyrus_20",
+  "resolved": "target_ender_20",
+  "evidence": "Cyrus was the payout target from 2023 until 2025-12-31 and was replaced by Ender-20 effective 2026-01-01 (first payout-target change since 2023). The v5.3 Quantum release (2026-07-15) states the payout target is remaining the same. v5.3 files contain no plain cyrus target column (only auxiliary target_cyrusd_20/60); target_ender_20 is present and resolves on the 20D2L cadence. MR28's assertion was therefore correct; the target_cyrus_20 expectation was stale.",
+  "bare_target_alias": "In v5.3 the bare `target` column is byte-identical to target_ender_60 on pre-holdout eras (NaN pattern included) and is a dataset default, not the payout authority. The harness rejects `target` as a payout-target configuration."
+ },
+ "pending_transition": {
+  "name": "Ender-60 scoring cutover",
+  "status_at_retrieval": "announced, not yet effective",
+  "detail": "Current scoring docs state that starting with a separately coordinated cutover round, CORR and MMC will use the 60-day Ender target (CORR60/MMC60). As of retrieval, payouts remain on the 20-day Ender target. When the cutover round is announced and effected, this record is stale and must be re-issued."
+ },
+ "revalidation": "These values change over time (multipliers changed 2026-01-01; the payout target changed 2026-01-01; an Ender-60 cutover is announced). This record must be re-audited against live documentation, round configuration, and current dataset files before any deployment, staking, or payout-relevant use. It may not be assumed current."
+}

@@ -1,0 +1,76 @@
+{
+ "record": "keystone28_round0_partition",
+ "frozen_utc": "2026-08-17T14:32:27+00:00",
+ "data_version": "v5.3",
+ "era_unit": "weekly validation-file eras; uniform-width zero-padded strings",
+ "source": {
+  "file": "v5.3/validation.parquet",
+  "era_min": "0575",
+  "era_max": "1232",
+  "n_eras": 658,
+  "era_gaps": [],
+  "payout_target_resolution_frontier": "1227",
+  "payout_target_unresolved_eras": [
+   "1228",
+   "1229",
+   "1230",
+   "1231",
+   "1232"
+  ]
+ },
+ "dev": {
+  "start_era": "0575",
+  "end_era": "1222",
+  "n_eras": 648,
+  "subzones": {
+   "archive_selection_consumed": {
+    "range": "0301-1021",
+    "in_validation_file": "0575-1021",
+    "note": "Consumed for model selection by the archived Ender program (experiments/README.md): do not reuse for post-hoc selection evidence."
+   },
+   "archive_observed": {
+    "range": "1022-1230",
+    "note": "Observed by the archived Ender21 confirmation and Ender22-27 evaluations; usable as development data but not a substitute confirmation cohort."
+   },
+   "mmc_capable": {
+    "start_era": "1133",
+    "end_era": "1219",
+    "n_eras": 87,
+    "basis": "Published v5.3 meta_model.parquet coverage at freeze; MMC and weighted-score development reads are only defined here."
+   }
+  },
+  "train_file_note": "train.parquet eras (0001-0574) are outside this validation partition; eras 0301-0574 are archive-selection-consumed per the research ledger."
+ },
+ "gap": {
+  "start_era": "1223",
+  "end_era": "1230",
+  "n_eras": 8,
+  "embargo_rationale": "At least 8 full weekly eras separate DEV from HOLDOUT. DEV end 1222 to HOLDOUT start 1231 is a 9-week era-date spacing (63 days): greater than the 22-day forward window of the current 20D2L payout target and greater than the 62-day forward window of a 60D2L target, so no DEV target window overlaps any holdout era even under the announced Ender-60 cutover."
+ },
+ "holdout": {
+  "start_era": "1231",
+  "end_era": null,
+  "status": "accumulating",
+  "post_archive_preference": "Holdout begins immediately after era 1230, the last era observed by the archived research program, so every holdout era is post-archive.",
+  "eras_present_in_file_at_freeze": [
+   "1231",
+   "1232"
+  ],
+  "n_fully_resolved_for_payout_target_at_freeze": 0,
+  "min_required_resolved_eras": 13,
+  "policy": "Fewer than 13 suitable holdout eras exist (currently 0 fully resolved for target_ender_20, whose resolution frontier is era 1227), so the holdout is marked ACCUMULATING. The 13-era requirement is not weakened. No post-hoc selection on the holdout. Round 0 grants no authority to score the holdout."
+ },
+ "smoke_slice": {
+  "eras": [
+   "1216",
+   "1217",
+   "1218",
+   "1219"
+  ],
+  "purpose": "Round-0 plumbing smoke only: inside DEV, inside published meta-model coverage, fully resolved for the payout target, and strictly pre-embargo/pre-holdout. Smoke metrics are plumbing evidence, not a candidate result, and rank nothing."
+ },
+ "hygiene": {
+  "holdout_reads": "Holdout eras were touched only for schema/era enumeration and null-count metadata proving target availability; no holdout target values were opened, summarized, or scored.",
+  "selection": "No post-hoc selection on the final holdout, ever."
+ }
+}
