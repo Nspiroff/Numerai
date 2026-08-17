@@ -37,12 +37,38 @@ conflict the other way:
   `target_ender_60`** on pre-holdout eras (NaN pattern included), confirming
   the documented alias.
 
+Under the SC32 correction (independent review `4952411743`), two further
+authority facts are recorded honestly:
+
+- **Official sources are internally inconsistent.** The generic Definitions
+  page (docs.numer.ai/numerai-tournament/scoring/definitions, retrieved
+  2026-08-17) still defines CORR20v2 as "numerai corr of a submission against
+  target_cyrus_20" and likewise names `target_cyrus_20` for MMC (vs SWMM) and
+  BMC (vs BMM). That page conflicts with the January 2026 payout-target
+  announcement, the current Scoring page, the current round configuration,
+  and the current v5.3 files, and is treated as **stale** under the recorded
+  authority precedence (round configuration > scoring page > dated
+  announcements > dataset files > generic definitions prose). The full
+  machine-readable record is `round0_score_authority.json:authority_conflicts`.
+- **The public round configuration settles the question at the highest
+  precedence.** An unauthenticated GraphQL query of
+  `rounds(tournament: 8, number: 1334)` (current round, retrieved
+  2026-08-17) returned `target: "target_ender_20"` with exactly two
+  `isPayout` score configs — `correlation` v6 (`v2_corr20`) at fixed
+  multiplier 0.75 and `meta_model_contribution` v5 (`mmc`) at fixed 2.25,
+  both 20-day/2-lag, effective since round 1149 — while every 60D config
+  (including names still carrying legacy cyrus naming, e.g.
+  `correlation_cyrus_60`) has multiplier 0 and `isPayout: false`.
+
 **Resolution: the current official payout target is `target_ender_20`.**
-MR28's assertion was correct; the `target_cyrus_20` expectation was stale.
-Documentation and files agree, so the
-`STOPPED_AT_KA28_TARGET_AUTHORITY_MISMATCH` condition was not triggered. The
-announced Ender-60 cutover is recorded in `round0_score_authority.json` as a
-pending transition that stales the record when effected.
+MR28's assertion was correct; the `target_cyrus_20` expectation traces to the
+stale Definitions prose. The accurate conclusion is: newer official change
+announcements, current scoring guidance, the current round configuration, and
+current v5.3 files support Ender20; the generic Definitions page conflicts
+and is treated as stale. The mismatch stop condition was not triggered
+because every higher-precedence source is consistent. The announced Ender-60
+cutover remains prominent in `round0_score_authority.json` as a pending
+transition that stales the record when effected.
 
 ## 2. Storage and data acquisition
 
@@ -136,15 +162,21 @@ authority boundary and the failure discipline around them:
   loud `ValueError` on duplicate/missing/misaligned ids, non-finite
   predictions, missing target values in scored eras, malformed or mixed-width
   era strings, and unexpected era sets (`expected_eras`); deterministic
-  `(era, id)` ordering before scoring; weighted score
-  `corr * corr_multiplier + mmc * mmc_multiplier`.
+  `(era, id)` ordering before scoring; weighted **model** score
+  `corr * corr_multiplier + mmc * mmc_multiplier` (model-selection authority
+  only — staking settlement is recorded separately in
+  `round0_score_authority.json:staking_settlement` and never influences
+  selection).
 - Meta-model coverage: wholly uncovered eras either fail (default) or are
   cleanly excluded under the explicitly declared policy; partially covered
   eras always fail.
 - Summary (reproducible from the per-era frame via `summarize_round0`): mean,
   population std (ddof = 0), era Sharpe (= mean/std, no annualization, NaN at
-  std 0 — convention recorded in the output), cumulative-sum max drawdown
-  (positive magnitude, convention recorded), recent-window mean, per-block
+  std 0 — convention recorded in the output), **zero-baseline maximum
+  drawdown** (SC32 correction: the equity curve is
+  `concatenate([0.0], cumsum(per-era score))`, so an initial losing streak
+  from zero equity is counted; positive magnitude, convention recorded in
+  the output), recent-window mean, per-block
   means, correlation with the Meta Model, and optional benchmark-column
   correlations (both via the official Numerai Corr transform with the
   reference vector in the target slot — diagnostic, not payout scores).
@@ -156,7 +188,7 @@ authority boundary and the failure discipline around them:
 
 ## 6. Focused tests (`agents/tests/test_keystone28_round0_metrics.py`)
 
-29 synthetic, deterministic, CPU-only unittest cases (no dataset, no network,
+32 synthetic, deterministic, CPU-only unittest cases (no dataset, no network,
 no pyarrow/numerapi import): exact per-era parity with `numerai_corr` and
 `correlation_contribution`; exact weighted-score arithmetic; row-order
 invariance across all inputs and repeat-run identity; explicit (non-default)
@@ -166,8 +198,14 @@ era disagreement, non-finite predictions, missing targets, malformed eras,
 unexpected era sets; meta-model coverage policy behavior (fail / clean whole-
 era exclusion / partial-coverage always fails); BMC unavailability without
 official BMM authority and BMC parity when one is declared; summary
-reproducibility against hand computation. Local run: **29/29 OK** (Python
-3.13.14, CI-pinned numpy 2.5.1 / pandas 3.0.5 / numerai-tools 0.6.0).
+reproducibility against hand computation; and (SC32) three zero-baseline
+drawdown contract tests — an all-negative series draws down its full absolute
+cumulative loss, an initial loss from zero equity is never silently
+discarded, and a positive-then-negative path reproduces the hand
+calculation. Local run: **32/32 OK** (Python 3.13.14, CI-pinned numpy 2.5.1 /
+pandas 3.0.5 / numerai-tools 0.6.0). Under SC32 the complete module also runs
+in the protected Ubuntu CI job (portable command total 70 tests; Windows
+custody allocation unchanged at 38).
 
 ## 7. Real-data smoke (plumbing evidence only)
 
@@ -178,9 +216,16 @@ target). 27,897 rows per source joined one-to-one (identical id sets across
 validation/meta-model/benchmarks; zero nulls; zero duplicates). All per-era
 CORR/MMC/weighted scores are finite; era-set enforcement (`expected_eras`)
 and the embargo/holdout guard held; **no holdout era was read for scoring**.
-Two independent executions produced **byte-identical** output
+Under the SC32 correction the smoke was regenerated with the zero-baseline
+drawdown convention: the four per-era CORR/MMC/weighted values are unchanged
+to the last bit, while the weighted-score maximum drawdown moved from the
+KA28 value `0.0782512942832417` (no-baseline) to the corrected
+`0.10508308525992216` — the full absolute cumulative loss of this
+all-negative weighted path, exactly as the convention requires. Three
+independent executions produced **byte-identical** output
 (`round0_smoke_result.json`, payload SHA-256
-`1dbad8b681ea1ec52e78d7c6e103d3e45b150d004795b1c69a446c1a42756789`). The
+`72d3878858922c51b6cd671524a5bcf1a5857bf813442bc78a85b6032179f749`;
+superseding KA28 payload SHA-256 `1dbad8b681ea1ec52e78d7c6e103d3e45b150d004795b1c69a446c1a42756789`). The
 numbers exist to prove plumbing, not to rank models: the benchmark's
 correlation with the Meta Model (≈ 0.63–0.69 per era) and its small negative
 MMC on those eras are exactly the expected shape for a benchmark model close
@@ -195,6 +240,46 @@ to the Meta Model, and no benchmark is selected or ranked from this smoke.
 - Generated multi-gigabyte data stays outside Git on `D:`.
 - Round-0 records are dated snapshots. **The scoring authority changes over
   time** (multipliers and payout target changed 2026-01-01; an Ender-60
-  cutover is announced): every value in this packet must be re-audited
-  against live documentation, round configuration, and current files before
-  deployment-relevant use.
+  cutover is announced; the generic Definitions page currently lags): every
+  value in this packet must be re-audited against the live round
+  configuration, documentation, and current files before deployment-relevant
+  use.
+
+## 9. Independent-review correction (SC32)
+
+Review `4952411743` on PR #32 (reviewed head `261e2b1a…`) required a
+correction cycle before merge. The KA28 direction (Ender20 target, Keystone
+family, official-parity harness, no training) was affirmed; four defects were
+repaired in one correction commit, with all five external data files
+re-verified byte-identical to their recorded SHA-256 values first:
+
+1. **Official-source conflict recorded honestly.** The KA28 packet claimed
+   "documentation and files agree"; in fact the generic Definitions page
+   still names `target_cyrus_20` for CORR/MMC/BMC. The packet now records a
+   machine-readable `authority_conflicts` section with per-source claims,
+   retrieval timestamps, lifecycle status, the resolution, and the
+   authority-precedence rule — plus the decisive public round-1334
+   configuration (`target: target_ender_20`; payout configs `correlation` v6
+   × 0.75 and `meta_model_contribution` v5 × 2.25, fixed).
+2. **Model score separated from staking settlement.** The weighted formula
+   is now recorded as the *weighted model score* (selection authority). The
+   legacy continuous-staking formula
+   (`stake * clip(payout_factor * score, ±0.05)`) is no longer presented as
+   current: staking mechanics are recorded separately (atomic v3 vs legacy),
+   and the actively applied settlement system is marked
+   `unresolved_for_this_record` because the public round record reports
+   `v3Staking: false` with a populated dynamic payout factor while current
+   docs describe the Atomic flow as current. Settlement never influences
+   selection.
+3. **Zero-baseline maximum drawdown.** The equity curve now starts at zero
+   (`concatenate([0.0], cumsum(scores))`), so an initial losing streak is
+   counted. Three focused contract tests were added (suite 29 → 32); the
+   smoke was regenerated three times, byte-identical, with per-era scores
+   unchanged and the weighted drawdown moving `0.0782512942832417` →
+   `0.10508308525992216`.
+4. **Keystone suite executes in protected CI.** The complete
+   `agents.tests.test_keystone28_round0_metrics` module was appended to the
+   Ubuntu portable unittest command (job and check names, app binding,
+   permissions, runners, pins, and timeouts unchanged): the prior protected
+   run had only compiled the Keystone files. New totals: Ubuntu 70, Windows
+   38 (unchanged), repository-wide 108.

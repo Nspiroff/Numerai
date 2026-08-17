@@ -64,7 +64,7 @@
    "mmc_multiplier": 2.25,
    "mmc_score_name": "MMC20",
    "payout_target": "target_ender_20",
-   "weighted_score_formula": "weighted_score = corr * corr_multiplier + mmc * mmc_multiplier"
+   "weighted_model_score_formula": "weighted_model_score = corr * corr_multiplier + mmc * mmc_multiplier (model-selection score only; staking settlement mechanics are recorded separately in the score-authority record and never influence selection)"
   },
   "block_size": 4,
   "bmc": {
@@ -74,7 +74,7 @@
   },
   "conventions": {
    "era_ordering": "eras are uniform-width zero-padded digit strings sorted lexicographically (equal to chronological order); the joined cohort is sorted by (era, id) before scoring",
-   "max_drawdown": "max drawdown = max(running_max(cumsum(per-era score)) - cumsum(per-era score)) over eras in chronological order; positive magnitude in score units",
+   "max_drawdown": "max drawdown = max(running_max(equity) - equity) where equity = concatenate([0.0], cumsum(per-era score)) in chronological order; the zero-equity starting baseline is included so an initial losing streak from zero is counted; positive magnitude in score units",
    "prediction_reference_corr": "correlation with the Meta Model and with benchmark columns uses the official Numerai Corr transform with the reference predictions in the target slot (repo per_era_pred_corr convention); it is diagnostic, not a payout score",
    "sharpe": "era Sharpe = mean(per-era score) / population std(per-era score, ddof=0); no annualization; NaN when the std is 0"
   },
@@ -90,7 +90,7 @@
   "recent_window": 4,
   "scores": {
    "corr": {
-    "max_drawdown": 0.023299384831244992,
+    "max_drawdown": 0.044054486790808894,
     "mean": -0.006283946108873397,
     "per_block_means": [
      {
@@ -106,7 +106,7 @@
     "std": 0.016399055208637502
    },
    "mmc": {
-    "max_drawdown": 0.033318125522797525,
+    "max_drawdown": 0.03832499863702309,
     "mean": -0.009581249659255773,
     "per_block_means": [
      {
@@ -122,7 +122,7 @@
     "std": 0.004340326181482603
    },
    "weighted_score": {
-    "max_drawdown": 0.0782512942832417,
+    "max_drawdown": 0.10508308525992216,
     "mean": -0.02627077131498054,
     "per_block_means": [
      {

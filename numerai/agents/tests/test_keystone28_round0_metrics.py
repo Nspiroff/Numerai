@@ -401,6 +401,46 @@ class TestBmcGating(unittest.TestCase):
             )
 
 
+def _per_era_frame(values) -> pd.DataFrame:
+    eras = [f"{i + 1:04d}" for i in range(len(values))]
+    frame = pd.DataFrame(
+        {"corr": values, "mmc": values, "weighted_score": values}, index=eras
+    )
+    frame.index.name = "era"
+    return frame
+
+
+class TestZeroBaselineDrawdown(unittest.TestCase):
+    """The drawdown convention includes the zero-equity starting baseline."""
+
+    def _drawdown(self, values) -> float:
+        summary = kr0.summarize_round0(_per_era_frame(values), _authority())
+        return summary["scores"]["weighted_score"]["max_drawdown"]
+
+    def test_all_negative_series_draws_down_the_full_cumulative_loss(self):
+        values = [-0.02, -0.05, -0.01, -0.03]
+        self.assertEqual(self._drawdown(values), abs(sum(values)))
+        self.assertEqual(self._drawdown(values), 0.11)
+
+    def test_initial_loss_is_not_silently_discarded(self):
+        # Under a no-baseline convention this series would report only the
+        # later 0.04 dip; the initial 0.10 loss from zero equity must win.
+        values = [-0.10, 0.08, -0.04]
+        self.assertEqual(self._drawdown(values), 0.10)
+
+    def test_positive_then_negative_path_matches_hand_calculation(self):
+        values = [0.30, -0.10, -0.15, 0.05]
+        # equity = [0, 0.30, 0.20, 0.05, 0.10]; running max peaks at 0.30;
+        # deepest drawdown = 0.30 - 0.05 = 0.25.
+        self.assertAlmostEqual(self._drawdown(values), 0.25, places=15)
+        self.assertEqual(
+            kr0.summarize_round0(_per_era_frame(values), _authority())[
+                "conventions"
+            ]["max_drawdown"],
+            kr0.DRAWDOWN_CONVENTION,
+        )
+
+
 class TestSummaryReproducibility(unittest.TestCase):
     def test_summary_reproduces_from_per_era_values(self):
         predictions, scoring, meta_model, _ = _cohort()
@@ -427,10 +467,10 @@ class TestSummaryReproducibility(unittest.TestCase):
         self.assertEqual(stats["mean"], float(np.mean(values)))
         self.assertEqual(stats["std"], float(np.std(values, ddof=0)))
         self.assertEqual(stats["sharpe"], float(np.mean(values) / np.std(values, ddof=0)))
-        cumulative = np.cumsum(values)
+        equity_curve = np.concatenate(([0.0], np.cumsum(values)))
         self.assertEqual(
             stats["max_drawdown"],
-            float(np.max(np.maximum.accumulate(cumulative) - cumulative)),
+            float(np.max(np.maximum.accumulate(equity_curve) - equity_curve)),
         )
         self.assertEqual(stats["recent_mean"], float(np.mean(values[-2:])))
         self.assertEqual(stats["recent_window_used"], 2)

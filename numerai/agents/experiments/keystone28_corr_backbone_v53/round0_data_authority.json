@@ -82,10 +82,12 @@
   "https://docs.numer.ai/numerai-tournament/scoring/correlation-corr (retrieved 2026-08-17: CORR20V2 definition \u2014 tie-kept rank, gaussianize, 1.5 power on predictions and centered target, Pearson)",
   "https://docs.numer.ai/numerai-tournament/scoring/meta-model-contribution-mmc (retrieved 2026-08-17: MMC = covariance with target after neutralization to the stake-weighted Meta Model)",
   "https://docs.numer.ai/numerai-tournament/data (retrieved 2026-08-17: v5.3 latest recommended; bare `target` aliases target_ender_60 in v5.3)",
-  "https://docs.numer.ai/numerai-tournament/staking (retrieved 2026-08-17: score = corr20*corr_multiplier + mmc20*mmc_multiplier; payout = stake*clip(payout_factor*score, -0.05, 0.05); payout_factor = min(1, stake_threshold/total_at_risk), Numerai threshold 72,000 NMR)",
+  "https://docs.numer.ai/numerai-tournament/staking (retrieved 2026-08-17: current stake management is handled through the standalone Atomic Blockchain Staking flow; the formula payout = stake*clip(payout_factor*score, -0.05, 0.05) with payout_factor = min(1, stake_threshold/total_at_risk) is explicitly labeled the LEGACY continuous staking payout function; Numerai threshold 72,000 NMR)",
   "https://blog.numer.ai/numerai-monthly-numercon-speakers-new-dataset-target-2026-payout-updates/ (Ender20 is the scoring/payout/leaderboard target effective 2026-01-01, first payout-target change since 2023; CORR multiplier 0.5->0.75 and MMC multiplier 2.0->2.25 effective 2026-01-01)",
   "https://forum.numer.ai/t/numerai-v5-3-quantum-data-release/8321 (v5.3 'Quantum' released 2026-07-15; 807 new features; same target list; 'The payout target is remaining the same'; new benchmarks v53_lgbm_ender20 and v53_lgbm_ender60)",
-  "https://forum.numer.ai/t/new-target-for-payouts-and-data-v5-2-faith-ii/8209 (v5.2 Faith II introduced Ender/Jasper targets, Dec 2025)"
+  "https://forum.numer.ai/t/new-target-for-payouts-and-data-v5-2-faith-ii/8209 (v5.2 Faith II introduced Ender/Jasper targets, Dec 2025)",
+  "https://docs.numer.ai/numerai-tournament/scoring/definitions (retrieved 2026-08-17: generic Definitions page still names target_cyrus_20 for CORR20v2, MMC, and BMC \u2014 recorded as a stale conflicting source, see authority_conflicts)",
+  "Public GraphQL round configuration, rounds(tournament: 8, number: 1334) (retrieved 2026-08-17T15:39:13+00:00: target=target_ender_20; payout scores correlation v6 x0.75 and meta_model_contribution v5 x2.25, both 20D2L; see round_configuration)"
  ],
  "schemas": {
   "features_json": {
@@ -421,7 +423,8 @@
    "v53_lgbm_ender60"
   ],
   "official_bmm_aggregate_available": false,
-  "bmc_status": "BMC_AGGREGATE_NOT_REPRODUCIBLE_FROM_PUBLISHED_FILES"
+  "bmc_status": "BMC_AGGREGATE_NOT_REPRODUCIBLE_FROM_PUBLISHED_FILES",
+  "authority_conflict_note": "Official sources are internally inconsistent: the generic Definitions page still names target_cyrus_20 for CORR/MMC/BMC and is treated as stale. Newer official change announcements, current scoring guidance, the public round-1334 configuration (target=target_ender_20), and the current v5.3 files support Ender20. See round0_score_authority.json:authority_conflicts."
  },
  "authorized_operations_note": "Audit used schema inspection, era enumeration, row counts, null counts, and column identity checks only (identity checks restricted to pre-holdout eras). No model was trained or tuned; no API-authenticated or account action occurred."
 }

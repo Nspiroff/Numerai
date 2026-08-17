@@ -6,8 +6,10 @@ Lean reusable interface for official-parity per-era scoring:
   ``numerai_tools.scoring.numerai_corr`` (official implementation, not rederived);
 * per-era MMC against the published Meta Model via
   ``numerai_tools.scoring.correlation_contribution`` (official implementation);
-* the weighted payout-style score
-  ``corr * corr_multiplier + mmc * mmc_multiplier``;
+* the weighted model score
+  ``corr * corr_multiplier + mmc * mmc_multiplier`` (the model-selection
+  authority; staking settlement is a separate concern recorded in the
+  score-authority record and never influences selection);
 * deterministic summary statistics reproducible from the per-era values.
 
 Every scoring-authority value (payout target, multipliers, meta-model column,
@@ -57,8 +59,10 @@ SHARPE_CONVENTION = (
     "no annualization; NaN when the std is 0"
 )
 DRAWDOWN_CONVENTION = (
-    "max drawdown = max(running_max(cumsum(per-era score)) - cumsum(per-era "
-    "score)) over eras in chronological order; positive magnitude in score units"
+    "max drawdown = max(running_max(equity) - equity) where equity = "
+    "concatenate([0.0], cumsum(per-era score)) in chronological order; the "
+    "zero-equity starting baseline is included so an initial losing streak "
+    "from zero is counted; positive magnitude in score units"
 )
 PREDICTION_CORR_CONVENTION = (
     "correlation with the Meta Model and with benchmark columns uses the "
@@ -530,9 +534,9 @@ def _series_summary(scores: pd.Series, *, recent_window: int, block_size: int) -
     mean = float(np.mean(values))
     std = float(np.std(values, ddof=0))
     sharpe = float(mean / std) if std != 0.0 else float("nan")
-    cumulative = np.cumsum(values)
-    running_max = np.maximum.accumulate(cumulative)
-    max_drawdown = float(np.max(running_max - cumulative))
+    equity_curve = np.concatenate(([0.0], np.cumsum(values)))
+    running_max = np.maximum.accumulate(equity_curve)
+    max_drawdown = float(np.max(running_max - equity_curve))
     recent_used = int(min(recent_window, values.size))
     recent_mean = float(np.mean(values[-recent_used:]))
     blocks = []
@@ -589,8 +593,11 @@ def summarize_round0(
             "corr_multiplier": float(authority.corr_multiplier),
             "mmc_multiplier": float(authority.mmc_multiplier),
             "meta_model_column": authority.meta_model_column,
-            "weighted_score_formula": (
-                "weighted_score = corr * corr_multiplier + mmc * mmc_multiplier"
+            "weighted_model_score_formula": (
+                "weighted_model_score = corr * corr_multiplier + mmc * "
+                "mmc_multiplier (model-selection score only; staking "
+                "settlement mechanics are recorded separately in the "
+                "score-authority record and never influence selection)"
             ),
         },
         "conventions": {

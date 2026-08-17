@@ -6,10 +6,12 @@
   "https://docs.numer.ai/numerai-tournament/scoring/correlation-corr (retrieved 2026-08-17: CORR20V2 definition \u2014 tie-kept rank, gaussianize, 1.5 power on predictions and centered target, Pearson)",
   "https://docs.numer.ai/numerai-tournament/scoring/meta-model-contribution-mmc (retrieved 2026-08-17: MMC = covariance with target after neutralization to the stake-weighted Meta Model)",
   "https://docs.numer.ai/numerai-tournament/data (retrieved 2026-08-17: v5.3 latest recommended; bare `target` aliases target_ender_60 in v5.3)",
-  "https://docs.numer.ai/numerai-tournament/staking (retrieved 2026-08-17: score = corr20*corr_multiplier + mmc20*mmc_multiplier; payout = stake*clip(payout_factor*score, -0.05, 0.05); payout_factor = min(1, stake_threshold/total_at_risk), Numerai threshold 72,000 NMR)",
+  "https://docs.numer.ai/numerai-tournament/staking (retrieved 2026-08-17: current stake management is handled through the standalone Atomic Blockchain Staking flow; the formula payout = stake*clip(payout_factor*score, -0.05, 0.05) with payout_factor = min(1, stake_threshold/total_at_risk) is explicitly labeled the LEGACY continuous staking payout function; Numerai threshold 72,000 NMR)",
   "https://blog.numer.ai/numerai-monthly-numercon-speakers-new-dataset-target-2026-payout-updates/ (Ender20 is the scoring/payout/leaderboard target effective 2026-01-01, first payout-target change since 2023; CORR multiplier 0.5->0.75 and MMC multiplier 2.0->2.25 effective 2026-01-01)",
   "https://forum.numer.ai/t/numerai-v5-3-quantum-data-release/8321 (v5.3 'Quantum' released 2026-07-15; 807 new features; same target list; 'The payout target is remaining the same'; new benchmarks v53_lgbm_ender20 and v53_lgbm_ender60)",
-  "https://forum.numer.ai/t/new-target-for-payouts-and-data-v5-2-faith-ii/8209 (v5.2 Faith II introduced Ender/Jasper targets, Dec 2025)"
+  "https://forum.numer.ai/t/new-target-for-payouts-and-data-v5-2-faith-ii/8209 (v5.2 Faith II introduced Ender/Jasper targets, Dec 2025)",
+  "https://docs.numer.ai/numerai-tournament/scoring/definitions (retrieved 2026-08-17: generic Definitions page still names target_cyrus_20 for CORR20v2, MMC, and BMC \u2014 recorded as a stale conflicting source, see authority_conflicts)",
+  "Public GraphQL round configuration, rounds(tournament: 8, number: 1334) (retrieved 2026-08-17T15:39:13+00:00: target=target_ender_20; payout scores correlation v6 x0.75 and meta_model_contribution v5 x2.25, both 20D2L; see round_configuration)"
  ],
  "dataset_version": "v5.3",
  "payout_target": "target_ender_20",
@@ -17,7 +19,6 @@
  "mmc_score_version": "MMC20",
  "corr_multiplier": 0.75,
  "mmc_multiplier": 2.25,
- "weighted_score_formula": "score = corr * corr_multiplier + mmc * mmc_multiplier; payout = stake * clip(payout_factor * score, -0.05, +0.05); payout_factor = min(1, stake_threshold / total_at_risk)",
  "meta_model_column": "numerai_meta_model",
  "meta_model_first_supported_era": "1133",
  "meta_model_last_supported_era_at_retrieval": "1219",
@@ -39,5 +40,117 @@
   "status_at_retrieval": "announced, not yet effective",
   "detail": "Current scoring docs state that starting with a separately coordinated cutover round, CORR and MMC will use the 60-day Ender target (CORR60/MMC60). As of retrieval, payouts remain on the 20-day Ender target. When the cutover round is announced and effected, this record is stale and must be re-issued."
  },
- "revalidation": "These values change over time (multipliers changed 2026-01-01; the payout target changed 2026-01-01; an Ender-60 cutover is announced). This record must be re-audited against live documentation, round configuration, and current dataset files before any deployment, staking, or payout-relevant use. It may not be assumed current."
+ "revalidation": "These values change over time (multipliers and the payout target changed 2026-01-01; an Ender-60 cutover is announced; the generic Definitions page currently lags reality; the active staking settlement system is unresolved at round-configuration level). This record must be re-audited against the live round configuration, scoring documentation, and current dataset files before any deployment, staking, or payout-relevant use. It may not be assumed current.",
+ "weighted_model_score_formula": "weighted_model_score = corr * corr_multiplier + mmc * mmc_multiplier (the model-selection authority for this family; this is the weighted model score only, NOT a staking-settlement formula)",
+ "authority_precedence": [
+  "1. current round configuration (public GraphQL round record)",
+  "2. current Scoring page (docs.numer.ai/numerai-tournament/scoring)",
+  "3. dated official payout-target announcements (blog/forum)",
+  "4. current dataset schema and benchmark roster (v5.3 files)",
+  "5. generic definitions prose (lowest precedence; can lag changes)"
+ ],
+ "authority_conflicts": {
+  "summary": "Official Numerai sources are internally inconsistent about the payout target. Newer official change announcements, current scoring guidance, the current public round configuration, and current v5.3 files support Ender20; the generic Definitions page still names target_cyrus_20 and is treated as stale under the recorded authority precedence.",
+  "sources": [
+   {
+    "source": "Public round configuration (GraphQL rounds(tournament: 8, number: 1334))",
+    "claim": "Round 1334 target is target_ender_20; the only isPayout score configs are correlation v6 (displayName v2_corr20, multiplier fixed 0.75) and meta_model_contribution v5 (displayName mmc, multiplier fixed 2.25), both 20D2L.",
+    "retrieved_utc": "2026-08-17T15:39:13+00:00",
+    "apparent_lifecycle_status": "current (authoritative round record)"
+   },
+   {
+    "source": "https://docs.numer.ai/numerai-tournament/scoring (current Scoring page)",
+    "claim": "The round's score configuration identifies the scoring horizon; CORR20V2 covers 20-day rounds including Ender-20 rounds; CORR60/MMC60 apply to rounds configured for Ender-60 scoring, which begins only with a separately coordinated cutover round.",
+    "retrieved_utc": "2026-08-17T14:05:00+00:00",
+    "apparent_lifecycle_status": "current"
+   },
+   {
+    "source": "https://blog.numer.ai/numerai-monthly-numercon-speakers-new-dataset-target-2026-payout-updates/",
+    "claim": "Ender20 is the scoring, payout, and leaderboard target effective 2026-01-01 (first payout-target change since 2023); CORR multiplier 0.5 -> 0.75 and MMC multiplier 2.0 -> 2.25 effective the same date.",
+    "retrieved_utc": "2026-08-17T14:10:00+00:00",
+    "apparent_lifecycle_status": "dated official change announcement (January 2026)"
+   },
+   {
+    "source": "https://forum.numer.ai/t/numerai-v5-3-quantum-data-release/8321",
+    "claim": "v5.3 Quantum (2026-07-15) keeps the target list and 'the payout target is remaining the same'.",
+    "retrieved_utc": "2026-08-17T14:12:00+00:00",
+    "apparent_lifecycle_status": "dated official release announcement (July 2026)"
+   },
+   {
+    "source": "Current v5.3 dataset schema and benchmark roster",
+    "claim": "target_ender_20 present and resolving on the 20D2L cadence (frontier era 1227); no plain cyrus target column (only auxiliary target_cyrusd_20/60); benchmarks v53_lgbm_ender20 and v53_lgbm_ender60; bare `target` aliases target_ender_60.",
+    "retrieved_utc": "2026-08-17T14:20:00+00:00",
+    "apparent_lifecycle_status": "current published files"
+   },
+   {
+    "source": "https://docs.numer.ai/numerai-tournament/scoring/definitions (generic Definitions page)",
+    "claim": "Still defines CORR20v2 as 'numerai corr of a submission against target_cyrus_20', MMC as 'correlation contribution of a submission, SWMM, and target_cyrus_20', and BMC as 'correlation contribution of a submission, BMM, and target_cyrus_20'.",
+    "retrieved_utc": "2026-08-17T15:40:00+00:00",
+    "apparent_lifecycle_status": "stale \u2014 contradicts the 2026-01-01 payout-target change announcement, the current Scoring page, the current round configuration, and the current v5.3 files"
+   }
+  ],
+  "resolution": "target_ender_20 remains the resolved current payout target. The Definitions-page target_cyrus_20 wording sits at the lowest precedence level and is contradicted by every higher-precedence source, so it is recorded as stale rather than resolved-for. The announced Ender-60 cutover remains pending and prominent: when a cutover round is coordinated, this record is stale and must be re-issued."
+ },
+ "round_configuration": {
+  "retrieved_utc": "2026-08-17T15:39:13+00:00",
+  "method": "Unauthenticated public NumerAPI GraphQL raw_query; no credentials, no account action. Query recorded verbatim below.",
+  "query": "query { rounds(tournament: 8, number: 1334) { number openTime closeTime scoreTime resolveTime payoutFactor stakeThreshold v3Staking target roundScoreConfigs { name displayName version isPayout isCanonScore defaultMultiplier minMultiplier maxMultiplier totalScoreDays returnsLagDays dataDelayDays clipThreshold roundNumberStart roundNumberEnd universe } } }",
+  "round_number": 1334,
+  "target": "target_ender_20",
+  "open_time": "2026-08-15T12:08:10Z",
+  "close_time": "2026-08-18T12:00:00Z",
+  "payout_score_configs": [
+   {
+    "display_name": "v2_corr20",
+    "score_name": "correlation",
+    "score_version": "6",
+    "default_multiplier": 0.75,
+    "min_multiplier": 0.75,
+    "max_multiplier": 0.75,
+    "total_score_days": 20,
+    "returns_lag_days": 2,
+    "clip_threshold": 0.05,
+    "effective_from_round": 1149
+   },
+   {
+    "display_name": "mmc",
+    "score_name": "meta_model_contribution",
+    "score_version": "5",
+    "default_multiplier": 2.25,
+    "min_multiplier": 2.25,
+    "max_multiplier": 2.25,
+    "total_score_days": 20,
+    "returns_lag_days": 2,
+    "clip_threshold": 0.05,
+    "effective_from_round": 1149
+   }
+  ],
+  "observed_round_fields": {
+   "payout_factor": "0.088771951446152130",
+   "stake_threshold": 72000.0,
+   "v3_staking": false
+  },
+  "notes": "The round record directly confirms the payout target (target_ender_20) and the fixed default multipliers (CORR 0.75, MMC 2.25, both min==max) at precedence level 1. All 60D score configs on the round (including names still carrying legacy cyrus naming such as correlation_cyrus_60) have multiplier 0 and isPayout=false: diagnostics only, corroborating the pending Ender-60 cutover."
+ },
+ "staking_settlement": {
+  "purpose": "Staking settlement mechanics are recorded for completeness only. They are SEPARATE from the weighted model score and never influence model selection in this family.",
+  "atomic_staking_v3_documented": {
+   "weighted_score": "sum(score * multiplier) over the round's payout scores",
+   "payout_factor": 1,
+   "round_return": "clip(weighted_score, -1, 1)",
+   "settlement": "round_stake * round_return",
+   "payout_burn": "payout and burn are separated",
+   "authority_note": "The round configuration, not this research record, determines score types and multipliers. The current staking docs state that stake management is handled through the standalone Atomic Blockchain Staking flow, which 'removes continuous-stake overlap leverage and the legacy per-round clip'."
+  },
+  "legacy_continuous_staking": {
+   "formula": "payout = stake * clip(payout_factor * score, -0.05, 0.05)",
+   "payout_factor": "dynamic: min(1, stake_threshold / total_at_risk)",
+   "status": "historical only; the staking docs explicitly label this 'the legacy continuous staking payout function'"
+  },
+  "active_system_status": {
+   "status": "unresolved_for_this_record",
+   "evidence": "Docs prose says the Atomic Blockchain Staking flow is current, but the public round-1334 record reports v3Staking=false with a populated dynamic payout_factor (0.088771951446152130) and per-config clip_threshold 0.05 fields, so the actively applied settlement system could not be proven one way or the other from the public round/tournament configuration alone. It is marked unresolved for this Round-0 model-selection record; settlement mechanics do not affect model selection here.",
+   "retrieved_utc": "2026-08-17T15:39:13+00:00"
+  }
+ }
 }

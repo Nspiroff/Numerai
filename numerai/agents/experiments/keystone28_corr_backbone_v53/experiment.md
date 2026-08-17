@@ -50,14 +50,23 @@ authority.
 ## Current payout objective (frozen 2026-08-17, must be re-audited before use)
 
 - Payout target: `target_ender_20` (effective 2026-01-01; reaffirmed by the
-  v5.3 "Quantum" release, 2026-07-15).
+  v5.3 "Quantum" release, 2026-07-15; directly confirmed by the public
+  round-1334 configuration, which reports `target: target_ender_20`).
 - Scores: CORR20V2 (`numerai_tools.scoring.numerai_corr`) and MMC20
   (`numerai_tools.scoring.correlation_contribution` against
-  `numerai_meta_model`).
-- Weighted score: `corr * 0.75 + mmc * 2.25` (multipliers effective
-  2026-01-01).
+  `numerai_meta_model`) — the round-1334 payout configs are `correlation` v6
+  at fixed 0.75 and `meta_model_contribution` v5 at fixed 2.25.
+- Weighted **model** score: `corr * 0.75 + mmc * 2.25` (multipliers effective
+  2026-01-01). This is the model-selection authority only; staking
+  settlement mechanics (atomic v3 vs legacy continuous) are recorded
+  separately in `round0_score_authority.json:staking_settlement`, are marked
+  unresolved at round-configuration level, and never influence selection.
 - BMC: not reproducible from published files
   (`BMC_AGGREGATE_NOT_REPRODUCIBLE_FROM_PUBLISHED_FILES`); never substituted.
+- Known official-source conflict (recorded, resolved): the generic
+  Definitions page still names `target_cyrus_20` for CORR/MMC/BMC and is
+  treated as stale under the recorded authority precedence; see
+  `round0_score_authority.json:authority_conflicts`.
 
 ## Round-0 packet contents
 
