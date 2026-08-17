@@ -1,0 +1,430 @@
+{
+ "record": "keystone28_round0_data_authority",
+ "retrieved_utc": "2026-08-17T14:32:27+00:00",
+ "inventory": {
+  "source": "NumerAPI().list_datasets() (unauthenticated public endpoint)",
+  "retrieved_utc": "2026-08-17T14:07:43.263267+00:00",
+  "dataset_count": 48,
+  "versions_available": [
+   "v5.0",
+   "v5.1",
+   "v5.2",
+   "v5.3"
+  ],
+  "current_recommended_version": "v5.3",
+  "recommendation_authority": "docs.numer.ai/numerai-tournament/data (v5.3 latest and recommended) and the v5.3 Quantum release announcement (2026-07-15); v5.0-v5.2 remain supported.",
+  "v5_3_files": [
+   "v5.3/features.json",
+   "v5.3/live.parquet",
+   "v5.3/live_benchmark_models.parquet",
+   "v5.3/live_example_preds.csv",
+   "v5.3/live_example_preds.parquet",
+   "v5.3/meta_model.parquet",
+   "v5.3/train.parquet",
+   "v5.3/train_benchmark_models.parquet",
+   "v5.3/validation.parquet",
+   "v5.3/validation_benchmark_models.parquet",
+   "v5.3/validation_example_preds.csv",
+   "v5.3/validation_example_preds.parquet"
+  ]
+ },
+ "storage": {
+  "data_root": "D:\\numerai-data\\keystone28\\v5.3",
+  "volume": "D:",
+  "volume_free_bytes_before": 284122968064,
+  "volume_free_bytes_after": 278274519040,
+  "note": "Multi-gigabyte datasets live on the external non-system volume only; nothing under the Git worktree.",
+  "downloads": [
+   {
+    "dataset": "v5.3/features.json",
+    "dest": "D:\\numerai-data\\keystone28\\v5.3\\features.json",
+    "result": "downloaded",
+    "bytes": 387149,
+    "sha256": "27de6b598b0d479415dba8062d050fc190469776f9c905feea9ee3f2bdda3631",
+    "seconds": 2.6
+   },
+   {
+    "dataset": "v5.3/meta_model.parquet",
+    "dest": "D:\\numerai-data\\keystone28\\v5.3\\meta_model.parquet",
+    "result": "downloaded",
+    "bytes": 13590154,
+    "sha256": "add541799bdf08043256f80afe9ddc9f3d294c96533f1041e3579aed4b98d6d6",
+    "seconds": 3.3
+   },
+   {
+    "dataset": "v5.3/validation_example_preds.parquet",
+    "dest": "D:\\numerai-data\\keystone28\\v5.3\\validation_example_preds.parquet",
+    "result": "downloaded",
+    "bytes": 97057487,
+    "sha256": "4bfd3ab7afa61c2638c756feb3f6d9e0b41d565cafe0b622b289711cec83c5e3",
+    "seconds": 6.0
+   },
+   {
+    "dataset": "v5.3/validation_benchmark_models.parquet",
+    "dest": "D:\\numerai-data\\keystone28\\v5.3\\validation_benchmark_models.parquet",
+    "result": "downloaded",
+    "bytes": 126278375,
+    "sha256": "801876e33d643523b197980aa0a5f6af2585869eb44e390708cae47dd6a5aaf5",
+    "seconds": 7.0
+   },
+   {
+    "dataset": "v5.3/validation.parquet",
+    "dest": "D:\\numerai-data\\keystone28\\v5.3\\validation.parquet",
+    "result": "downloaded",
+    "bytes": 5611121884,
+    "sha256": "8ed7859b707aee8e4d6c4476fb9ecb1123caa429311dbf9f45c574722c24fae6",
+    "seconds": 181.7
+   }
+  ]
+ },
+ "documentation_authority": [
+  "https://docs.numer.ai/numerai-tournament/scoring (retrieved 2026-08-17: CORR20V2/CORR60/CORJ60/CORT20 roster; 'Starting with the separately coordinated Ender-60 scoring cutover round, CORR and MMC use the 60-day Ender target')",
+  "https://docs.numer.ai/numerai-tournament/scoring/correlation-corr (retrieved 2026-08-17: CORR20V2 definition \u2014 tie-kept rank, gaussianize, 1.5 power on predictions and centered target, Pearson)",
+  "https://docs.numer.ai/numerai-tournament/scoring/meta-model-contribution-mmc (retrieved 2026-08-17: MMC = covariance with target after neutralization to the stake-weighted Meta Model)",
+  "https://docs.numer.ai/numerai-tournament/data (retrieved 2026-08-17: v5.3 latest recommended; bare `target` aliases target_ender_60 in v5.3)",
+  "https://docs.numer.ai/numerai-tournament/staking (retrieved 2026-08-17: current stake management is handled through the standalone Atomic Blockchain Staking flow; the formula payout = stake*clip(payout_factor*score, -0.05, 0.05) with payout_factor = min(1, stake_threshold/total_at_risk) is explicitly labeled the LEGACY continuous staking payout function; Numerai threshold 72,000 NMR)",
+  "https://blog.numer.ai/numerai-monthly-numercon-speakers-new-dataset-target-2026-payout-updates/ (Ender20 is the scoring/payout/leaderboard target effective 2026-01-01, first payout-target change since 2023; CORR multiplier 0.5->0.75 and MMC multiplier 2.0->2.25 effective 2026-01-01)",
+  "https://forum.numer.ai/t/numerai-v5-3-quantum-data-release/8321 (v5.3 'Quantum' released 2026-07-15; 807 new features; same target list; 'The payout target is remaining the same'; new benchmarks v53_lgbm_ender20 and v53_lgbm_ender60)",
+  "https://forum.numer.ai/t/new-target-for-payouts-and-data-v5-2-faith-ii/8209 (v5.2 Faith II introduced Ender/Jasper targets, Dec 2025)",
+  "https://docs.numer.ai/numerai-tournament/scoring/definitions (retrieved 2026-08-17: generic Definitions page still names target_cyrus_20 for CORR20v2, MMC, and BMC \u2014 recorded as a stale conflicting source, see authority_conflicts)",
+  "Public GraphQL round configuration, rounds(tournament: 8, number: 1334) (retrieved 2026-08-17T15:39:13+00:00: target=target_ender_20; payout scores correlation v6 x0.75 and meta_model_contribution v5 x2.25, both 20D2L; see round_configuration)"
+ ],
+ "schemas": {
+  "features_json": {
+   "top_level_keys": [
+    "feature_sets",
+    "targets"
+   ],
+   "feature_set_counts": {
+    "small": 42,
+    "medium": 780,
+    "all": 3555,
+    "v2_equivalent_features": 304,
+    "v3_equivalent_features": 1000,
+    "fncv3_features": 400,
+    "intelligence": 35,
+    "charisma": 290,
+    "strength": 135,
+    "dexterity": 51,
+    "constitution": 335,
+    "wisdom": 140,
+    "agility": 145,
+    "serenity": 95,
+    "sunshine": 325,
+    "rain": 666,
+    "midnight": 244,
+    "faith": 372,
+    "quantum": 807
+   },
+   "targets_listed": [
+    "target_agnes_20",
+    "target_agnes_60",
+    "target_alpha_20",
+    "target_alpha_60",
+    "target_bravo_20",
+    "target_bravo_60",
+    "target_caroline_20",
+    "target_caroline_60",
+    "target_charlie_20",
+    "target_charlie_60",
+    "target_claudia_20",
+    "target_claudia_60",
+    "target_cyrusd_20",
+    "target_cyrusd_60",
+    "target_delta_20",
+    "target_delta_60",
+    "target_echo_20",
+    "target_echo_60",
+    "target_ender_20",
+    "target_ender_60",
+    "target_jasper_20",
+    "target_jasper_60",
+    "target_jeremy_20",
+    "target_jeremy_60",
+    "target_ralph_20",
+    "target_ralph_60",
+    "target_rowan_20",
+    "target_rowan_60",
+    "target_sam_20",
+    "target_sam_60",
+    "target_teager2b_20",
+    "target_teager2b_60",
+    "target_tyler_20",
+    "target_tyler_60",
+    "target_victor_20",
+    "target_victor_60",
+    "target_waldo_20",
+    "target_waldo_60",
+    "target_xerxes_20",
+    "target_xerxes_60",
+    "target"
+   ],
+   "n_targets_listed": 41
+  },
+  "validation_parquet": {
+   "num_rows": 4114072,
+   "num_row_groups": 4,
+   "n_columns": 3599,
+   "n_feature_columns": 3555,
+   "target_columns": [
+    "target",
+    "target_agnes_20",
+    "target_agnes_60",
+    "target_alpha_20",
+    "target_alpha_60",
+    "target_bravo_20",
+    "target_bravo_60",
+    "target_caroline_20",
+    "target_caroline_60",
+    "target_charlie_20",
+    "target_charlie_60",
+    "target_claudia_20",
+    "target_claudia_60",
+    "target_cyrusd_20",
+    "target_cyrusd_60",
+    "target_delta_20",
+    "target_delta_60",
+    "target_echo_20",
+    "target_echo_60",
+    "target_ender_20",
+    "target_ender_60",
+    "target_jasper_20",
+    "target_jasper_60",
+    "target_jeremy_20",
+    "target_jeremy_60",
+    "target_ralph_20",
+    "target_ralph_60",
+    "target_rowan_20",
+    "target_rowan_60",
+    "target_sam_20",
+    "target_sam_60",
+    "target_teager2b_20",
+    "target_teager2b_60",
+    "target_tyler_20",
+    "target_tyler_60",
+    "target_victor_20",
+    "target_victor_60",
+    "target_waldo_20",
+    "target_waldo_60",
+    "target_xerxes_20",
+    "target_xerxes_60"
+   ],
+   "non_feature_non_target_columns": [
+    "era",
+    "data_type",
+    "id"
+   ],
+   "data_type_counts": {
+    "validation": 4021919,
+    "test": 92153
+   },
+   "era_min": "0575",
+   "era_max": "1232",
+   "n_eras": 658,
+   "era_gaps": [],
+   "target_resolution": {
+    "target": {
+     "last_fully_resolved_era": "1219",
+     "first_fully_resolved_era": "0575",
+     "n_fully_resolved": 645,
+     "unresolved_eras": [
+      "1220",
+      "1221",
+      "1222",
+      "1223",
+      "1224",
+      "1225",
+      "1226",
+      "1227",
+      "1228",
+      "1229",
+      "1230",
+      "1231",
+      "1232"
+     ],
+     "partially_resolved_eras": []
+    },
+    "target_ender_20": {
+     "last_fully_resolved_era": "1227",
+     "first_fully_resolved_era": "0575",
+     "n_fully_resolved": 653,
+     "unresolved_eras": [
+      "1228",
+      "1229",
+      "1230",
+      "1231",
+      "1232"
+     ],
+     "partially_resolved_eras": []
+    },
+    "target_ender_60": {
+     "last_fully_resolved_era": "1219",
+     "first_fully_resolved_era": "0575",
+     "n_fully_resolved": 645,
+     "unresolved_eras": [
+      "1220",
+      "1221",
+      "1222",
+      "1223",
+      "1224",
+      "1225",
+      "1226",
+      "1227",
+      "1228",
+      "1229",
+      "1230",
+      "1231",
+      "1232"
+     ],
+     "partially_resolved_eras": []
+    }
+   },
+   "rows_per_era_min": 5450,
+   "rows_per_era_max": 7309,
+   "bare_target_alias_identity_preholdout": {
+    "target_ender_20": {
+     "identical_on_preholdout": false,
+     "nan_pattern_identical": false,
+     "values_equal_where_both_present": false
+    },
+    "target_ender_60": {
+     "identical_on_preholdout": true,
+     "nan_pattern_identical": true,
+     "values_equal_where_both_present": true
+    }
+   }
+  },
+  "validation_parquet_target_null_totals": {
+   "target": 92153,
+   "target_agnes_20": 35476,
+   "target_agnes_60": 92153,
+   "target_alpha_20": 35476,
+   "target_alpha_60": 92153,
+   "target_bravo_20": 35476,
+   "target_bravo_60": 92153,
+   "target_caroline_20": 35476,
+   "target_caroline_60": 92153,
+   "target_charlie_20": 35476,
+   "target_charlie_60": 92153,
+   "target_claudia_20": 35476,
+   "target_claudia_60": 92153,
+   "target_cyrusd_20": 35476,
+   "target_cyrusd_60": 92153,
+   "target_delta_20": 35476,
+   "target_delta_60": 92153,
+   "target_echo_20": 35476,
+   "target_echo_60": 92153,
+   "target_ender_20": 35476,
+   "target_ender_60": 92153,
+   "target_jasper_20": 35476,
+   "target_jasper_60": 92153,
+   "target_jeremy_20": 56492,
+   "target_jeremy_60": 147300,
+   "target_ralph_20": 35476,
+   "target_ralph_60": 92153,
+   "target_rowan_20": 35476,
+   "target_rowan_60": 92153,
+   "target_sam_20": 35476,
+   "target_sam_60": 92153,
+   "target_teager2b_20": 35476,
+   "target_teager2b_60": 92153,
+   "target_tyler_20": 35476,
+   "target_tyler_60": 92153,
+   "target_victor_20": 35476,
+   "target_victor_60": 92153,
+   "target_waldo_20": 35476,
+   "target_waldo_60": 92153,
+   "target_xerxes_20": 35476,
+   "target_xerxes_60": 92153
+  },
+  "meta_model_parquet": {
+   "num_rows": 575597,
+   "columns": [
+    "era",
+    "data_type",
+    "numerai_meta_model",
+    "id"
+   ],
+   "value_columns": [
+    "numerai_meta_model"
+   ],
+   "era_min": "1133",
+   "era_max": "1219",
+   "n_eras": 87,
+   "era_gaps": [],
+   "null_counts": {
+    "numerai_meta_model": 0
+   },
+   "id_duplicates": 0
+  },
+  "validation_benchmark_models_parquet": {
+   "num_rows": 4114072,
+   "n_columns": 4,
+   "key_columns": [
+    "era",
+    "id"
+   ],
+   "benchmark_columns": [
+    "v53_lgbm_ender20",
+    "v53_lgbm_ender60"
+   ],
+   "n_benchmark_columns": 2,
+   "official_bmm_aggregate_candidates": [],
+   "era_min": "0575",
+   "era_max": "1232",
+   "n_eras": 658
+  },
+  "validation_example_preds_parquet": {
+   "num_rows": 4114072,
+   "columns": [
+    "prediction",
+    "id"
+   ]
+  }
+ },
+ "findings": {
+  "current_payout_target": "target_ender_20",
+  "bare_target_alias": "target_ender_60 (verified identical on pre-holdout eras, NaN pattern included)",
+  "feature_count_all": 3555,
+  "feature_sets": {
+   "small": 42,
+   "medium": 780,
+   "all": 3555,
+   "v2_equivalent_features": 304,
+   "v3_equivalent_features": 1000,
+   "fncv3_features": 400,
+   "intelligence": 35,
+   "charisma": 290,
+   "strength": 135,
+   "dexterity": 51,
+   "constitution": 335,
+   "wisdom": 140,
+   "agility": 145,
+   "serenity": 95,
+   "sunshine": 325,
+   "rain": 666,
+   "midnight": 244,
+   "faith": 372,
+   "quantum": 807
+  },
+  "n_targets": 41,
+  "validation_era_range": [
+   "0575",
+   "1232"
+  ],
+  "latest_fully_resolved_payout_target_era": "1227",
+  "meta_model_column": "numerai_meta_model",
+  "meta_model_era_coverage": [
+   "1133",
+   "1219"
+  ],
+  "benchmark_model_columns": [
+   "v53_lgbm_ender20",
+   "v53_lgbm_ender60"
+  ],
+  "official_bmm_aggregate_available": false,
+  "bmc_status": "BMC_AGGREGATE_NOT_REPRODUCIBLE_FROM_PUBLISHED_FILES",
+  "authority_conflict_note": "Official sources are internally inconsistent: the generic Definitions page still names target_cyrus_20 for CORR/MMC/BMC and is treated as stale. Newer official change announcements, current scoring guidance, the public round-1334 configuration (target=target_ender_20), and the current v5.3 files support Ender20. See round0_score_authority.json:authority_conflicts."
+ },
+ "authorized_operations_note": "Audit used schema inspection, era enumeration, row counts, null counts, and column identity checks only (identity checks restricted to pre-holdout eras). No model was trained or tuned; no API-authenticated or account action occurred."
+}

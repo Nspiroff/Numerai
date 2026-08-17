@@ -42,9 +42,9 @@ never executed here.
   its checks in a permanent "Pending" state, which blocks merging; universal
   PR coverage removes that deadlock before either context is ever configured
   as a required status check.
-- **Documentation-only PRs therefore still run the complete 76-test platform
+- **Documentation-only PRs therefore still run the complete 108-test platform
   contract.** The workload is intentionally small: the Ubuntu job compiles
-  the governed `numerai/agents` tree and runs the 38 portable tests, and the
+  the governed `numerai/agents` tree and runs the 70 portable tests, and the
   Windows job runs the 38 archived custody tests. There is **no job-level
   conditional skipping, no lightweight fake-success job, and no
   `continue-on-error` anywhere** — a reported success is always the real
@@ -64,14 +64,16 @@ never executed here.
 ## Platform split
 
 The workflow contains **two jobs**. Across both jobs the selected suite is
-**76 tests**; **no individual test method is skipped** anywhere, and no
-`continue-on-error` is used.
+**108 tests** (70 on Ubuntu + 38 on Windows); **no individual test method is
+skipped** anywhere, and no `continue-on-error` is used.
 
 ### Job 1 — `portable-source-contract` (ubuntu-24.04)
 
 1. **Compile gate** — every `*.py` file under `numerai/agents` is compiled
-   in-memory (no bytecode written). 199 files at selection time.
-2. **Portable source-contract modules** (38 tests), run with
+   in-memory (no bytecode written). 199 files at original selection time;
+   202 after the Keystone Round-0 addition (harness, test module, and smoke
+   runner).
+2. **Portable source-contract modules** (70 tests), run with
    `python -m unittest` from the repository root with `PYTHONPATH=numerai`:
 
 | Module | Tests | Why it is synthetic, safe, and portable |
@@ -80,10 +82,13 @@ The workflow contains **two jobs**. Across both jobs the selected suite is
 | `agents.tests.test_ender22_evaluators` | 4 | Contract tests of the archived Ender22 evaluator helpers on synthetic in-memory inputs. |
 | `agents.tests.test_ender23_protocol` | 6 | Read-only assertions over tracked Ender23 protocol documents; verifies frozen wording/contract, writes nothing. |
 | `agents.tests.test_ender24_evaluator` | 14 | Mock-based contract tests of the archived Ender24 evaluator modules; all writes go to `tempfile` directories. |
+| `agents.tests.test_keystone28_round0_metrics` | 32 | Source-contract tests of the Keystone Round-0 scoring harness (`agents.code.metrics.keystone_round0`), added under SC32 (independent review `4952411743` on PR #32) so the harness executes — not merely compiles — in protected CI. Deterministic and synthetic: fixed-seed in-memory numpy/pandas fixtures only; exact-parity cross-checks against `numerai_tools.scoring` (already pinned for `test_target_transforms`); CPU-only; no dataset, file, network, credential, `pyarrow`, or `numerapi` use (temporary JSON round-trip uses `tempfile`). Every method runs; nothing is skipped. |
 
 ### Job 2 — `windows-terminal-custody-contract` (windows-2022)
 
-The **complete, unmodified** archived evaluator custody suites (38 tests):
+**Unchanged by the SC32 Keystone addition**: the Windows terminal-custody
+allocation remains exactly the **complete, unmodified** archived evaluator
+custody suites (38 tests):
 
 | Module | Tests | Why it runs on Windows |
 | --- | --- | --- |
@@ -153,6 +158,10 @@ other four modules were fully green).
   portable modules and the compile gate passed on `ubuntu-24.04`, and that
   the only errors were the two archived exception-envelope custody tests
   described above.
+- **SC32 Keystone-addition validation (Windows, Python 3.13.14, exact CI
+  pins)**: the complete five-module Ubuntu portable command passed **70/70**
+  and the unchanged Windows custody command passed **38/38** locally before
+  the CI change was pushed; the full-tree compile gate covered 202 files.
 
 ## Deliberately excluded test categories
 

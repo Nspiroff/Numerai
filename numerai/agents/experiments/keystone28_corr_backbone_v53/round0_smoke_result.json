@@ -1,0 +1,142 @@
+{
+ "authority": {
+  "corr_multiplier": 0.75,
+  "corr_score_name": "CORR20V2",
+  "meta_model_column": "numerai_meta_model",
+  "mmc_multiplier": 2.25,
+  "mmc_score_name": "MMC20",
+  "payout_target": "target_ender_20"
+ },
+ "checks": {
+  "all_scores_finite": true,
+  "excluded_eras": [],
+  "expected_eras_enforced": true,
+  "holdout_untouched": true,
+  "one_to_one_joins": true
+ },
+ "data_version": "v5.3",
+ "inputs": {
+  "distinct_ids": 27897,
+  "meta_model_rows": 27897,
+  "prediction_rows": 27897,
+  "scoring_rows": 27897
+ },
+ "per_era_scores": {
+  "1216": {
+   "corr": -0.020755101959563902,
+   "corr_with_meta_model": 0.68827153667927,
+   "mmc": -0.005006873114225569,
+   "weighted_score": -0.02683179097668046
+  },
+  "1217": {
+   "corr": -0.02329938483124499,
+   "corr_with_meta_model": 0.6777948659651737,
+   "mmc": -0.016020120327536802,
+   "weighted_score": -0.053519809360391545
+  },
+  "1218": {
+   "corr": 0.0030924947527877287,
+   "corr_with_meta_model": 0.6469952863227602,
+   "mmc": -0.011018768410982253,
+   "weighted_score": -0.022472857860119277
+  },
+  "1219": {
+   "corr": 0.01582620760252758,
+   "corr_with_meta_model": 0.6309509719140772,
+   "mmc": -0.006279236784278467,
+   "weighted_score": -0.0022586270627308683
+  }
+ },
+ "prediction_vector": "published benchmark predictions 'v53_lgbm_ender20' from v5.3/validation_benchmark_models.parquet",
+ "purpose": "Plumbing-only smoke of the Round-0 harness on real historical pre-holdout data. Not a candidate result; ranks and selects nothing. No model was trained; no holdout era was scored; no network or account action occurred.",
+ "record": "keystone28_round0_smoke",
+ "smoke_eras": [
+  "1216",
+  "1217",
+  "1218",
+  "1219"
+ ],
+ "summary": {
+  "authority": {
+   "corr_multiplier": 0.75,
+   "corr_score_name": "CORR20V2",
+   "meta_model_column": "numerai_meta_model",
+   "mmc_multiplier": 2.25,
+   "mmc_score_name": "MMC20",
+   "payout_target": "target_ender_20",
+   "weighted_model_score_formula": "weighted_model_score = corr * corr_multiplier + mmc * mmc_multiplier (model-selection score only; staking settlement mechanics are recorded separately in the score-authority record and never influence selection)"
+  },
+  "block_size": 4,
+  "bmc": {
+   "detail": "No official historical Benchmark Meta Model aggregate (or its stake weights) is published; a single benchmark column or an equal-weight average is not the official BMM and is not reported as BMC.",
+   "reason": "BMC_AGGREGATE_NOT_REPRODUCIBLE_FROM_PUBLISHED_FILES",
+   "status": "unavailable"
+  },
+  "conventions": {
+   "era_ordering": "eras are uniform-width zero-padded digit strings sorted lexicographically (equal to chronological order); the joined cohort is sorted by (era, id) before scoring",
+   "max_drawdown": "max drawdown = max(running_max(equity) - equity) where equity = concatenate([0.0], cumsum(per-era score)) in chronological order; the zero-equity starting baseline is included so an initial losing streak from zero is counted; positive magnitude in score units",
+   "prediction_reference_corr": "correlation with the Meta Model and with benchmark columns uses the official Numerai Corr transform with the reference predictions in the target slot (repo per_era_pred_corr convention); it is diagnostic, not a payout score",
+   "sharpe": "era Sharpe = mean(per-era score) / population std(per-era score, ddof=0); no annualization; NaN when the std is 0"
+  },
+  "diagnostics": {
+   "corr_with_meta_model": {
+    "mean": 0.6610031652203202
+   }
+  },
+  "excluded_eras_missing_meta_model": [],
+  "first_era": "1216",
+  "last_era": "1219",
+  "n_eras": 4,
+  "recent_window": 4,
+  "scores": {
+   "corr": {
+    "max_drawdown": 0.044054486790808894,
+    "mean": -0.006283946108873397,
+    "per_block_means": [
+     {
+      "end_era": "1219",
+      "mean": -0.006283946108873397,
+      "n_eras": 4,
+      "start_era": "1216"
+     }
+    ],
+    "recent_mean": -0.006283946108873397,
+    "recent_window_used": 4,
+    "sharpe": -0.38318952091603403,
+    "std": 0.016399055208637502
+   },
+   "mmc": {
+    "max_drawdown": 0.03832499863702309,
+    "mean": -0.009581249659255773,
+    "per_block_means": [
+     {
+      "end_era": "1219",
+      "mean": -0.009581249659255773,
+      "n_eras": 4,
+      "start_era": "1216"
+     }
+    ],
+    "recent_mean": -0.009581249659255773,
+    "recent_window_used": 4,
+    "sharpe": -2.2074953030334084,
+    "std": 0.004340326181482603
+   },
+   "weighted_score": {
+    "max_drawdown": 0.10508308525992216,
+    "mean": -0.02627077131498054,
+    "per_block_means": [
+     {
+      "end_era": "1219",
+      "mean": -0.02627077131498054,
+      "n_eras": 4,
+      "start_era": "1216"
+     }
+    ],
+    "recent_mean": -0.02627077131498054,
+    "recent_window_used": 4,
+    "sharpe": -1.438640385388599,
+    "std": 0.018260832645737524
+   }
+  }
+ }
+}
