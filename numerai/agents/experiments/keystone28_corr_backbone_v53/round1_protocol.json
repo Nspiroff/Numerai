@@ -1,0 +1,306 @@
+{
+ "record": "keystone28_round1_protocol",
+ "frozen_utc": "2026-08-17T17:50:27+00:00",
+ "base_commit": "dcacb0a3b78d718f059891138ea36f5c065a8a79",
+ "primary_question": "Does adding only chronologically prior, resolved validation history to an otherwise identical LightGBM backbone improve genuinely out-of-sample Ender20 weighted model score relative to a train-parquet-only control?",
+ "payout_target": "target_ender_20",
+ "feature_set": "medium",
+ "feature_list_sha256": "dd03cd099eb2c2283786eb123fe13a374460251b49f4717ec5ad34cabede80ba",
+ "n_features": 780,
+ "frozen_constants": {
+  "score_zone": [
+   "1133",
+   "1219"
+  ],
+  "blocks": [
+   [
+    1133,
+    1147
+   ],
+   [
+    1148,
+    1162
+   ],
+   [
+    1163,
+    1177
+   ],
+   [
+    1178,
+    1192
+   ],
+   [
+    1193,
+    1207
+   ],
+   [
+    1208,
+    1219
+   ]
+  ],
+  "embargo_eras": 8,
+  "sampling_seed": 20260817,
+  "max_sampled_rows": 1000000,
+  "model_seeds": [
+   42,
+   1337,
+   2024
+  ]
+ },
+ "folds": [
+  {
+   "block": 1,
+   "scored_eras": [
+    "1133",
+    "1147"
+   ],
+   "n_scored_eras": 15,
+   "embargo_eras": [
+    "1125",
+    "1132"
+   ],
+   "latest_eligible_validation_train_era": "1124"
+  },
+  {
+   "block": 2,
+   "scored_eras": [
+    "1148",
+    "1162"
+   ],
+   "n_scored_eras": 15,
+   "embargo_eras": [
+    "1140",
+    "1147"
+   ],
+   "latest_eligible_validation_train_era": "1139"
+  },
+  {
+   "block": 3,
+   "scored_eras": [
+    "1163",
+    "1177"
+   ],
+   "n_scored_eras": 15,
+   "embargo_eras": [
+    "1155",
+    "1162"
+   ],
+   "latest_eligible_validation_train_era": "1154"
+  },
+  {
+   "block": 4,
+   "scored_eras": [
+    "1178",
+    "1192"
+   ],
+   "n_scored_eras": 15,
+   "embargo_eras": [
+    "1170",
+    "1177"
+   ],
+   "latest_eligible_validation_train_era": "1169"
+  },
+  {
+   "block": 5,
+   "scored_eras": [
+    "1193",
+    "1207"
+   ],
+   "n_scored_eras": 15,
+   "embargo_eras": [
+    "1185",
+    "1192"
+   ],
+   "latest_eligible_validation_train_era": "1184"
+  },
+  {
+   "block": 6,
+   "scored_eras": [
+    "1208",
+    "1219"
+   ],
+   "n_scored_eras": 12,
+   "embargo_eras": [
+    "1200",
+    "1207"
+   ],
+   "latest_eligible_validation_train_era": "1199"
+  }
+ ],
+ "cohort": {
+  "control_t": "3 static train-parquet-only fits (one per model seed), predicting all 87 scored eras",
+  "candidate_v": "18 fits (6 blocks x 3 seeds): train.parquet + validation eras <= latest eligible era for the block",
+  "total_scientific_fits": 21,
+  "sampling_law": "deterministic era-balanced sampling: rows presented sorted by (era, id); if cohort <= cap take all; else equal per-era quota cap//n_eras with per-era fixed permutations from SeedSequence([20260817, int(era)]), remainder granted in ascending era order; identical law and cap for both procedures; invariant across model seeds (round1_lib.era_balanced_sample_positions)"
+ },
+ "lightgbm_profile": {
+  "name": "FALLBACK",
+  "num_trees": 6000,
+  "learning_rate": 0.005,
+  "max_depth": 8,
+  "num_leaves": 255,
+  "min_data_in_leaf": 10000,
+  "feature_fraction": 0.1,
+  "num_threads": 8,
+  "objective": "regression",
+  "deterministic": true,
+  "force_row_wise": true,
+  "no_early_stopping": true,
+  "device": "cpu",
+  "profile_choice_evidence": {
+   "declared_ceilings": {
+    "per_fit_wall_clock_minutes": 45,
+    "cohort_serial_hours": 12,
+    "peak_working_set_gb": 24
+   },
+   "throughput_probe": {
+    "non_scientific": true,
+    "trees": 250,
+    "params": "PRIMARY profile parameters (depth 10, leaves 1024)",
+    "cohort": "CONTROL-T seed-42 sampled cohort (1,000,000 rows x 780 features)",
+    "probe_seconds": 80.3,
+    "seconds_per_tree": 0.3212
+   },
+   "primary_projection": "30,000 trees x 0.3212 s/tree = 9,636 s = 160.6 min per fit (> 45-min ceiling); 21 fits = 56 h serial (> 12-h ceiling). PRIMARY violates the declared fit resource ceiling.",
+   "fallback_projection": "Upper bound 6,000 x 0.3212 s = 32.1 min per fit (FALLBACK trees are strictly cheaper: 255 < 1024 leaves, depth 8 < 10); cohort upper bound 11.2 h within the 12-h ceiling.",
+   "choice_basis": "runtime/resource evidence only; frozen before any scientific fit; never changed after a model score is seen"
+  }
+ },
+ "environment": {
+  "python": "3.13.14 (venv D:/numerai-data/venv-ka28)",
+  "lightgbm": "4.7.0 (PyPI CPU wheel)",
+  "numpy": "2.5.1",
+  "pandas": "3.0.5",
+  "pyarrow": "25.0.1",
+  "scipy": "1.18.0",
+  "scikit_learn": "1.9.0",
+  "numerai_tools": "0.6.0",
+  "numerapi": "3.1.1",
+  "psutil": "7.2.2",
+  "cpu": "AMD EPYC 7543P slice: 4 cores / 8 logical",
+  "ram_gb_total": 28.0,
+  "gpu": "NVIDIA RTX A4500 20GB present but UNUSED: no GPU-enabled LightGBM is genuinely available in any usable environment (only an uninstallable bare DLL residue in the protected checkout; no CUDA toolkit; Windows lacks LightGBM CUDA support)",
+  "competing_workloads": "none substantial at audit (no Unreal/Blender/trainer)"
+ },
+ "data_identities": {
+  "train.parquet": {
+   "bytes": 3296841026,
+   "sha256": "bae773ddd7eea6ed07c55d87b882cc061901abbb724972b2a630381417c328f8",
+   "rows": 2746268,
+   "eras": [
+    "0001",
+    "0574"
+   ],
+   "target_ender_20_nulls": 0
+  },
+  "train_benchmark_models.parquet": {
+   "bytes": 65045676,
+   "sha256": "5a8729941c481abe95236920663e1d3cb1140407cc743e3a7f71afbf78f80248",
+   "rows": 2131319,
+   "columns": [
+    "era",
+    "v53_lgbm_ender20",
+    "v53_lgbm_ender60",
+    "id"
+   ]
+  },
+  "validation.parquet": {
+   "bytes": 5611121884,
+   "sha256": "8ed7859b707aee8e4d6c4476fb9ecb1123caa429311dbf9f45c574722c24fae6"
+  },
+  "validation_benchmark_models.parquet": {
+   "bytes": 126278375,
+   "sha256": "801876e33d643523b197980aa0a5f6af2585869eb44e390708cae47dd6a5aaf5"
+  },
+  "meta_model.parquet": {
+   "bytes": 13590154,
+   "sha256": "add541799bdf08043256f80afe9ddc9f3d294c96533f1041e3579aed4b98d6d6"
+  },
+  "validation_example_preds.parquet": {
+   "bytes": 97057487,
+   "sha256": "4bfd3ab7afa61c2638c756feb3f6d9e0b41d565cafe0b622b289711cec83c5e3"
+  },
+  "features.json": {
+   "bytes": 387149,
+   "sha256": "27de6b598b0d479415dba8062d050fc190469776f9c905feea9ee3f2bdda3631"
+  },
+  "external_output_root": "D:/numerai-data/keystone28/round1"
+ },
+ "authority_revalidation": {
+  "retrieved_utc": "2026-08-17T17:35:38+00:00",
+  "current_round": 1334,
+  "target": "target_ender_20",
+  "payout_configs": [
+   {
+    "displayName": "v2_corr20",
+    "name": "correlation",
+    "version": "6",
+    "defaultMultiplier": 0.75,
+    "minMultiplier": 0.75,
+    "maxMultiplier": 0.75,
+    "totalScoreDays": 20,
+    "returnsLagDays": 2
+   },
+   {
+    "displayName": "mmc",
+    "name": "meta_model_contribution",
+    "version": "5",
+    "defaultMultiplier": 2.25,
+    "minMultiplier": 2.25,
+    "maxMultiplier": 2.25,
+    "totalScoreDays": 20,
+    "returnsLagDays": 2
+   }
+  ],
+  "sixty_day_payout_configs": [],
+  "query": "query { rounds(tournament: 8, number: 1334) { number openTime target v3Staking payoutFactor roundScoreConfigs { name displayName version isPayout defaultMultiplier minMultiplier maxMultiplier totalScoreDays returnsLagDays roundNumberStart } } }"
+ },
+ "scoring": {
+  "harness": "agents.code.metrics.keystone_round0.score_round0 with ScoreAuthority.from_json(round0_score_authority.json)",
+  "expected_eras": "exactly 1133-1219 (87)",
+  "meta_model_policy": "fail_on_missing_meta_model_era",
+  "recent_window_report_only": 20,
+  "summary_block_size": 15,
+  "benchmark_reference": "v53_lgbm_ender20 scored on the identical rows and eras",
+  "benchmark_corr_diagnostics": [
+   "v53_lgbm_ender20",
+   "v53_lgbm_ender60"
+  ],
+  "bmc": "not reported (BMC_AGGREGATE_NOT_REPRODUCIBLE_FROM_PUBLISHED_FILES)"
+ },
+ "decision_law": {
+  "thresholds": {
+   "seed_mean_weighted_uplift_min": 0.00025,
+   "positive_block_differences_min": 4,
+   "worst_seed_mean_max_deficit": 0.0005,
+   "worst_seed_sharpe_max_deficit": 0.05,
+   "worst_seed_drawdown_max_ratio": 1.25,
+   "pipeline_parity_min_corr_fraction": 0.7
+  },
+  "bootstrap_report_only": {
+   "n_resamples": 10000,
+   "block_length": 8,
+   "seed": 20260817,
+   "ci": [
+    5.0,
+    95.0
+   ]
+  },
+  "terminal_states": [
+   "KEYSTONE_R1_RECENCY_AUGMENTATION_PROMOTED",
+   "KEYSTONE_R1_NEGATIVE_NO_RECENCY_GAIN"
+  ],
+  "pipeline_parity_stop": "STOPPED_AT_KW33_PIPELINE_PARITY_FAILURE",
+  "implementation": "round1_lib.decide_round1 (no Ender60 input path)"
+ },
+ "ender60_auxiliary": {
+  "role": "pre-registered cutover-readiness diagnostics only; never selects the winner",
+  "raw_components": [
+   "CORR60",
+   "MMC60"
+  ],
+  "combined_label": "HYPOTHETICAL_CUTOVER_WEIGHTED_DIAGNOSTIC",
+  "status": "current 60D round score configs are non-payout (multiplier 0)"
+ },
+ "prohibitions": "No GAP 1223-1230 or HOLDOUT >=1231 row for training, scoring, metrics, or selection; no bare `target` alias; no early stopping on scored folds; no parameter/authority change after results; no additional model/feature-set/seed/target variant; no upload, model creation, submission, staking, deployment, or account action."
+}
