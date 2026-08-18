@@ -1,14 +1,20 @@
 # Main branch protection policy
 
-> **Branch protection is not enabled by this PR.** This file is a policy and
-> proposed-configuration document only (Issue #26, Phase 2 readiness — BP26).
-> It grants no enforcement authority. Applying, modifying, or removing any
-> branch protection on `main` requires separate explicit user authorization
-> after independent review and the docs-only canary described below.
+> **Classic branch protection is enabled on `main`.** The exact live
+> configuration and enforcement record are documented below (PE30,
+> 2026-08-17). Protection was applied through the GitHub REST API under
+> separate explicit authority *before* the branch carrying this revision
+> was created; the pull request that publishes this revision only records
+> that state — it did not apply protection itself. Modifying or removing
+> protection still requires separate explicit user authorization under the
+> emergency process below.
 
-## Current state
+## Historical readiness baseline (BP26, 2026-08-16 — pre-enforcement)
 
-Verified against the live repository on 2026-08-16:
+Everything in this section is a **historical snapshot** preserved unchanged
+from the BP26 readiness gate. It describes the repository **before** PE30
+applied protection on 2026-08-17 and is deliberately not updated. As
+verified against the live repository on 2026-08-16:
 
 - Current `main` checkpoint: `95721aec64e810d16b7ca7e4c896e08ad9ae91ea`
   (the merge commit of CI maintenance PR #28; parents
@@ -29,7 +35,7 @@ Verified against the live repository on 2026-08-16:
   1. `Portable compile and source-contract tests` (ubuntu-24.04)
   2. `Windows terminal evaluator custody contracts` (windows-2022)
 
-## Why readiness is required first
+## Why readiness was required first (historical rationale)
 
 1. **Skipped required workflows remain pending.** GitHub documents that a
    workflow skipped by path filtering, branch filtering, or a commit message
@@ -53,21 +59,27 @@ Verified against the live repository on 2026-08-16:
    must therefore remain **0** until a genuinely distinct collaborator with
    suitable access exists.
 
-## Proposed classic branch-protection configuration
+## Classic branch-protection configuration (reviewed BP26, applied by PE30)
 
 Target: classic branch protection (not a ruleset) on branch `main`.
 
-Endpoint (validated against the current GitHub REST documentation,
-<https://docs.github.com/en/rest/branches/branch-protection?apiVersion=2022-11-28#update-branch-protection>):
+Endpoint (originally validated by BP26 against the 2022-11-28 REST
+documentation,
+<https://docs.github.com/en/rest/branches/branch-protection?apiVersion=2022-11-28#update-branch-protection>,
+and revalidated immediately before enforcement against the then-current
+supported API versions — `2026-03-10` (latest) and `2022-11-28` — with
+every field below accepted, unchanged, in both):
 
 ```
 PUT /repos/Nspiroff/Numerai/branches/main/protection
 Accept: application/vnd.github+json
-X-GitHub-Api-Version: 2022-11-28
+X-GitHub-Api-Version: 2026-03-10
 ```
 
-Proposed payload (exact JSON; every field below is an accepted parameter of
-the endpoint above — no unsupported fields are included):
+Payload (exact JSON; this is the payload PE30 applied verbatim on
+2026-08-17 — see the live enforcement record below; every field is an
+accepted parameter of the endpoint above and no unsupported fields are
+included):
 
 ```json
 {
@@ -139,6 +151,82 @@ Field-by-field intent:
   merge queue (both are unavailable in classic protection payloads and are
   not wanted), and no bypass allowances of any kind.
 
+## Documentation-only canary record (DC29, 2026-08-17)
+
+- Canary PR: **#30** — `test(ci): documentation-only required-check canary`
+  — final state **closed, draft, unmerged** (`merged_at: null`).
+- Head: `cbf20e44a481d341a0be5cf85681f0d326af7a3f`; base: `main` at
+  `7eae9e4850782bbc5362834f65b28fb1cd6c2818`.
+- Only changed path: `BRANCH_PROTECTION_CANARY.md` (root level) — outside
+  every former pull-request path filter (`numerai/agents/**`,
+  `.github/workflows/research-source-ci.yml`, `.github/ci/**`), so the
+  pre-BP26 workflow would have skipped it entirely.
+- Workflow run `31981489705` (`pull_request`, attempt 1) → **success**:
+  - `Portable compile and source-contract tests` — job `95248932726`,
+    ubuntu-24.04: compiled 199 files, 38/38 tests OK;
+  - `Windows terminal evaluator custody contracts` — job `95248932710`,
+    windows-2022: 38/38 tests OK.
+- Both checks were emitted by GitHub Actions app ID `15368` with
+  byte-identical names on the exact canary head.
+- The temporary canary branch and worktree were deleted after success; the
+  closed PR and its Actions run remain preserved as evidence.
+- Conclusion: `DOCS_ONLY_PR_EMITS_BOTH_REQUIRED_CHECK_CANDIDATES`.
+
+## Live enforcement record (PE30, 2026-08-17)
+
+- Gate: **PE30**, under separate explicit user authorization obtained after
+  the DC29 canary.
+- Enforcement time: PUT submitted **2026-08-17T01:19:58Z** (UTC); HTTP 200
+  received by 2026-08-17T01:19:59Z; local machine time
+  2026-08-16 18:19:59 PDT.
+- `main` at enforcement: `7eae9e4850782bbc5362834f65b28fb1cd6c2818`
+  (enforcement moved no ref).
+- Endpoint: `PUT /repos/Nspiroff/Numerai/branches/main/protection` with
+  `Accept: application/vnd.github+json` and
+  `X-GitHub-Api-Version: 2026-03-10` — the latest supported version at
+  enforcement time (live supported set: `2026-03-10`, `2022-11-28`), and
+  the version the server confirmed via
+  `X-Github-Api-Version-Selected: 2026-03-10`.
+- Request payload: the exact JSON above — 767 bytes, SHA-256
+  `1b827801123342d2fe46616c00789c071808d0960cffd0dabd06f7c49c159c31`.
+- Response: **HTTP/2.0 200 OK**; the captured raw response (status line,
+  headers, and body) is 2,823 bytes, SHA-256
+  `7f851791a0dddda7a680fe7d386351af8ddc1ca9d49504af9fb65b196e7936b5`.
+  Exactly one PUT was submitted — nothing was retried, configured
+  piecemeal, or applied through the web UI, and no ruleset was created.
+- Immediate read-back verification — **29/29 live fields match** the
+  payload:
+  - required status checks: `strict: false`; exactly two checks —
+    `Portable compile and source-contract tests` and
+    `Windows terminal evaluator custody contracts` — both `app_id: 15368`,
+    no third check;
+  - `enforce_admins: true`; required pull-request flow enabled with
+    `required_approving_review_count: 0`; stale-review dismissal off;
+    code-owner reviews off; last-push approval off; no dismissal
+    restrictions; no bypass allowances;
+  - no push restrictions (`restrictions` null); linear history not
+    required; force pushes blocked; deletions blocked; branch-creation
+    blocking off; conversation resolution required; branch not locked;
+    fork syncing off;
+  - `main.protected: true`; **no repository ruleset**; merge methods
+    unchanged (merge, squash, and rebase all still enabled; automatic
+    branch deletion still disabled); exactly one direct collaborator
+    (`Nspiroff`, admin); `main` still at
+    `7eae9e4850782bbc5362834f65b28fb1cd6c2818`.
+- **No direct-push probe was performed.** Direct-push blocking is verified
+  through the live configuration (required pull-request flow with
+  `enforce_admins: true` and no push restrictions), not by an empirical
+  push attempt — a genuine negative probe could mutate `main` if protection
+  were misconfigured. Any mutating direct-push test remains separately
+  gated.
+- Authority boundaries: this protection is repository governance, not
+  scientific authority. Passing required checks grants no training,
+  scoring, confirmation, deployment, or Numerai account authority. Changing
+  required checks, approval counts, app IDs, strictness, admin enforcement,
+  or bypass posture requires separate explicit authority; protection
+  removal requires the recorded emergency process above, including
+  before/after configuration capture and restoration verification.
+
 ## Merge-topology law
 
 - Source, manifest, and terminal-evidence packets in this repository use
@@ -185,7 +273,7 @@ manifest, terminal-evidence, documentation, and maintenance PR:
 - a **failed** check is preserved and investigated — never deleted,
   re-run-to-green without diagnosis, or papered over;
 - **no admin bypass is authorized by this document**, and `enforce_admins:
-  true` is proposed precisely so none exists mechanically.
+  true` is live precisely so none exists mechanically.
 
 Emergency modification or removal of branch protection requires all of:
 
@@ -198,36 +286,58 @@ Emergency modification or removal of branch protection requires all of:
 
 ## Canary and enforcement sequence
 
-The exact future sequence (none of it performed by BP26):
+Status as of PE30 (2026-08-17):
 
-1. Independently review and merge the BP26 readiness PR.
-2. Create a temporary documentation-only canary PR against `main`.
-3. Verify both exact contexts appear and pass on the canary despite no
-   governed-source change.
-4. Close the canary without merging and delete only its temporary branch,
-   under explicit cleanup authority.
-5. Independently audit the proposed protection payload above against the
-   then-current GitHub API documentation again.
-6. Obtain explicit user authority to apply protection.
-7. Apply the protection to `main`.
-8. Query the live protection
-   (`GET /repos/Nspiroff/Numerai/branches/main/protection`) and compare
-   every field to the approved payload.
-9. Create a protected-branch canary PR.
-10. Verify direct pushes to `main` are blocked and the merge-commit PR flow
-    remains usable end to end.
-11. Only then consider the two checks operationally trusted requirements.
+**Completed:**
+
+1. The BP26 readiness PR (#29) was independently reviewed (review
+   4947425481 at head `cabf45a6273470ebc15a1bdf7bbf679c5b8f5e6f`) and
+   merged with a merge commit (`7eae9e4850782bbc5362834f65b28fb1cd6c2818`)
+   — RM29.
+2. A temporary documentation-only canary PR (#30) was created against
+   `main` — DC29.
+3. Both exact contexts appeared and passed on the canary (run
+   `31981489705`) despite no governed-source change.
+4. The canary was closed without merging and only its temporary branch and
+   worktree were deleted, under explicit cleanup authority.
+5. The payload above was independently reviewed again and the current
+   GitHub API schema was revalidated immediately before enforcement
+   (supported versions `2026-03-10` and `2022-11-28`; every authorized
+   field unchanged).
+6. Explicit user authority to apply protection was obtained (PE30).
+7. The protection was applied to `main` (a single PUT, HTTP 200).
+8. The live protection was queried and every field compared to the approved
+   payload — 29/29 match (see the live enforcement record above).
+
+**Current:**
+
+9. The first protected-flow PR — the pull request carrying this revision —
+   was created after protection went live and changes only this file.
+10. Both required checks must appear and pass on it.
+11. It remains draft and awaits independent review before merge; only after
+    that merge and a post-merge re-verification are the two checks treated
+    as operationally trusted requirements.
+
+**Not performed (and not authorized by PE30):**
+
+- Any destructive direct-push probe against `main`. Direct-push blocking is
+  asserted from the live API configuration, not from an empirical push
+  attempt (see the live enforcement record above).
+- The protected-flow merge itself.
+- Repository-wide squash/rebase disabling (see the merge-method caveat
+  below).
 
 ## Merge-method setting caveat
 
 Repository settings currently allow **merge commits, squash merges, and
 rebase merges** (`allow_merge_commit`, `allow_squash_merge`, and
 `allow_rebase_merge` are all `true`; automatic branch deletion after merge
-is disabled). **This BP26 gate does not change those settings.**
+is disabled). **Neither the BP26 readiness gate nor the PE30 enforcement
+gate changed those settings.**
 
 Disabling squash and rebase repository-wide is a separate, explicitly
 authorized decision. Until it is made, governed prompts must continue to
 explicitly require merge commits and reject squash/rebase for source,
-manifest, and terminal-evidence packets — branch protection as proposed
+manifest, and terminal-evidence packets — branch protection as applied
 above permits merge commits but does not by itself forbid the other two
 methods.
