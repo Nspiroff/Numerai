@@ -1,38 +1,53 @@
 """Keystone Round-2 parity-calibration evaluator (KP35): one decision per call.
 
-One invocation evaluates exactly one thing — a single stage screen, or a single
-confirmation cohort — and writes exactly one result. It never starts a fit and
-never authorises the next one; a screen result records what became *authorisable*,
-and a human decides whether to act on it after independent review.
+One invocation evaluates exactly one thing -- a single stage screen, or a single
+confirmation cohort -- and writes exactly one result. It never starts a fit and
+never authorises the next one; a screen result records what became
+*authorisable*, and a human decides whether to act on it after independent
+review.
 
-What is enforced before any number is computed:
+Nothing is trusted because it was written by the trainer. Before any number is
+computed the evaluator independently:
 
-* the completed artifacts named by the protocol must all exist, and every
-  prediction parquet must reproduce the SHA-256 recorded in its fit log;
-* the complete canonical ``(era, id)`` universe must be identical across the
-  prediction vector, the scoring target frame, the Meta Model frame, the
-  published Ender20 benchmark frame, and the published Ender60 benchmark frame
-  whenever auxiliary diagnostics are loaded — this is the prospective repair of
-  the KW33 source-contract gap, and it rejects strict subsets, strict supersets,
-  missing or extra rows, duplicate ids, era disagreements and unexpected eras;
-* every scored fit must share the recorded sample identity, and a confirmation
-  cohort must additionally share every model parameter except the seed;
-* GAP (1223-1230) and HOLDOUT (>=1231) eras are filtered at the Parquet scan
-  boundary and refused if they somehow appear;
-* the benchmark mean CORR is recomputed from the published column on the
-  identical rows and must reproduce the frozen KW33 value within the declared
-  tolerance, because a drifting benchmark would silently move every threshold.
+* authenticates the authorising prior result as a complete KP35 result envelope
+  at its canonical path under this same ``--out-root`` -- a JSON file elsewhere
+  containing a plausible ``terminal_state`` authorises nothing;
+* verifies the score-producing runtime against the frozen environment;
+* revalidates the data-file SHA-256 identities rather than assuming the trainer
+  already did;
+* loads the *external* sample manifest and proves it reproduces the frozen
+  composition, instead of relying on sample hashes copied into fit logs;
+* reconstructs every fit envelope from the frozen stage recipe -- profile,
+  exact LightGBM parameter dictionary, parameter digest, feature identity,
+  target, era range, row counts, source split, absence of early stopping and of
+  a model artifact -- and compares the prediction file's actual SHA-256 and
+  actual ``(era, id)`` universe against the log. For a one-seed screen there is
+  no second seed to compare against, so the frozen recipe is the reference;
+* requires the complete canonical ``(era, id)`` universe to be identical across
+  the prediction vector, the scoring target frame, the Meta Model frame, the
+  published Ender20 benchmark frame and the published Ender60 benchmark frame;
+* validates the local ScoreAuthority against the frozen target, multipliers and
+  Meta Model column;
+* recomputes the benchmark mean CORR and requires it to reproduce the frozen
+  KW33 value within the declared tolerance -- a drifting benchmark would
+  silently move every threshold.
+
+For a confirmation cohort it additionally requires that every individual fit
+matches the frozen recipe *and* that the cohort differs only by the model seed.
 
 Selection uses CORR alone. MMC, the weighted model score, Sharpe, zero-baseline
 drawdown, the recent-20 window, the benchmark correlations and every Ender60
-quantity are computed and reported as explicitly non-selecting diagnostics; the
-decision functions in ``round2_parity_lib`` have no input path for any of them.
+quantity are reported as explicitly non-selecting diagnostics; the decision
+functions in ``round2_parity_lib`` have no input path for any of them, and any
+non-finite scalar raises before a terminal state can be produced.
 
 CORR and MMC are delegated to pinned official ``numerai_tools`` through the
 audited Round-0 harness and are never rederived here.
 
-Result paths are create-new-only: a second invocation against an existing
-result path is refused rather than allowed to overwrite a recorded decision.
+Every result envelope carries the validated protocol, data, sample, environment
+and artifact identities so a successor validator can authenticate it. Result
+paths are create-new-only: a second invocation against an existing result path
+is refused rather than allowed to overwrite a recorded decision.
 
 Running this module produces a scientific result and is authorised only by an
 explicit, separately reviewed execution gate.
@@ -42,10 +57,13 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.metadata as importlib_metadata
 import json
 import os
+import platform
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Mapping
 
 import numpy as np
 import pandas as pd
@@ -61,8 +79,12 @@ DEFAULT_AUTHORITY = PACKET_DIR / "round0_score_authority.json"
 RECENT_WINDOW = 20
 BLOCK_SIZE = 15
 
-MODE_SCREEN = "screen"
-MODE_CONFIRMATION = "confirmation"
+DISTRIBUTIONS = {
+    "numpy": "numpy",
+    "pandas": "pandas",
+    "pyarrow": "pyarrow",
+    "numerai_tools": "numerai-tools",
+}
 
 
 def _now() -> str:
@@ -75,6 +97,16 @@ def _sha256_file(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024 * 8), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def observed_runtime_versions() -> dict[str, str]:
+    versions = {"python": platform.python_version()}
+    for key, distribution in DISTRIBUTIONS.items():
+        try:
+            versions[key] = importlib_metadata.version(distribution)
+        except importlib_metadata.PackageNotFoundError:
+            versions[key] = "NOT_INSTALLED"
+    return versions
 
 
 def _write_new_json(path: Path, payload: dict, *, kind: str) -> None:
@@ -95,6 +127,23 @@ def _load_zone_frame(data_root: Path, name: str, columns: list[str]) -> pd.DataF
         frame = frame.reset_index()
     kp.assert_scoring_zone_exact(frame["era"].unique(), context=f"{name} load")
     return frame.sort_values(["era", "id"], kind="stable").reset_index(drop=True)
+
+
+def revalidate_data_identities(data_root: Path, protocol: dict) -> dict:
+    """Recompute the declared data identities; do not assume the trainer did."""
+    verified: dict[str, str] = {}
+    for name, declared in protocol["data_identities"].items():
+        path = data_root / name
+        if not path.exists():
+            raise FileNotFoundError(f"declared data file missing: {path}")
+        digest = _sha256_file(path)
+        if digest != declared["sha256"]:
+            raise ValueError(
+                f"{name}: sha256 {digest} != frozen {declared['sha256']}; refusing "
+                "to score against data the protocol does not describe"
+            )
+        verified[name] = digest
+    return verified
 
 
 def _universe(name: str, frame: pd.DataFrame) -> kp.RowUniverse:
@@ -165,9 +214,13 @@ def _score_vector(
         recent_window=RECENT_WINDOW,
         block_size=BLOCK_SIZE,
     )
-    per_era_corr = [float(v) for v in primary.per_era["corr"].tolist()]
+    per_era_corr = [
+        kp.assert_finite_scalar(v, name="per-era CORR")
+        for v in primary.per_era["corr"].tolist()
+    ]
+    mean_corr = kp.assert_finite_scalar(float(np.mean(per_era_corr)), name="mean CORR")
     return {
-        "selecting": {"per_era_corr": per_era_corr, "mean_corr": float(np.mean(per_era_corr))},
+        "selecting": {"per_era_corr": per_era_corr, "mean_corr": mean_corr},
         "non_selecting_diagnostics": {
             "per_era_mmc": [float(v) for v in primary.per_era["mmc"].tolist()],
             "per_era_weighted_score": [
@@ -211,55 +264,76 @@ def aux_authority_ender60(base: ScoreAuthority) -> ScoreAuthority:
 
 
 # ---------------------------------------------------------------- artifact load
-def load_fit(out_root: Path, stage: str, model_seed: int) -> tuple[pd.DataFrame, dict]:
-    """Load one completed fit and prove its prediction matches its recorded hash."""
+def load_fit(
+    out_root: Path,
+    stage: str,
+    model_seed: int,
+    *,
+    protocol_semantic: str,
+    data_identities: Mapping[str, str],
+    sample_manifest: Mapping,
+) -> tuple[pd.DataFrame, dict, dict]:
+    """Load one completed fit and validate its whole envelope independently."""
     pred_path = out_root / kp.artifact_relpath("prediction", stage=stage, model_seed=model_seed)
     log_path = out_root / kp.artifact_relpath("fit_log", stage=stage, model_seed=model_seed)
     for path in (pred_path, log_path):
         if not path.exists():
             raise FileNotFoundError(f"expected KP35 artifact missing: {path}")
+
     log = json.loads(log_path.read_text(encoding="utf-8"))
-    if log.get("exit_status") != "success":
-        raise ValueError(f"{stage} seed {model_seed} did not succeed; refusing to evaluate")
-    digest = _sha256_file(pred_path)
-    if digest != log.get("prediction_sha256"):
-        raise ValueError(
-            f"{pred_path}: sha256 {digest} != recorded {log.get('prediction_sha256')}"
-        )
-    if log.get("stage") != stage or log.get("model_seed") != model_seed:
-        raise ValueError(f"{log_path}: fit log does not describe {stage} seed {model_seed}")
     frame = pd.read_parquet(pred_path)
     frame = frame.sort_values(["era", "id"], kind="stable").reset_index(drop=True)
-    return frame, log
+    universe = kp.RowUniverse.from_columns(
+        f"{stage}_seed{model_seed}", frame["era"], frame["id"]
+    )
+
+    provenance = kp.validate_fit_log(
+        log,
+        stage=stage,
+        model_seed=model_seed,
+        protocol_semantic=protocol_semantic,
+        data_identities=data_identities,
+        sample_manifest=sample_manifest,
+        actual_prediction_sha256=_sha256_file(pred_path),
+        actual_prediction_canon_sha256=universe.canon_sha256,
+        actual_prediction_rows=int(len(frame)),
+    )
+    provenance["prediction_path"] = str(pred_path)
+    provenance["fit_log_path"] = str(log_path)
+    return frame, log, provenance
 
 
-def assert_cohort_consistency(logs: dict[int, dict]) -> dict:
-    """Every fit in a cohort shares one sample identity and one parameter set."""
-    identities = {log["sample_identity_sha256"] for log in logs.values()}
-    if len(identities) != 1:
-        raise ValueError(f"cohort spans multiple sample identities: {sorted(identities)}")
-    canon = {log["sample_canon_sha256"] for log in logs.values()}
-    if len(canon) != 1:
-        raise ValueError("cohort fits were trained on different sampled (era,id) universes")
-    stripped = set()
-    for log in logs.values():
-        params = dict(log["params"])
-        params.pop("seed", None)
-        stripped.add(json.dumps({**params, "num_trees": log["num_trees"]}, sort_keys=True))
-    if len(stripped) != 1:
-        raise ValueError("cohort fits differ in a model parameter other than the seed")
-    return {
-        "sample_identity_sha256": next(iter(identities)),
-        "sample_canon_sha256": next(iter(canon)),
-        "seeds": sorted(logs),
-        "identical_except_seed": True,
-    }
+def load_sample_manifest(out_root: Path) -> dict:
+    """Load and validate the external sample manifest itself."""
+    path = out_root / kp.artifact_relpath("sample_identity")
+    if not path.exists():
+        raise FileNotFoundError(f"sample manifest missing: {path}")
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    kp.assert_frozen_sample(manifest)
+    return manifest
+
+
+def load_prior_result(out_root: Path, prior_path: Path | None):
+    if prior_path is None:
+        return None, None
+    if not prior_path.exists():
+        raise kp.PriorResultAuthorityError(f"prior result does not exist: {prior_path}")
+    try:
+        relative = prior_path.resolve().relative_to(out_root.resolve())
+    except ValueError as exc:
+        raise kp.PriorResultAuthorityError(
+            f"prior result {prior_path} is not under --out-root {out_root}; a "
+            "result outside the run's own output root authorises nothing"
+        ) from exc
+    return kp.normalize_relpath(str(relative)), json.loads(
+        prior_path.read_text(encoding="utf-8")
+    )
 
 
 # ------------------------------------------------------------------------ main
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--mode", required=True, choices=[MODE_SCREEN, MODE_CONFIRMATION])
+    parser.add_argument("--mode", required=True, choices=list(kp.MODES))
     parser.add_argument("--stage", required=True, choices=list(kp.STAGES))
     parser.add_argument("--data-root", required=True, type=Path)
     parser.add_argument("--out-root", required=True, type=Path)
@@ -269,42 +343,71 @@ def main(argv: list[str] | None = None) -> int:
         "--prior-result",
         type=Path,
         default=None,
-        help="Recorded prior result whose terminal_state authorises this evaluation.",
+        help=(
+            "Recorded prior KP35 result envelope, at its canonical path under "
+            "--out-root, whose validated terminal_state authorises this evaluation."
+        ),
     )
     args = parser.parse_args(argv)
 
     stage = kp.assert_stage(args.stage)
+    mode = kp.assert_mode(args.mode)
+
+    runtime_versions = observed_runtime_versions()
+    environment = kp.assert_runtime_versions(
+        runtime_versions, required=kp.SCORE_PRODUCING_PACKAGES
+    )
+
     protocol = json.loads(args.protocol.read_text(encoding="utf-8"))
     for key, value in kp.frozen_constants().items():
         if protocol["frozen_constants"].get(key) != value:
             raise ValueError(f"protocol disagrees with the frozen law on {key!r}")
     kp.assert_payout_target(protocol["payout_target"])
-
-    prior_state = None
-    if args.prior_result is not None:
-        prior_state = json.loads(args.prior_result.read_text(encoding="utf-8"))["terminal_state"]
-
-    if args.mode == MODE_SCREEN:
-        kp.assert_stage_executable(stage, prior_state)
-        seeds = [kp.SCREENING_SEED]
-        result_path = args.out_root / kp.artifact_relpath("screen_result", stage=stage)
-        kind = "screen_result"
-    else:
-        kp.assert_confirmation_authorized(prior_state)
-        if prior_state != kp.STAGE_STATES[stage][0]:
-            raise kp.StageAuthorityError(
-                f"confirmation of {stage} requires {kp.STAGE_STATES[stage][0]}, "
-                f"got {prior_state!r}"
-            )
-        seeds = [kp.SCREENING_SEED, *kp.CONFIRMATION_SEEDS]
-        result_path = args.out_root / kp.artifact_relpath("confirmation_result", stage=stage)
-        kind = "confirmation_result"
+    protocol_semantic = kp.protocol_semantic_sha256(protocol)
 
     # Refuse a second result write before doing any work at all.
-    kp.assert_create_new_only(result_path.exists(), str(result_path), kind=kind)
+    result_kind = "screen_result" if mode == kp.MODE_SCREEN else "confirmation_result"
+    result_path = args.out_root / kp.artifact_relpath(result_kind, stage=stage)
+    kp.assert_create_new_only(result_path.exists(), str(result_path), kind=result_kind)
+
+    # Phase 1: authenticate the authorising artifact.
+    prior_relpath, prior_envelope = load_prior_result(args.out_root, args.prior_result)
+    prior_state = kp.validate_prior_result(
+        stage=stage,
+        mode=mode,
+        prior_relpath=prior_relpath,
+        prior_envelope=prior_envelope,
+        protocol_semantic=protocol_semantic,
+    )
+    if mode == kp.MODE_SCREEN:
+        kp.assert_stage_executable(stage, prior_state)
+        seeds = [kp.SCREENING_SEED]
+    else:
+        kp.assert_confirmation_authorized(stage, prior_state)
+        seeds = [kp.SCREENING_SEED, *kp.CONFIRMATION_SEEDS]
+
+    data_identities = revalidate_data_identities(args.data_root, protocol)
+    sample_manifest = load_sample_manifest(args.out_root)
+
+    # Phase 2: prove the predecessor was produced against this same sample.
+    if prior_envelope is not None:
+        kp.validate_prior_result(
+            stage=stage,
+            mode=mode,
+            prior_relpath=prior_relpath,
+            prior_envelope=prior_envelope,
+            protocol_semantic=protocol_semantic,
+            sample_identity_sha256=sample_manifest["sample_identity_sha256"],
+            sample_canon_sha256=sample_manifest["sample_canon_sha256"],
+        )
 
     authority = ScoreAuthority.from_json(args.authority)
-    kp.assert_payout_target(authority.payout_target)
+    authority_binding = kp.assert_score_authority(
+        payout_target=authority.payout_target,
+        corr_multiplier=authority.corr_multiplier,
+        mmc_multiplier=authority.mmc_multiplier,
+        meta_model_column=authority.meta_model_column,
+    )
     aux_authority = aux_authority_ender60(authority)
 
     scoring = _load_zone_frame(
@@ -322,11 +425,20 @@ def main(argv: list[str] | None = None) -> int:
 
     frames: dict[str, pd.DataFrame] = {}
     logs: dict[int, dict] = {}
+    provenance: dict[str, dict] = {}
     for seed in seeds:
-        frame, log = load_fit(args.out_root, stage, seed)
+        frame, log, prov = load_fit(
+            args.out_root,
+            stage,
+            seed,
+            protocol_semantic=protocol_semantic,
+            data_identities=data_identities,
+            sample_manifest=sample_manifest,
+        )
         frames[f"{stage}_seed{seed}"] = frame
         logs[seed] = log
-    cohort = assert_cohort_consistency(logs)
+        provenance[str(seed)] = prov
+    cohort = kp.assert_cohort_identical_except_seed(logs)
 
     benchmark_vector = benchmarks[["id", "era", kp.BENCHMARK_COLUMN]].rename(
         columns={kp.BENCHMARK_COLUMN: "prediction"}
@@ -347,7 +459,7 @@ def main(argv: list[str] | None = None) -> int:
         scored["benchmark_reference_vector"]["selecting"]["mean_corr"]
     )
 
-    if args.mode == MODE_SCREEN:
+    if mode == kp.MODE_SCREEN:
         decision = kp.screen_stage(
             stage,
             scored[f"{stage}_seed{kp.SCREENING_SEED}"]["selecting"]["mean_corr"],
@@ -355,6 +467,7 @@ def main(argv: list[str] | None = None) -> int:
         )
     else:
         decision = kp.final_confirmation(
+            stage,
             scored[f"{stage}_seed{kp.SCREENING_SEED}"]["selecting"]["mean_corr"],
             scored[f"{stage}_seed{kp.CONFIRMATION_SEEDS[0]}"]["selecting"]["mean_corr"],
             scored[f"{stage}_seed{kp.CONFIRMATION_SEEDS[1]}"]["selecting"]["mean_corr"],
@@ -363,13 +476,15 @@ def main(argv: list[str] | None = None) -> int:
     kp.assert_forward_transition(prior_state, decision["terminal_state"])
 
     result = {
-        "record": f"kp35_{args.mode}_result",
+        "record": kp.MODE_RECORDS[mode],
         "generated_utc": _now(),
         "stage": stage,
-        "mode": args.mode,
+        "mode": mode,
         "prior_state": prior_state,
+        "prior_result_relpath": prior_relpath,
         "terminal_state": decision["terminal_state"],
         "decision": decision,
+        "protocol_semantic_sha256": protocol_semantic,
         "benchmark": {
             "column": kp.BENCHMARK_COLUMN,
             "recomputed_mean_corr": benchmark_mean_corr,
@@ -377,42 +492,50 @@ def main(argv: list[str] | None = None) -> int:
             "tolerance": kp.BENCHMARK_MEAN_CORR_TOLERANCE,
             "identity_enforced": True,
         },
-        "exact_row_contract": row_contract,
+        "scoring_universe": {
+            "rows": row_contract["n_rows"],
+            "n_eras": row_contract["n_eras"],
+            "canon_sha256": row_contract["canon_sha256"],
+            "frames": row_contract["frames"],
+            "identical": row_contract["identical"],
+        },
+        "sample_custody": {
+            "sample_identity_sha256": sample_manifest["sample_identity_sha256"],
+            "sample_canon_sha256": sample_manifest["sample_canon_sha256"],
+            "rows_before_sampling": sample_manifest["rows_before_sampling"],
+            "selected_row_count": sample_manifest["selected_row_count"],
+            "source_split_rows": sample_manifest["source_split_rows"],
+            "eligible_era_range": sample_manifest["eligible_era_range"],
+            "frozen_sample_reproduced": True,
+            "manifest_independently_validated": True,
+        },
+        "fit_provenance": provenance,
         "cohort": cohort,
+        "data_identities": data_identities,
+        "authority_binding": authority_binding,
+        "runtime_versions": runtime_versions,
+        "environment_binding": environment,
         "score_zone": {
             "eras": [kp.score_zone_eras()[0], kp.score_zone_eras()[-1]],
             "n_eras": kp.N_SCORE_ERAS,
             "no_gap_or_holdout_loaded": True,
         },
         "scored_vectors": scored,
-        "fit_logs": {
-            str(seed): {
-                k: log.get(k)
-                for k in (
-                    "stage", "model_seed", "role", "params_sha256",
-                    "sample_identity_sha256", "sample_canon_sha256",
-                    "rows_before_sampling", "rows_after_sampling",
-                    "source_split_rows", "duration_seconds",
-                    "peak_working_set_bytes", "prediction_sha256",
-                    "prediction_canon_sha256", "exit_status", "retry_of",
-                    "started_utc", "ended_utc",
-                )
-            }
-            for seed, log in logs.items()
-        },
         "authorizes_next_fit": False,
         "next_step": (
             "This evaluator does not authorise any further fit. Obtain "
             "independent review of this recorded result before invoking a "
             "successor stage or a confirmation cohort."
         ),
+        "live_authority_revalidation_required_before_next_fit": True,
         "non_actions": (
             "No GAP/HOLDOUT access; no Candidate-V path; no Ender60 selection "
             "path; no upload, model creation, submission, staking, deployment, "
             "or Numerai account action."
         ),
     }
-    _write_new_json(result_path, result, kind=kind)
+    kp.validate_result_envelope(result, context=str(result_path))
+    _write_new_json(result_path, result, kind=result_kind)
     print(f"[{_now()}] terminal_state={decision['terminal_state']}")
     print(f"wrote {result_path}")
     print("no successor fit was started and none is authorised by this run")

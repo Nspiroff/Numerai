@@ -3,30 +3,43 @@
 One invocation trains one stage at one model seed and stops. There is no cohort
 loop, no stage list, and no code path that starts a successor fit: chaining is
 deliberately a human decision taken after independent review of the completed
-artifact, which is why every eligibility check below reads a *recorded* prior
-result rather than an in-process variable.
+artifact, which is why every eligibility check below authenticates a *recorded*
+prior result rather than an in-process variable.
 
 Refusal law enforced before any data is touched:
 
 * the stage must be one of the two frozen parity stages (Candidate-V and every
   later ladder branch are structurally unreachable);
 * seed 42 is the only screening seed; 1337 and 2024 are the only confirmation
-  seeds, and a confirmation fit requires a recorded screen pass;
-* P2 requires a recorded ``KP35_P1_SCREEN_FAILED_P2_AUTHORIZABLE`` artifact;
+  seeds, and a confirmation fit requires that stage's recorded screen pass;
+* P2 requires a recorded P1 failure -- either the screen failure or, after the
+  corrected state graph, the P1 confirmation failure that leaves the documented
+  deep profile untested;
+* the authorising artifact must be a complete KP35 result envelope at its
+  canonical path under this same ``--out-root``. A JSON file elsewhere that
+  merely contains a plausible ``terminal_state`` authorises nothing;
+* the runtime must match the frozen environment exactly;
 * the protocol record and ``round2_parity_lib`` must agree constant for constant;
 * every data file must reproduce its frozen SHA-256;
 * the payout target is explicit and the bare ``target`` alias is rejected;
 * the feature list must match the frozen 780-feature medium hash;
-* training loads eras 0001-1084 only — the purge 1085-1092, the benchmark
+* training loads eras 0001-1084 only -- the purge 1085-1092, the benchmark
   prediction chunk 1093-1248, GAP 1223-1230 and HOLDOUT >=1231 are excluded at
   the Parquet scan boundary, so a forbidden row is never materialised;
+* the freshly computed sample manifest must reproduce every frozen composition
+  value before LightGBM is called, and a reloaded manifest must match on the
+  complete custody envelope rather than two hash fields;
 * P2 must reuse P1's exact sampled ``(era, id)`` universe, proven by identity
   comparison rather than by regenerating an allegedly equivalent sample.
 
+Attempt custody. A normal invocation is attempt 1 and ``--retry`` is attempt 2;
+there is no attempt 3. The posture is derived from the artifacts actually on
+disk, never from a constant. A retry is authorised only when a validated
+attempt-1 failure record was preserved, and each attempt owns its own failure
+path so a second failure can never be masked by the first.
+
 Artifacts. Predictions, logs, failure records and the sample manifest are
-written outside Git under ``--out-root``. Paths are create-new-only: a final
-path is never replaced, a completed prediction is never overwritten, a
-completed fit is never rerun, and a failure record is preserved. Atomic
+written outside Git under ``--out-root``. Paths are create-new-only; atomic
 temp-to-final replacement is used for first-time creation only. No model
 artifact is written; no future stage is started; nothing is uploaded.
 
@@ -39,12 +52,14 @@ from __future__ import annotations
 import argparse
 import gc
 import hashlib
+import importlib.metadata as importlib_metadata
 import json
 import os
 import platform
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Mapping
 
 import lightgbm as lgb
 import numpy as np
@@ -56,6 +71,15 @@ from agents.experiments.keystone28_corr_backbone_v53 import round2_parity_lib as
 
 PACKET_DIR = Path(__file__).resolve().parent
 DEFAULT_PROTOCOL = PACKET_DIR / "round2_parity_protocol.json"
+
+DISTRIBUTIONS = {
+    "lightgbm": "lightgbm",
+    "numpy": "numpy",
+    "pandas": "pandas",
+    "pyarrow": "pyarrow",
+    "numerai_tools": "numerai-tools",
+    "psutil": "psutil",
+}
 
 
 def _now() -> str:
@@ -70,13 +94,20 @@ def _sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _sha256_text(text: str) -> str:
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
-
-
 def _peak_working_set_bytes() -> int:
     info = psutil.Process().memory_info()
     return int(getattr(info, "peak_wset", getattr(info, "rss", 0)))
+
+
+def observed_runtime_versions() -> dict[str, str]:
+    """The runtime this process is actually running under."""
+    versions = {"python": platform.python_version()}
+    for key, distribution in DISTRIBUTIONS.items():
+        try:
+            versions[key] = importlib_metadata.version(distribution)
+        except importlib_metadata.PackageNotFoundError:
+            versions[key] = "NOT_INSTALLED"
+    return versions
 
 
 def _cpu_posture() -> dict:
@@ -103,7 +134,7 @@ def _write_new_json(path: Path, payload: dict, *, kind: str) -> None:
 
 
 # ------------------------------------------------------- protocol revalidation
-def load_protocol(path: Path) -> dict:
+def load_protocol(path: Path) -> tuple[dict, str]:
     """Load the protocol record and prove it agrees with the executable law."""
     protocol = json.loads(path.read_text(encoding="utf-8"))
     expected = kp.frozen_constants()
@@ -123,7 +154,7 @@ def load_protocol(path: Path) -> dict:
     if protocol["feature_list_sha256"] != kp.FEATURE_LIST_SHA256:
         raise ValueError("protocol feature-list hash is not the frozen list")
     kp.assert_declared_profile_difference()
-    return protocol
+    return protocol, kp.protocol_semantic_sha256(protocol)
 
 
 def revalidate_data_identities(data_root: Path, protocol: dict) -> dict:
@@ -151,21 +182,34 @@ def load_feature_list(data_root: Path, protocol: dict) -> list[str]:
     medium = list(features["feature_sets"][protocol["feature_set"]])
     if len(medium) != kp.N_FEATURES:
         raise ValueError(f"medium feature set has {len(medium)} features != {kp.N_FEATURES}")
-    digest = _sha256_text("\n".join(medium))
+    digest = hashlib.sha256("\n".join(medium).encode("utf-8")).hexdigest()
     if digest != kp.FEATURE_LIST_SHA256:
         raise ValueError("features.json medium list hash does not match the frozen protocol")
     return medium
 
 
-def read_prior_state(path: Path | None) -> str | None:
-    """Stage eligibility is read from a recorded artifact, never asserted inline."""
-    if path is None:
-        return None
-    record = json.loads(path.read_text(encoding="utf-8"))
-    state = record.get("terminal_state")
-    if state is None:
-        raise ValueError(f"{path} carries no terminal_state")
-    return state
+# --------------------------------------------------- strict prior authority (C)
+def load_prior_result(
+    out_root: Path, prior_path: Path | None
+) -> tuple[str | None, Mapping | None]:
+    """Read a claimed prior result and locate it relative to ``--out-root``.
+
+    A prior result outside the run's own output root is refused here rather
+    than being read and trusted.
+    """
+    if prior_path is None:
+        return None, None
+    if not prior_path.exists():
+        raise kp.PriorResultAuthorityError(f"prior result does not exist: {prior_path}")
+    try:
+        relative = prior_path.resolve().relative_to(out_root.resolve())
+    except ValueError as exc:
+        raise kp.PriorResultAuthorityError(
+            f"prior result {prior_path} is not under --out-root {out_root}; a "
+            "result outside the run's own output root authorises nothing"
+        ) from exc
+    envelope = json.loads(prior_path.read_text(encoding="utf-8"))
+    return kp.normalize_relpath(str(relative)), envelope
 
 
 # ------------------------------------------------------------------ data load
@@ -235,9 +279,11 @@ def build_or_load_sample(
 ) -> tuple[np.ndarray, dict]:
     """Construct the canonical sample on first use; afterwards load and reuse it.
 
-    P2 never regenerates a fresh sample: it loads P1's manifest and proves the
-    identity matches, which is what makes "the only change is the model
-    profile" a checked fact rather than a claim.
+    The freshly computed manifest must reproduce every value frozen at source
+    freeze before LightGBM is ever called. When a manifest already exists, the
+    complete custody envelope is compared -- not merely two hash fields -- so
+    P2 provably reuses P1's rows rather than regenerating an allegedly
+    equivalent sample.
     """
     manifest_path = out_root / kp.artifact_relpath("sample_identity")
     positions = kp.era_balanced_sample_positions(cohort["era"].to_numpy())
@@ -249,9 +295,8 @@ def build_or_load_sample(
     split = selected["_source"].value_counts().to_dict()
     identities = {name: digest for name, digest in sorted(data_identities.items())}
 
-    manifest = {
-        "record": "kp35_sample_identity",
-        "non_scientific": False,
+    fresh = {
+        "record": kp.RECORD_SAMPLE,
         "generated_utc": _now(),
         "data_identities": identities,
         "eligible_era_range": [eligible_eras[0], eligible_eras[-1]],
@@ -270,29 +315,37 @@ def build_or_load_sample(
             "validation": int(split.get("validation", 0)),
         },
         "sample_canon_sha256": canon,
-        "sample_identity_sha256": kp.sample_identity(
-            data_identities=identities,
-            eligible_era_range=[eligible_eras[0], eligible_eras[-1]],
-            feature_list_sha256=kp.FEATURE_LIST_SHA256,
-            sampling_law_version=kp.SAMPLING_LAW_VERSION,
-            sampling_seed=kp.SAMPLING_SEED,
-            row_cap=kp.MAX_SAMPLED_ROWS,
-            sample_canon_sha256=canon,
-        ),
     }
-    kp.validate_sample_manifest(manifest)
+    fresh["sample_identity_sha256"] = kp.sample_identity(
+        data_identities=identities,
+        eligible_era_range=fresh["eligible_era_range"],
+        feature_list_sha256=kp.FEATURE_LIST_SHA256,
+        sampling_law_version=kp.SAMPLING_LAW_VERSION,
+        sampling_seed=kp.SAMPLING_SEED,
+        row_cap=kp.MAX_SAMPLED_ROWS,
+        sample_canon_sha256=canon,
+    )
+
+    # Infrastructure stop, not a model result: this must reproduce exactly.
+    kp.assert_frozen_sample(fresh)
 
     if manifest_path.exists():
         existing = json.loads(manifest_path.read_text(encoding="utf-8"))
-        kp.assert_shared_sample_identity(existing, manifest)
-        print(f"[{_now()}] reusing recorded sample identity "
-              f"{existing['sample_identity_sha256'][:16]}...", flush=True)
+        kp.assert_frozen_sample(existing)
+        kp.assert_sample_envelope_equal(existing, fresh, context=str(manifest_path))
+        print(
+            f"[{_now()}] reusing recorded sample identity "
+            f"{existing['sample_identity_sha256'][:16]}... (full custody envelope matched)",
+            flush=True,
+        )
         return positions, existing
 
-    _write_new_json(manifest_path, manifest, kind="sample_identity")
-    print(f"[{_now()}] wrote sample identity {manifest['sample_identity_sha256'][:16]}...",
-          flush=True)
-    return positions, manifest
+    _write_new_json(manifest_path, fresh, kind="sample_identity")
+    print(
+        f"[{_now()}] wrote sample identity {fresh['sample_identity_sha256'][:16]}...",
+        flush=True,
+    )
+    return positions, fresh
 
 
 # --------------------------------------------------------------------- the fit
@@ -300,16 +353,19 @@ def run_fit(
     *,
     stage: str,
     model_seed: int,
+    attempt: int,
     cohort: pd.DataFrame,
     positions: np.ndarray,
     manifest: dict,
     scoring: pd.DataFrame,
     feature_list: list[str],
     target: str,
-    protocol: dict,
+    protocol_semantic: str,
     data_identities: dict,
+    runtime_versions: dict,
     out_root: Path,
     retry_of: str | None,
+    attempt1_failure_sha256: str | None,
 ) -> dict:
     profile = kp.profile_for(stage)
     params = kp.lightgbm_params(profile, model_seed)
@@ -317,16 +373,21 @@ def run_fit(
 
     pred_path = out_root / kp.artifact_relpath("prediction", stage=stage, model_seed=model_seed)
     log_path = out_root / kp.artifact_relpath("fit_log", stage=stage, model_seed=model_seed)
-    fail_path = out_root / kp.artifact_relpath("failure_record", stage=stage, model_seed=model_seed)
+    fail_path = out_root / kp.artifact_relpath(
+        "failure_record", stage=stage, model_seed=model_seed, attempt=attempt
+    )
 
     kp.assert_create_new_only(pred_path.exists(), str(pred_path), kind="prediction")
     kp.assert_create_new_only(log_path.exists(), str(log_path), kind="fit_log")
+    kp.assert_create_new_only(fail_path.exists(), str(fail_path), kind="failure_record")
 
     record = {
-        "record": "kp35_fit_log",
+        "record": kp.RECORD_FIT_LOG,
         "stage": stage,
         "model_seed": model_seed,
-        "role": "screening" if model_seed == kp.SCREENING_SEED else "confirmation",
+        "role": kp.expected_role(model_seed),
+        "attempt": attempt,
+        "max_attempts": kp.MAX_ATTEMPTS,
         "payout_target": target,
         "feature_set": kp.FEATURE_SET,
         "n_features": len(feature_list),
@@ -334,9 +395,10 @@ def run_fit(
         "profile_name": profile["name"],
         "num_trees": num_trees,
         "params": params,
-        "params_sha256": _sha256_text(json.dumps({**params, "num_trees": num_trees}, sort_keys=True)),
-        "protocol_sha256": _sha256_text(json.dumps(protocol, sort_keys=True)),
+        "params_sha256": kp.params_sha256(stage, model_seed),
+        "protocol_semantic_sha256": protocol_semantic,
         "data_identities": data_identities,
+        "runtime_versions": runtime_versions,
         "sample_identity_sha256": manifest["sample_identity_sha256"],
         "sample_canon_sha256": manifest["sample_canon_sha256"],
         "rows_before_sampling": manifest["rows_before_sampling"],
@@ -352,6 +414,7 @@ def run_fit(
         "cpu_posture": _cpu_posture(),
         "started_utc": _now(),
         "retry_of": retry_of,
+        "attempt1_failure_sha256": attempt1_failure_sha256,
         "next_stage_started": False,
     }
 
@@ -403,6 +466,8 @@ def run_fit(
         record["ended_utc"] = _now()
         record["duration_seconds"] = round(time.time() - start, 1)
         record["peak_working_set_bytes"] = _peak_working_set_bytes()
+        # Each attempt owns its own failure path, so a second failure can never
+        # be masked by the first failure file already existing.
         _write_new_json(fail_path, record, kind="failure_record")
         raise
 
@@ -410,9 +475,22 @@ def run_fit(
     record["duration_seconds"] = round(time.time() - start, 1)
     record["peak_working_set_bytes"] = _peak_working_set_bytes()
     record["peak_vram"] = "not_applicable_cpu_training"
+
+    # Prove the log we are about to write validates against the frozen recipe.
+    kp.validate_fit_log(
+        record,
+        stage=stage,
+        model_seed=model_seed,
+        protocol_semantic=protocol_semantic,
+        data_identities=data_identities,
+        sample_manifest=manifest,
+        actual_prediction_sha256=record["prediction_sha256"],
+        actual_prediction_canon_sha256=record["prediction_canon_sha256"],
+        actual_prediction_rows=record["prediction_rows"],
+    )
     _write_new_json(log_path, record, kind="fit_log")
     print(
-        f"[{_now()}] {stage} seed {model_seed}: OK "
+        f"[{_now()}] {stage} seed {model_seed} attempt {attempt}: OK "
         f"rows={record['rows_after_sampling']} dur={record['duration_seconds']}s",
         flush=True,
     )
@@ -430,44 +508,80 @@ def main(argv: list[str] | None = None) -> int:
         "--prior-result",
         type=Path,
         default=None,
-        help="Recorded prior stage result whose terminal_state authorises this fit.",
+        help=(
+            "Recorded prior KP35 result envelope, at its canonical path under "
+            "--out-root, whose validated terminal_state authorises this fit."
+        ),
     )
     parser.add_argument(
         "--retry",
         action="store_true",
-        help="Single infrastructural retry; permitted only when no valid prediction exists.",
+        help=(
+            "Single infrastructural retry (attempt 2); requires a preserved and "
+            "validated attempt-1 failure record and no valid prediction."
+        ),
     )
     args = parser.parse_args(argv)
 
     stage = kp.assert_stage(args.stage)
     seed = args.model_seed
     screening = seed == kp.SCREENING_SEED
+    mode = kp.MODE_SCREEN if screening else kp.MODE_CONFIRMATION
     kp.assert_stage_seed(stage, seed, screening=screening)
-    prior_state = read_prior_state(args.prior_result)
 
+    runtime_versions = observed_runtime_versions()
+    kp.assert_runtime_versions(runtime_versions)
+
+    protocol, protocol_semantic = load_protocol(args.protocol)
+    target = kp.assert_payout_target(protocol["payout_target"])
+
+    # Phase 1: authenticate the authorising artifact before touching any data.
+    prior_relpath, prior_envelope = load_prior_result(args.out_root, args.prior_result)
+    prior_state = kp.validate_prior_result(
+        stage=stage,
+        mode=mode,
+        prior_relpath=prior_relpath,
+        prior_envelope=prior_envelope,
+        protocol_semantic=protocol_semantic,
+    )
     if screening:
         kp.assert_stage_executable(stage, prior_state)
     else:
-        kp.assert_confirmation_authorized(prior_state)
-        expected_pass = kp.STAGE_STATES[stage][0]
-        if prior_state != expected_pass:
-            raise kp.StageAuthorityError(
-                f"confirmation seed {seed} for {stage} requires a recorded "
-                f"{expected_pass}; got {prior_state!r}"
-            )
+        kp.assert_confirmation_authorized(stage, prior_state)
 
+    # Attempt posture is derived from artifacts on disk, never from a constant.
+    attempt = kp.resolve_attempt(retry_requested=args.retry)
     pred_path = args.out_root / kp.artifact_relpath("prediction", stage=stage, model_seed=seed)
-    if args.retry:
-        kp.assert_retry_authorized(
-            prediction_exists=pred_path.exists(),
-            prior_retries=0,
+    log_path = args.out_root / kp.artifact_relpath("fit_log", stage=stage, model_seed=seed)
+    fail1_path = args.out_root / kp.artifact_relpath(
+        "failure_record", stage=stage, model_seed=seed, attempt=kp.FIRST_ATTEMPT
+    )
+    fail2_path = args.out_root / kp.artifact_relpath(
+        "failure_record", stage=stage, model_seed=seed, attempt=kp.RETRY_ATTEMPT
+    )
+    kp.assert_attempt_authorized(
+        stage=stage,
+        model_seed=seed,
+        attempt=attempt,
+        prediction_exists=pred_path.exists(),
+        success_log_exists=log_path.exists(),
+        attempt1_failure_exists=fail1_path.exists(),
+        attempt2_failure_exists=fail2_path.exists(),
+    )
+
+    retry_of = None
+    attempt1_failure_sha256 = None
+    if attempt == kp.RETRY_ATTEMPT:
+        first_failure = json.loads(fail1_path.read_text(encoding="utf-8"))
+        kp.validate_attempt1_failure_record(
+            first_failure,
             stage=stage,
             model_seed=seed,
+            protocol_semantic=protocol_semantic,
         )
-    kp.assert_create_new_only(pred_path.exists(), str(pred_path), kind="prediction")
+        retry_of = str(fail1_path)
+        attempt1_failure_sha256 = _sha256_file(fail1_path)
 
-    protocol = load_protocol(args.protocol)
-    target = kp.assert_payout_target(protocol["payout_target"])
     data_identities = revalidate_data_identities(args.data_root, protocol)
     feature_list = load_feature_list(args.data_root, protocol)
 
@@ -475,21 +589,37 @@ def main(argv: list[str] | None = None) -> int:
           flush=True)
     cohort = load_training_frames(args.data_root, feature_list, target)
     positions, manifest = build_or_load_sample(cohort, data_identities, args.out_root)
+
+    # Phase 2: prove the authorising artifact was produced against this sample.
+    if prior_envelope is not None:
+        kp.validate_prior_result(
+            stage=stage,
+            mode=mode,
+            prior_relpath=prior_relpath,
+            prior_envelope=prior_envelope,
+            protocol_semantic=protocol_semantic,
+            sample_identity_sha256=manifest["sample_identity_sha256"],
+            sample_canon_sha256=manifest["sample_canon_sha256"],
+        )
+
     scoring = load_scoring_frame(args.data_root, feature_list)
 
     run_fit(
         stage=stage,
         model_seed=seed,
+        attempt=attempt,
         cohort=cohort,
         positions=positions,
         manifest=manifest,
         scoring=scoring,
         feature_list=feature_list,
         target=target,
-        protocol=protocol,
+        protocol_semantic=protocol_semantic,
         data_identities=data_identities,
+        runtime_versions=runtime_versions,
         out_root=args.out_root,
-        retry_of=f"{stage}_seed{seed}" if args.retry else None,
+        retry_of=retry_of,
+        attempt1_failure_sha256=attempt1_failure_sha256,
     )
     print(
         f"[{_now()}] one fit complete. No successor stage was started and none "

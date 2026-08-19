@@ -5,13 +5,14 @@ the documented benchmark information boundary, the eight-era purge, the score
 zone, the two stage profiles (P1 FALLBACK, P2 documented v5 deep), stage
 ordering and eligibility, the one-seed screening law, the two-part final
 confirmation law, the exact-row-universe contract, canonical key hashing, the
-sample-manifest schema, the terminal-state transition law, and the forbidden-era
-guards.
+sample-manifest schema and its frozen composition, attempt/retry custody, the
+strict prior-result authority, fit-log provenance validation, runtime-version
+binding, the terminal-state transition law, and the forbidden-era guards.
 
 Scope. KP35 is *parity calibration only*. It asks whether either of the two
 PROVEN mismatches between the KW33 static CONTROL backbone and the documented
-v5 benchmark procedure — the training-history boundary, or the LightGBM
-parameter profile — restores benchmark-plausible CORR on eras 1133-1219. It
+v5 benchmark procedure -- the training-history boundary, or the LightGBM
+parameter profile -- restores benchmark-plausible CORR on eras 1133-1219. It
 does not test Candidate-V, validation recency promotion, MMC specialists,
 feature ensembles, target ensembles, blending, deployment, or live performance.
 
@@ -23,21 +24,32 @@ Invariants enforced here rather than merely documented:
 * GAP (1223-1230) and HOLDOUT (>=1231) eras are refused everywhere;
 * CORR alone selects; MMC, weighted score, Sharpe, drawdown, recent-window and
   benchmark correlations are carried as explicitly non-selecting diagnostics;
+* every scalar entering a decision must be finite -- NaN and infinities raise
+  before a terminal scientific state can be produced, and never masquerade as
+  an ordinary screen or confirmation failure;
 * the sample identity is a function of the data, era range, feature list,
-  sampling law, seed and cap only — never of the model seed or model profile,
+  sampling law, seed and cap only -- never of the model seed or model profile,
   so P1 and P2 are provably fitted on the identical sampled rows;
+* a prior result authorises a successor fit only as a complete, canonically
+  located, internally consistent KP35 result envelope -- never because a file
+  happens to contain a plausible ``terminal_state`` string;
+* at most two attempts exist per (stage, seed), each with its own preserved
+  failure path, and a retry requires a validated first failure;
 * terminal states are absorbing: no transition may run backward.
 
 This module is the executable form of ``round2_parity_protocol.json``; the
 protocol record is the authority and the trainer and evaluator revalidate
-agreement between the two before doing anything. Nothing here imports
-LightGBM, PyArrow, NumerAPI, a dataset, or a network client, so every law
-below is synthetically testable on a bare CPU runner.
+agreement between the two before doing anything. Nothing here imports a
+gradient-boosting library, a Parquet reader, an API client, a dataset, or a
+network client, so every law below is synthetically testable on a bare CPU
+runner.
 """
 
 from __future__ import annotations
 
 import hashlib
+import json
+import math
 from dataclasses import dataclass, field
 from typing import Iterable, Mapping, Sequence
 
@@ -85,6 +97,7 @@ FEATURE_LIST_SHA256 = (
 
 BENCHMARK_COLUMN = "v53_lgbm_ender20"
 BENCHMARK_60_COLUMN = "v53_lgbm_ender60"
+META_MODEL_COLUMN = "numerai_meta_model"
 
 SAMPLING_SEED = 20260817
 MAX_SAMPLED_ROWS = 1_000_000
@@ -164,7 +177,19 @@ P1 = "P1_HISTORY_BOUNDARY_1084"
 P2 = "P2_DEEP_PROFILE"
 STAGES: tuple[str, ...] = (P1, P2)
 STAGE_PROFILES: Mapping[str, Mapping[str, object]] = {P1: P1_PROFILE, P2: P2_PROFILE}
-CONFIRMATION = "CONFIRMATION"
+
+MODE_SCREEN = "screen"
+MODE_CONFIRMATION = "confirmation"
+MODES: tuple[str, ...] = (MODE_SCREEN, MODE_CONFIRMATION)
+
+RECORD_SCREEN = "kp35_screen_result"
+RECORD_CONFIRMATION = "kp35_confirmation_result"
+RECORD_FIT_LOG = "kp35_fit_log"
+RECORD_SAMPLE = "kp35_sample_identity"
+MODE_RECORDS: Mapping[str, str] = {
+    MODE_SCREEN: RECORD_SCREEN,
+    MODE_CONFIRMATION: RECORD_CONFIRMATION,
+}
 
 #: Substring guard: any stage name containing this token is refused outright,
 #: so a near-miss spelling cannot slip past the exact-name list below.
@@ -191,34 +216,65 @@ FORBIDDEN_STAGE_NAMES: frozenset[str] = frozenset(
 )
 
 # ------------------------------------------------------------ terminal states
+KP35_SOURCE_FROZEN = "KP35_SOURCE_FROZEN_AWAITING_INDEPENDENT_REVIEW"
 KP35_P1_SCREEN_PASSED = "KP35_P1_SCREEN_PASSED_AWAITING_CONFIRMATION"
 KP35_P1_SCREEN_FAILED = "KP35_P1_SCREEN_FAILED_P2_AUTHORIZABLE"
+KP35_P1_CONFIRMATION_FAILED = "KP35_P1_CONFIRMATION_FAILED_P2_AUTHORIZABLE"
 KP35_P2_SCREEN_PASSED = "KP35_P2_SCREEN_PASSED_AWAITING_CONFIRMATION"
 KP35_PARITY_NOT_RESTORED = "KP35_PARITY_NOT_RESTORED_BY_PROVEN_MISMATCHES"
+KP35_P2_CONFIRMATION_FAILED = "KP35_P2_SCREEN_PASS_CONFIRMATION_FAILED"
 KP35_PARITY_CONFIRMED = "KP35_PARITY_BACKBONE_CONFIRMED"
-KP35_CONFIRMATION_FAILED = "KP35_SCREEN_PASS_CONFIRMATION_FAILED"
-KP35_SOURCE_FROZEN = "KP35_SOURCE_FROZEN_AWAITING_INDEPENDENT_REVIEW"
 
+#: (screen pass state, screen failure state) per stage.
 STAGE_STATES: Mapping[str, tuple[str, str]] = {
     P1: (KP35_P1_SCREEN_PASSED, KP35_P1_SCREEN_FAILED),
     P2: (KP35_P2_SCREEN_PASSED, KP35_PARITY_NOT_RESTORED),
 }
 
+#: (confirmation pass state, confirmation failure state) per stage. The
+#: failure states are deliberately stage-specific: a P1 confirmation failure
+#: leaves the deep profile untested and must therefore authorise P2, while a
+#: P2 confirmation failure ends the ladder.
+CONFIRMATION_STATES: Mapping[str, tuple[str, str]] = {
+    P1: (KP35_PARITY_CONFIRMED, KP35_P1_CONFIRMATION_FAILED),
+    P2: (KP35_PARITY_CONFIRMED, KP35_P2_CONFIRMATION_FAILED),
+}
+
+#: States from which P2 screening may be separately authorised. Both arise
+#: from a P1 outcome that leaves the documented deep profile untested, and the
+#: registered question asks whether *either* proven mismatch restores parity.
+P2_AUTHORIZING_STATES: frozenset[str] = frozenset(
+    {KP35_P1_SCREEN_FAILED, KP35_P1_CONFIRMATION_FAILED}
+)
+
 #: Absorbing states. Nothing in this gate may transition out of one.
 ABSORBING_STATES: frozenset[str] = frozenset(
-    {KP35_PARITY_NOT_RESTORED, KP35_PARITY_CONFIRMED, KP35_CONFIRMATION_FAILED}
+    {
+        KP35_PARITY_NOT_RESTORED,
+        KP35_PARITY_CONFIRMED,
+        KP35_P2_CONFIRMATION_FAILED,
+    }
 )
 
 #: The complete forward transition law. A state absent from a key's value set
 #: is unreachable from that key, which makes every backward move an error.
 FORWARD_TRANSITIONS: Mapping[str, frozenset[str]] = {
     KP35_SOURCE_FROZEN: frozenset({KP35_P1_SCREEN_PASSED, KP35_P1_SCREEN_FAILED}),
-    KP35_P1_SCREEN_FAILED: frozenset({KP35_P2_SCREEN_PASSED, KP35_PARITY_NOT_RESTORED}),
-    KP35_P1_SCREEN_PASSED: frozenset({KP35_PARITY_CONFIRMED, KP35_CONFIRMATION_FAILED}),
-    KP35_P2_SCREEN_PASSED: frozenset({KP35_PARITY_CONFIRMED, KP35_CONFIRMATION_FAILED}),
+    KP35_P1_SCREEN_PASSED: frozenset(
+        {KP35_PARITY_CONFIRMED, KP35_P1_CONFIRMATION_FAILED}
+    ),
+    KP35_P1_SCREEN_FAILED: frozenset(
+        {KP35_P2_SCREEN_PASSED, KP35_PARITY_NOT_RESTORED}
+    ),
+    KP35_P1_CONFIRMATION_FAILED: frozenset(
+        {KP35_P2_SCREEN_PASSED, KP35_PARITY_NOT_RESTORED}
+    ),
+    KP35_P2_SCREEN_PASSED: frozenset(
+        {KP35_PARITY_CONFIRMED, KP35_P2_CONFIRMATION_FAILED}
+    ),
     KP35_PARITY_NOT_RESTORED: frozenset(),
     KP35_PARITY_CONFIRMED: frozenset(),
-    KP35_CONFIRMATION_FAILED: frozenset(),
+    KP35_P2_CONFIRMATION_FAILED: frozenset(),
 }
 
 # ------------------------------------------------------ non-selecting outputs
@@ -242,12 +298,60 @@ NON_SELECTING_DIAGNOSTICS: frozenset[str] = frozenset(
 ENDER60_AUX_LABEL = "HYPOTHETICAL_CUTOVER_WEIGHTED_DIAGNOSTIC"
 
 
+# --------------------------------------------------------------- error types
 class ExactRowUniverseError(ValueError):
     """Raised when two frames do not cover the identical ``(era, id)`` universe."""
 
 
 class StageAuthorityError(ValueError):
     """Raised when a stage/seed/state combination is not authorised."""
+
+
+class PriorResultAuthorityError(ValueError):
+    """Raised when a claimed prior result is not a valid KP35 result envelope."""
+
+
+class FitProvenanceError(ValueError):
+    """Raised when a fit log or prediction artifact fails provenance validation."""
+
+
+class SampleCustodyError(ValueError):
+    """Raised when a sample manifest does not reproduce the frozen composition.
+
+    This is an infrastructure, data, or implementation stop. It is never a
+    model result and must never be reported as a screen or confirmation
+    failure.
+    """
+
+
+class EnvironmentBindingError(ValueError):
+    """Raised when the runtime environment differs from the frozen protocol."""
+
+
+class NonFiniteValueError(ValueError):
+    """Raised when a NaN or infinite value reaches a decision input."""
+
+
+# ------------------------------------------------------- finite-value discipline
+def assert_finite_scalar(value: object, *, name: str) -> float:
+    """Return ``value`` as a finite float, or raise.
+
+    Every scalar that can move the state machine passes through here first.
+    A NaN or infinity must never pass a screen, become an ordinary screen
+    failure, become a confirmation failure, or otherwise advance the ladder --
+    it is a computation fault and is raised as one.
+    """
+    try:
+        number = float(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError) as exc:
+        raise NonFiniteValueError(f"{name} is not a real number: {value!r}") from exc
+    if not math.isfinite(number):
+        raise NonFiniteValueError(
+            f"{name} is not finite ({number!r}); a non-finite value may never "
+            "pass a screen, become a screen or confirmation failure, or move "
+            "the KP35 state machine"
+        )
+    return number
 
 
 # ------------------------------------------------------------------- era laws
@@ -337,7 +441,7 @@ def assert_training_eras_authorized(eras: Sequence[str], *, context: str) -> Non
 
 
 def assert_scoring_zone_exact(eras: Iterable[str], *, context: str) -> None:
-    """Scoring must cover exactly eras 1133-1219 — no subset, no superset."""
+    """Scoring must cover exactly eras 1133-1219 -- no subset, no superset."""
     got = sorted(set(eras))
     zone = score_zone_eras()
     if got != zone:
@@ -398,6 +502,30 @@ def per_era_counts(eras: Sequence[str]) -> dict[str, int]:
         key = str(era)
         counts[key] = counts.get(key, 0) + 1
     return counts
+
+
+def canonical_json_sha256(payload: object) -> str:
+    """SHA-256 of a canonical JSON serialisation of a parsed object.
+
+    Computed from the *parsed* structure rather than file bytes, so indentation
+    and key order in the on-disk file are irrelevant while any change to a key
+    or value changes the digest.
+    """
+    blob = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()
+
+
+def protocol_semantic_sha256(protocol: Mapping) -> str:
+    """The binding identity of a protocol record."""
+    return canonical_json_sha256(protocol)
+
+
+def normalize_relpath(value: str) -> str:
+    """Normalise a relative artifact path for canonical-location comparison."""
+    text = str(value).replace("\\", "/")
+    while text.startswith("./"):
+        text = text[2:]
+    return text.strip("/")
 
 
 # ------------------------------------------------------- exact-row contract (J)
@@ -579,7 +707,7 @@ def era_balanced_sample_positions(
     ``cap // n_eras``; eras with fewer rows contribute all of theirs; remaining
     capacity is granted one era at a time in ascending era order from that
     era's fixed random permutation. Per-era permutations come from
-    ``SeedSequence([seed, int(era)])`` — a function of the sampling seed and
+    ``SeedSequence([seed, int(era)])`` -- a function of the sampling seed and
     the era only, never of the model seed or the model profile.
     """
     eras = np.asarray(era_of_row)
@@ -647,6 +775,47 @@ SAMPLE_IDENTITY_EXCLUDED_FIELDS: frozenset[str] = frozenset(
      "max_depth", "num_leaves", "params_sha256"}
 )
 
+#: The complete sample composition computed at source freeze by a keys-only,
+#: explicitly non-scientific audit (no model feature loaded, no training, no
+#: prediction). Every future fit must reproduce all of it before LightGBM is
+#: called. A mismatch is an infrastructure/data/implementation stop.
+FROZEN_SAMPLE: Mapping[str, object] = {
+    "eligible_era_range": ["0001", "1084"],
+    "n_eligible_eras": 1084,
+    "rows_before_sampling": 5_890_287,
+    "selected_row_count": 1_000_000,
+    "source_split_rows": {"train": 529_780, "validation": 470_220},
+    "sample_canon_sha256": (
+        "e555e848770f4acd276020aca833541e8b0702a2f1b7c3ebc8068b657d101350"
+    ),
+    "sampling_seed": SAMPLING_SEED,
+    "row_cap": MAX_SAMPLED_ROWS,
+    "sampling_law_version": SAMPLING_LAW_VERSION,
+    "feature_set": FEATURE_SET,
+    "feature_list_sha256": FEATURE_LIST_SHA256,
+    "n_features": N_FEATURES,
+}
+
+#: The custody envelope compared field-for-field when an existing manifest is
+#: reloaded -- not merely two hash fields.
+SAMPLE_CUSTODY_ENVELOPE_FIELDS: tuple[str, ...] = (
+    "data_identities",
+    "eligible_era_range",
+    "n_eligible_eras",
+    "feature_set",
+    "feature_list_sha256",
+    "n_features",
+    "sampling_law_version",
+    "sampling_seed",
+    "row_cap",
+    "rows_before_sampling",
+    "selected_row_count",
+    "selected_rows_per_era",
+    "source_split_rows",
+    "sample_canon_sha256",
+    "sample_identity_sha256",
+)
+
 
 def sample_identity(
     *,
@@ -662,7 +831,7 @@ def sample_identity(
 
     Deliberately a function of the data, the eligible era range, the feature
     list, the sampling law, its seed, the row cap and the resulting canonical
-    ``(era, id)`` universe — and of nothing else. The model seed and the model
+    ``(era, id)`` universe -- and of nothing else. The model seed and the model
     profile are structurally excluded, which is what lets P2 prove it reused
     P1's exact sampled rows instead of regenerating an allegedly equivalent
     sample.
@@ -724,18 +893,66 @@ def validate_sample_manifest(manifest: Mapping) -> dict:
     return {"valid": True, "sample_identity_sha256": expected}
 
 
+def assert_frozen_sample(manifest: Mapping) -> dict:
+    """The manifest must reproduce every value frozen at source freeze.
+
+    Called before any LightGBM invocation and again by the evaluator. A
+    mismatch here means the data, the sampling implementation, or the
+    environment changed -- it is an infrastructure stop, not a model result,
+    and it must never be reported as a parity outcome.
+    """
+    validate_sample_manifest(manifest)
+    mismatches: list[str] = []
+    for key, expected in FROZEN_SAMPLE.items():
+        actual = manifest.get(key)
+        if isinstance(expected, list):
+            actual = list(actual) if actual is not None else None
+        if actual != expected:
+            mismatches.append(f"{key}: {actual!r} != frozen {expected!r}")
+    if mismatches:
+        raise SampleCustodyError(
+            "sample manifest does not reproduce the frozen KP35 composition -- "
+            "this is an infrastructure, data, or implementation stop and is NOT "
+            "a model result: " + "; ".join(mismatches)
+        )
+    return {
+        "frozen_sample_reproduced": True,
+        "sample_canon_sha256": manifest["sample_canon_sha256"],
+        "sample_identity_sha256": manifest["sample_identity_sha256"],
+    }
+
+
+def assert_sample_envelope_equal(
+    existing: Mapping, fresh: Mapping, *, context: str = "sample manifest"
+) -> str:
+    """Compare the complete custody envelope, not merely two hash fields."""
+    for manifest in (existing, fresh):
+        validate_sample_manifest(manifest)
+    mismatches = [
+        f"{field}: recorded {existing.get(field)!r} != recomputed {fresh.get(field)!r}"
+        for field in SAMPLE_CUSTODY_ENVELOPE_FIELDS
+        if existing.get(field) != fresh.get(field)
+    ]
+    if mismatches:
+        raise SampleCustodyError(
+            f"{context}: the recorded sample custody envelope does not match the "
+            "freshly computed one: " + "; ".join(mismatches)
+        )
+    return str(existing["sample_identity_sha256"])
+
+
 def assert_shared_sample_identity(p1_manifest: Mapping, p2_manifest: Mapping) -> str:
     """P1 and P2 must reference one identical sample, proven by hash."""
     for manifest in (p1_manifest, p2_manifest):
         validate_sample_manifest(manifest)
     if p1_manifest["sample_canon_sha256"] != p2_manifest["sample_canon_sha256"]:
-        raise ValueError(
+        raise SampleCustodyError(
             "P2 sampled a different (era,id) universe than P1; regenerating an "
-            "allegedly equivalent sample is not permitted — the identities must match"
+            "allegedly equivalent sample is not permitted -- the identities must match"
         )
     if p1_manifest["sample_identity_sha256"] != p2_manifest["sample_identity_sha256"]:
-        raise ValueError("P1 and P2 sample identities differ")
-    return p1_manifest["sample_identity_sha256"]
+        raise SampleCustodyError("P1 and P2 sample identities differ")
+    return str(p1_manifest["sample_identity_sha256"])
 
 
 # --------------------------------------------------------------- profile laws
@@ -788,6 +1005,13 @@ def lightgbm_params(profile: Mapping[str, object], model_seed: int) -> dict:
     }
 
 
+def params_sha256(stage: str, model_seed: int) -> str:
+    """The canonical parameter digest a fit log must reproduce."""
+    profile = profile_for(stage)
+    params = lightgbm_params(profile, model_seed)
+    return canonical_json_sha256({**params, "num_trees": profile["num_trees"]})
+
+
 # ------------------------------------------------- stage ordering/eligibility
 def assert_stage(stage: str) -> str:
     if stage in FORBIDDEN_STAGE_NAMES or FORBIDDEN_STAGE_SUBSTRING in stage.lower():
@@ -799,6 +1023,12 @@ def assert_stage(stage: str) -> str:
     if stage not in STAGES:
         raise StageAuthorityError(f"unknown KP35 stage {stage!r}; expected one of {STAGES}")
     return stage
+
+
+def assert_mode(mode: str) -> str:
+    if mode not in MODES:
+        raise StageAuthorityError(f"unknown KP35 mode {mode!r}; expected one of {MODES}")
+    return mode
 
 
 def stage_index(stage: str) -> int:
@@ -820,7 +1050,7 @@ def assert_stage_seed(stage: str, model_seed: int, *, screening: bool = True) ->
 
 
 def assert_stage_executable(stage: str, prior_state: str | None) -> None:
-    """Stage eligibility. P2 requires a recorded P1 screen *failure*.
+    """Stage eligibility. P2 requires a recorded P1 failure -- screen or confirmation.
 
     Nothing here starts a fit; this is the refusal law that a runner consults.
     There is no automatic chaining anywhere in the packet: a human must invoke
@@ -833,20 +1063,21 @@ def assert_stage_executable(stage: str, prior_state: str | None) -> None:
                 f"P1 is the first stage; it cannot run after state {prior_state!r}"
             )
         return
-    if prior_state != KP35_P1_SCREEN_FAILED:
+    if prior_state not in P2_AUTHORIZING_STATES:
         raise StageAuthorityError(
-            f"{P2} becomes executable only when a valid {P1} screen artifact "
-            f"records {KP35_P1_SCREEN_FAILED!r}; got {prior_state!r}. A P1 screen "
-            "pass goes to confirmation, never to P2."
+            f"{P2} becomes executable only when a valid P1 artifact records one of "
+            f"{sorted(P2_AUTHORIZING_STATES)}; got {prior_state!r}. A P1 screen "
+            "pass goes to P1 confirmation first, never straight to P2."
         )
 
 
-def assert_confirmation_authorized(prior_state: str | None) -> None:
-    """Confirmation requires a recorded screen pass from P1 or P2."""
-    if prior_state not in (KP35_P1_SCREEN_PASSED, KP35_P2_SCREEN_PASSED):
+def assert_confirmation_authorized(stage: str, prior_state: str | None) -> None:
+    """Confirmation of a stage requires that stage's recorded screen pass."""
+    assert_stage(stage)
+    expected = STAGE_STATES[stage][0]
+    if prior_state != expected:
         raise StageAuthorityError(
-            "confirmation requires a recorded screen pass "
-            f"({KP35_P1_SCREEN_PASSED} or {KP35_P2_SCREEN_PASSED}), "
+            f"confirmation of {stage} requires a recorded {expected}, "
             f"got {prior_state!r}"
         )
 
@@ -869,9 +1100,517 @@ def assert_forward_transition(from_state: str | None, to_state: str) -> None:
         )
 
 
+# --------------------------------------------------- strict prior authority (C)
+@dataclass(frozen=True)
+class PriorRequirement:
+    """One acceptable predecessor envelope for a (stage, mode) invocation."""
+
+    relpath: str
+    record: str
+    mode: str
+    stage: str
+    terminal_state: str
+
+
+#: The complete map from an intended (stage, mode) invocation to the exact set
+#: of prior result envelopes that may authorise it. A prior result is accepted
+#: only at its canonical path under the same ``--out-root``; an arbitrary JSON
+#: file elsewhere containing a plausible ``terminal_state`` authorises nothing.
+PRIOR_AUTHORITY: Mapping[tuple[str, str], tuple[PriorRequirement, ...]] = {
+    (P1, MODE_SCREEN): (),
+    (P1, MODE_CONFIRMATION): (
+        PriorRequirement(
+            relpath=f"results/{P1}_screen.json",
+            record=RECORD_SCREEN,
+            mode=MODE_SCREEN,
+            stage=P1,
+            terminal_state=KP35_P1_SCREEN_PASSED,
+        ),
+    ),
+    (P2, MODE_SCREEN): (
+        PriorRequirement(
+            relpath=f"results/{P1}_screen.json",
+            record=RECORD_SCREEN,
+            mode=MODE_SCREEN,
+            stage=P1,
+            terminal_state=KP35_P1_SCREEN_FAILED,
+        ),
+        PriorRequirement(
+            relpath=f"results/{P1}_confirmation.json",
+            record=RECORD_CONFIRMATION,
+            mode=MODE_CONFIRMATION,
+            stage=P1,
+            terminal_state=KP35_P1_CONFIRMATION_FAILED,
+        ),
+    ),
+    (P2, MODE_CONFIRMATION): (
+        PriorRequirement(
+            relpath=f"results/{P2}_screen.json",
+            record=RECORD_SCREEN,
+            mode=MODE_SCREEN,
+            stage=P2,
+            terminal_state=KP35_P2_SCREEN_PASSED,
+        ),
+    ),
+}
+
+#: Fields a KP35 result envelope must carry for a successor to authenticate it.
+RESULT_ENVELOPE_REQUIRED_FIELDS: tuple[str, ...] = (
+    "record",
+    "mode",
+    "stage",
+    "terminal_state",
+    "prior_state",
+    "protocol_semantic_sha256",
+    "benchmark",
+    "scoring_universe",
+    "sample_custody",
+    "fit_provenance",
+    "authorizes_next_fit",
+)
+
+
+def canonical_prior_relpaths(stage: str, mode: str) -> tuple[str, ...]:
+    """The canonical predecessor locations for one (stage, mode) invocation."""
+    assert_stage(stage)
+    assert_mode(mode)
+    return tuple(r.relpath for r in PRIOR_AUTHORITY[(stage, mode)])
+
+
+def validate_result_envelope(envelope: Mapping, *, context: str) -> None:
+    """Structural completeness of any KP35 result envelope."""
+    if not isinstance(envelope, Mapping):
+        raise PriorResultAuthorityError(f"{context}: result envelope is not an object")
+    missing = [f for f in RESULT_ENVELOPE_REQUIRED_FIELDS if f not in envelope]
+    if missing:
+        raise PriorResultAuthorityError(
+            f"{context}: result envelope missing required fields {missing}; a bare "
+            "terminal_state is not a KP35 result and authorises nothing"
+        )
+
+
+def validate_prior_result(
+    *,
+    stage: str,
+    mode: str,
+    prior_relpath: str | None,
+    prior_envelope: Mapping | None,
+    protocol_semantic: str,
+    sample_identity_sha256: str | None = None,
+    sample_canon_sha256: str | None = None,
+) -> str | None:
+    """Authenticate the artifact claiming to authorise this invocation.
+
+    Phase 1 (before any model feature is loaded) validates everything that does
+    not require the sample manifest. Phase 2 re-invokes with
+    ``sample_identity_sha256``/``sample_canon_sha256`` once the frozen manifest
+    is in hand, proving the predecessor was produced against the identical
+    sample.
+
+    Returns the validated predecessor terminal state, or ``None`` when the
+    invocation legitimately has no predecessor (the P1 screen).
+
+    A valid artifact is a necessary condition, never a sufficient one: a human
+    execution authorisation is separately required and nothing here starts a fit.
+    """
+    assert_stage(stage)
+    assert_mode(mode)
+    requirements = PRIOR_AUTHORITY[(stage, mode)]
+
+    if not requirements:
+        if prior_envelope is not None or prior_relpath is not None:
+            raise PriorResultAuthorityError(
+                f"{stage} {mode} is the first invocation and accepts no prior result"
+            )
+        return None
+
+    if prior_envelope is None or prior_relpath is None:
+        raise PriorResultAuthorityError(
+            f"{stage} {mode} requires a prior result at one of "
+            f"{[r.relpath for r in requirements]} under the same --out-root"
+        )
+
+    normalized = normalize_relpath(prior_relpath)
+    matched = [r for r in requirements if normalize_relpath(r.relpath) == normalized]
+    if not matched:
+        raise PriorResultAuthorityError(
+            f"prior result at {normalized!r} is not a canonical predecessor for "
+            f"{stage} {mode}; expected one of "
+            f"{[normalize_relpath(r.relpath) for r in requirements]}. A result at "
+            "an arbitrary location authorises nothing regardless of its contents."
+        )
+
+    validate_result_envelope(prior_envelope, context=f"prior result {normalized}")
+    requirement = matched[0]
+
+    for field_name, expected in (
+        ("record", requirement.record),
+        ("mode", requirement.mode),
+        ("stage", requirement.stage),
+        ("terminal_state", requirement.terminal_state),
+    ):
+        actual = prior_envelope.get(field_name)
+        if actual != expected:
+            raise PriorResultAuthorityError(
+                f"prior result {normalized}: {field_name} {actual!r} != required "
+                f"{expected!r} for authorising {stage} {mode}"
+            )
+
+    # The predecessor's own recorded transition must itself be legal.
+    try:
+        assert_forward_transition(
+            prior_envelope.get("prior_state"), requirement.terminal_state
+        )
+    except StageAuthorityError as exc:
+        raise PriorResultAuthorityError(
+            f"prior result {normalized}: its own recorded transition "
+            f"{prior_envelope.get('prior_state')!r} -> {requirement.terminal_state!r} "
+            f"is not legal, so the envelope cannot be authentic: {exc}"
+        ) from exc
+
+    if prior_envelope.get("protocol_semantic_sha256") != protocol_semantic:
+        raise PriorResultAuthorityError(
+            f"prior result {normalized}: protocol identity "
+            f"{prior_envelope.get('protocol_semantic_sha256')!r} != current "
+            f"{protocol_semantic!r}; the predecessor was produced under a "
+            "different protocol"
+        )
+
+    benchmark = prior_envelope.get("benchmark") or {}
+    if benchmark.get("frozen_kw33_mean_corr") != BENCHMARK_MEAN_CORR:
+        raise PriorResultAuthorityError(
+            f"prior result {normalized}: frozen benchmark value mismatch"
+        )
+    if benchmark.get("tolerance") != BENCHMARK_MEAN_CORR_TOLERANCE:
+        raise PriorResultAuthorityError(
+            f"prior result {normalized}: benchmark tolerance mismatch"
+        )
+    try:
+        assert_benchmark_identity(benchmark.get("recomputed_mean_corr"))
+    except ValueError as exc:
+        # A predecessor carrying a drifted or non-finite benchmark is an invalid
+        # envelope, so it is refused with the uniform prior-authority error.
+        raise PriorResultAuthorityError(
+            f"prior result {normalized}: recorded benchmark mean CORR is not the "
+            f"frozen identity: {exc}"
+        ) from exc
+
+    universe = prior_envelope.get("scoring_universe") or {}
+    if universe.get("rows") != SCORING_UNIVERSE_ROWS:
+        raise PriorResultAuthorityError(
+            f"prior result {normalized}: scoring universe row count mismatch"
+        )
+    if universe.get("canon_sha256") != SCORING_UNIVERSE_CANON_SHA256:
+        raise PriorResultAuthorityError(
+            f"prior result {normalized}: scoring universe canonical hash mismatch"
+        )
+
+    custody = prior_envelope.get("sample_custody") or {}
+    if sample_identity_sha256 is not None:
+        if custody.get("sample_identity_sha256") != sample_identity_sha256:
+            raise PriorResultAuthorityError(
+                f"prior result {normalized}: sample identity "
+                f"{custody.get('sample_identity_sha256')!r} != current "
+                f"{sample_identity_sha256!r}"
+            )
+    if sample_canon_sha256 is not None:
+        if custody.get("sample_canon_sha256") != sample_canon_sha256:
+            raise PriorResultAuthorityError(
+                f"prior result {normalized}: sample canonical hash mismatch"
+            )
+    if custody.get("sample_canon_sha256") != FROZEN_SAMPLE["sample_canon_sha256"]:
+        raise PriorResultAuthorityError(
+            f"prior result {normalized}: sample canonical hash is not the frozen sample"
+        )
+
+    provenance = prior_envelope.get("fit_provenance") or {}
+    expected_seeds = (
+        [SCREENING_SEED]
+        if requirement.mode == MODE_SCREEN
+        else [SCREENING_SEED, *CONFIRMATION_SEEDS]
+    )
+    for seed in expected_seeds:
+        entry = provenance.get(str(seed))
+        if not entry:
+            raise PriorResultAuthorityError(
+                f"prior result {normalized}: missing fit provenance for seed {seed}"
+            )
+        if entry.get("stage") != requirement.stage:
+            raise PriorResultAuthorityError(
+                f"prior result {normalized}: seed {seed} provenance names stage "
+                f"{entry.get('stage')!r}, expected {requirement.stage!r}"
+            )
+        if entry.get("model_seed") != seed:
+            raise PriorResultAuthorityError(
+                f"prior result {normalized}: seed {seed} provenance seed mismatch"
+            )
+        for required in ("params_sha256", "prediction_sha256", "prediction_canon_sha256"):
+            if not entry.get(required):
+                raise PriorResultAuthorityError(
+                    f"prior result {normalized}: seed {seed} provenance missing "
+                    f"{required}"
+                )
+        if entry.get("params_sha256") != params_sha256(requirement.stage, seed):
+            raise PriorResultAuthorityError(
+                f"prior result {normalized}: seed {seed} parameter digest does not "
+                "match the frozen stage recipe"
+            )
+        if entry.get("prediction_canon_sha256") != SCORING_UNIVERSE_CANON_SHA256:
+            raise PriorResultAuthorityError(
+                f"prior result {normalized}: seed {seed} prediction universe hash "
+                "is not the frozen scoring universe"
+            )
+    unexpected = sorted(set(provenance) - {str(s) for s in expected_seeds})
+    if unexpected:
+        raise PriorResultAuthorityError(
+            f"prior result {normalized}: unexpected fit provenance seeds {unexpected}"
+        )
+
+    if prior_envelope.get("authorizes_next_fit") is not False:
+        raise PriorResultAuthorityError(
+            f"prior result {normalized}: a KP35 result never self-authorises a "
+            "successor fit; authorizes_next_fit must be false"
+        )
+
+    return requirement.terminal_state
+
+
+# ------------------------------------------------- fit-log provenance law (D)
+FIT_LOG_REQUIRED_FIELDS: tuple[str, ...] = (
+    "record",
+    "stage",
+    "model_seed",
+    "role",
+    "attempt",
+    "payout_target",
+    "feature_set",
+    "n_features",
+    "feature_list_sha256",
+    "profile_name",
+    "num_trees",
+    "params",
+    "params_sha256",
+    "protocol_semantic_sha256",
+    "data_identities",
+    "sample_identity_sha256",
+    "sample_canon_sha256",
+    "rows_before_sampling",
+    "rows_after_sampling",
+    "source_split_rows",
+    "selected_rows_per_era",
+    "eligible_era_range",
+    "n_eligible_eras",
+    "scored_eras",
+    "no_early_stopping",
+    "no_evaluation_set",
+    "model_artifact_written",
+    "exit_status",
+    "prediction_rows",
+    "prediction_sha256",
+    "prediction_canon_sha256",
+)
+
+
+def expected_role(model_seed: int) -> str:
+    return "screening" if model_seed == SCREENING_SEED else "confirmation"
+
+
+def validate_fit_log(
+    log: Mapping,
+    *,
+    stage: str,
+    model_seed: int,
+    protocol_semantic: str,
+    data_identities: Mapping[str, str],
+    sample_manifest: Mapping,
+    actual_prediction_sha256: str | None = None,
+    actual_prediction_canon_sha256: str | None = None,
+    actual_prediction_rows: int | None = None,
+) -> dict:
+    """Independently reconstruct and validate one fit envelope.
+
+    Nothing is trusted because it appears in the log: the profile, the exact
+    LightGBM parameter dictionary and its digest are recomputed from the frozen
+    stage recipe, the sample fields are compared against the separately loaded
+    external manifest, and the prediction digests are compared against the
+    artifact actually on disk when the caller supplies them.
+
+    This runs for a one-seed screen too, where there is no second seed to
+    compare against, so the frozen recipe is the only available reference.
+    """
+    assert_stage(stage)
+    if model_seed not in ALL_SEEDS:
+        raise StageAuthorityError(f"model seed {model_seed} is not a KP35 seed")
+
+    missing = [f for f in FIT_LOG_REQUIRED_FIELDS if f not in log]
+    if missing:
+        raise FitProvenanceError(
+            f"{stage} seed {model_seed}: fit log missing required fields {missing}"
+        )
+
+    profile = profile_for(stage)
+    expected_params = lightgbm_params(profile, model_seed)
+
+    checks: list[tuple[str, object, object]] = [
+        ("record", log.get("record"), RECORD_FIT_LOG),
+        ("stage", log.get("stage"), stage),
+        ("model_seed", log.get("model_seed"), model_seed),
+        ("role", log.get("role"), expected_role(model_seed)),
+        ("payout_target", log.get("payout_target"), PAYOUT_TARGET),
+        ("feature_set", log.get("feature_set"), FEATURE_SET),
+        ("n_features", log.get("n_features"), N_FEATURES),
+        ("feature_list_sha256", log.get("feature_list_sha256"), FEATURE_LIST_SHA256),
+        ("profile_name", log.get("profile_name"), profile["name"]),
+        ("num_trees", log.get("num_trees"), profile["num_trees"]),
+        ("params", log.get("params"), expected_params),
+        ("params_sha256", log.get("params_sha256"), params_sha256(stage, model_seed)),
+        ("protocol_semantic_sha256", log.get("protocol_semantic_sha256"), protocol_semantic),
+        ("no_early_stopping", log.get("no_early_stopping"), True),
+        ("no_evaluation_set", log.get("no_evaluation_set"), True),
+        ("model_artifact_written", log.get("model_artifact_written"), False),
+        ("exit_status", log.get("exit_status"), "success"),
+        (
+            "sample_identity_sha256",
+            log.get("sample_identity_sha256"),
+            sample_manifest["sample_identity_sha256"],
+        ),
+        (
+            "sample_canon_sha256",
+            log.get("sample_canon_sha256"),
+            sample_manifest["sample_canon_sha256"],
+        ),
+        (
+            "rows_before_sampling",
+            log.get("rows_before_sampling"),
+            sample_manifest["rows_before_sampling"],
+        ),
+        (
+            "rows_after_sampling",
+            log.get("rows_after_sampling"),
+            sample_manifest["selected_row_count"],
+        ),
+        (
+            "source_split_rows",
+            log.get("source_split_rows"),
+            sample_manifest["source_split_rows"],
+        ),
+        (
+            "selected_rows_per_era",
+            log.get("selected_rows_per_era"),
+            sample_manifest["selected_rows_per_era"],
+        ),
+        (
+            "eligible_era_range",
+            list(log.get("eligible_era_range") or []),
+            list(sample_manifest["eligible_era_range"]),
+        ),
+        (
+            "n_eligible_eras",
+            log.get("n_eligible_eras"),
+            sample_manifest["n_eligible_eras"],
+        ),
+        (
+            "scored_eras",
+            list(log.get("scored_eras") or []),
+            [score_zone_eras()[0], score_zone_eras()[-1]],
+        ),
+        ("prediction_rows", log.get("prediction_rows"), SCORING_UNIVERSE_ROWS),
+        (
+            "prediction_canon_sha256",
+            log.get("prediction_canon_sha256"),
+            SCORING_UNIVERSE_CANON_SHA256,
+        ),
+    ]
+    mismatches = [
+        f"{name}: {actual!r} != expected {expected!r}"
+        for name, actual, expected in checks
+        if actual != expected
+    ]
+    if mismatches:
+        raise FitProvenanceError(
+            f"{stage} seed {model_seed}: fit log does not match the frozen recipe: "
+            + "; ".join(mismatches)
+        )
+
+    logged_identities = dict(log.get("data_identities") or {})
+    for name, digest in data_identities.items():
+        if logged_identities.get(name) != digest:
+            raise FitProvenanceError(
+                f"{stage} seed {model_seed}: data identity for {name} "
+                f"{logged_identities.get(name)!r} != revalidated {digest!r}"
+            )
+
+    if actual_prediction_sha256 is not None:
+        if log.get("prediction_sha256") != actual_prediction_sha256:
+            raise FitProvenanceError(
+                f"{stage} seed {model_seed}: prediction file digest "
+                f"{actual_prediction_sha256!r} != logged "
+                f"{log.get('prediction_sha256')!r}"
+            )
+    if actual_prediction_canon_sha256 is not None:
+        if actual_prediction_canon_sha256 != SCORING_UNIVERSE_CANON_SHA256:
+            raise FitProvenanceError(
+                f"{stage} seed {model_seed}: prediction universe is not the frozen "
+                "scoring universe"
+            )
+    if actual_prediction_rows is not None and actual_prediction_rows != SCORING_UNIVERSE_ROWS:
+        raise FitProvenanceError(
+            f"{stage} seed {model_seed}: prediction has {actual_prediction_rows} rows "
+            f"!= {SCORING_UNIVERSE_ROWS}"
+        )
+
+    return {
+        "stage": stage,
+        "model_seed": model_seed,
+        "role": expected_role(model_seed),
+        "attempt": log.get("attempt"),
+        "params_sha256": log.get("params_sha256"),
+        "prediction_sha256": log.get("prediction_sha256"),
+        "prediction_canon_sha256": log.get("prediction_canon_sha256"),
+        "sample_identity_sha256": log.get("sample_identity_sha256"),
+        "sample_canon_sha256": log.get("sample_canon_sha256"),
+        "validated": True,
+    }
+
+
+def assert_cohort_identical_except_seed(logs: Mapping[int, Mapping]) -> dict:
+    """Every fit in a cohort shares one sample identity and one parameter set."""
+    if not logs:
+        raise FitProvenanceError("empty cohort")
+    identities = {log["sample_identity_sha256"] for log in logs.values()}
+    if len(identities) != 1:
+        raise FitProvenanceError(
+            f"cohort spans multiple sample identities: {sorted(identities)}"
+        )
+    canon = {log["sample_canon_sha256"] for log in logs.values()}
+    if len(canon) != 1:
+        raise FitProvenanceError(
+            "cohort fits were trained on different sampled (era,id) universes"
+        )
+    stages = {log["stage"] for log in logs.values()}
+    if len(stages) != 1:
+        raise FitProvenanceError(f"cohort spans multiple stages: {sorted(stages)}")
+    stripped = set()
+    for log in logs.values():
+        params = dict(log["params"])
+        params.pop("seed", None)
+        stripped.add(canonical_json_sha256({**params, "num_trees": log["num_trees"]}))
+    if len(stripped) != 1:
+        raise FitProvenanceError(
+            "cohort fits differ in a model parameter other than the seed"
+        )
+    return {
+        "stage": next(iter(stages)),
+        "sample_identity_sha256": next(iter(identities)),
+        "sample_canon_sha256": next(iter(canon)),
+        "seeds": sorted(logs),
+        "identical_except_seed": True,
+    }
+
+
 # ------------------------------------------------------------- screening law
 def assert_benchmark_identity(
-    recomputed_mean_corr: float,
+    recomputed_mean_corr: object,
     frozen: float = BENCHMARK_MEAN_CORR,
     tolerance: float = BENCHMARK_MEAN_CORR_TOLERANCE,
 ) -> float:
@@ -879,61 +1618,67 @@ def assert_benchmark_identity(
 
     A drifting benchmark would silently move every threshold, so identity is
     required within a strict declared numerical tolerance rather than assumed.
+    A non-finite recomputation is a computation fault, raised before any state
+    can be produced.
     """
-    delta = abs(float(recomputed_mean_corr) - frozen)
+    value = assert_finite_scalar(recomputed_mean_corr, name="recomputed benchmark mean CORR")
+    delta = abs(value - frozen)
     if delta > tolerance:
         raise ValueError(
-            f"recomputed benchmark mean CORR {recomputed_mean_corr!r} differs "
+            f"recomputed benchmark mean CORR {value!r} differs "
             f"from the frozen KW33 value {frozen!r} by {delta!r} > {tolerance!r}"
         )
-    return float(recomputed_mean_corr)
+    return value
 
 
 def screen_threshold(benchmark_mean_corr: float = BENCHMARK_MEAN_CORR) -> float:
     """``SCREEN_FACTOR * benchmark_mean_corr``."""
-    return SCREEN_FACTOR * benchmark_mean_corr
+    return SCREEN_FACTOR * assert_finite_scalar(
+        benchmark_mean_corr, name="benchmark mean CORR"
+    )
 
 
 def final_threshold(benchmark_mean_corr: float = BENCHMARK_MEAN_CORR) -> float:
     """``FINAL_PARITY_FRACTION * benchmark_mean_corr``."""
-    return FINAL_PARITY_FRACTION * benchmark_mean_corr
+    return FINAL_PARITY_FRACTION * assert_finite_scalar(
+        benchmark_mean_corr, name="benchmark mean CORR"
+    )
 
 
 def screen_stage(
     stage: str,
-    seed42_corr: float,
+    seed42_corr: object,
     benchmark_mean_corr: float = BENCHMARK_MEAN_CORR,
 ) -> dict:
     """The one-seed screen. CORR only; nothing else has an input path.
 
-    A pass means only that confirmation is *authorisable*. It is not final
-    parity, not model promotion, not recency promotion, and not deployment
-    authority. A failure at P1 means only that P2 becomes authorisable. This
-    function never starts the next stage.
+    A pass means only that the *stage's own confirmation* is authorisable. It
+    is not final parity, not model promotion, not recency promotion, and not
+    deployment authority. A P1 screen failure means only that P2 becomes
+    authorisable. This function never starts the next stage.
     """
     assert_stage(stage)
-    threshold = screen_threshold(benchmark_mean_corr)
-    passed = float(seed42_corr) >= threshold
-    if stage == P1:
-        state = KP35_P1_SCREEN_PASSED if passed else KP35_P1_SCREEN_FAILED
-    else:
-        state = KP35_P2_SCREEN_PASSED if passed else KP35_PARITY_NOT_RESTORED
+    corr = assert_finite_scalar(seed42_corr, name=f"{stage} seed-42 screen CORR")
+    benchmark = assert_finite_scalar(benchmark_mean_corr, name="benchmark mean CORR")
+    threshold = screen_threshold(benchmark)
+    passed = corr >= threshold
+    state = STAGE_STATES[stage][0] if passed else STAGE_STATES[stage][1]
     return {
         "stage": stage,
         "screening_seed": SCREENING_SEED,
-        "seed42_corr": float(seed42_corr),
-        "benchmark_mean_corr": float(benchmark_mean_corr),
+        "seed42_corr": corr,
+        "benchmark_mean_corr": benchmark,
         "screen_factor": SCREEN_FACTOR,
         "threshold": threshold,
         "law": "seed42_corr >= SCREEN_FACTOR * benchmark_mean_corr",
         "passed": passed,
         "terminal_state": state,
         "means": (
-            "confirmation is authorisable; this is NOT final parity, model "
-            "promotion, recency promotion, or deployment authority"
+            f"{stage} confirmation is authorisable; this is NOT final parity, "
+            "model promotion, recency promotion, or deployment authority"
             if passed
             else (
-                "P2 is authorisable"
+                "P2 screening may be separately authorised"
                 if stage == P1
                 else "both proven mismatches failed to restore parity"
             )
@@ -944,9 +1689,10 @@ def screen_stage(
 
 
 def final_confirmation(
-    corr_42: float,
-    corr_1337: float,
-    corr_2024: float,
+    stage: str,
+    corr_42: object,
+    corr_1337: object,
+    corr_2024: object,
     benchmark_mean_corr: float = BENCHMARK_MEAN_CORR,
 ) -> dict:
     """The two-part final parity law. Both conditions are independently required.
@@ -958,16 +1704,32 @@ def final_confirmation(
     *on*; requiring the two seeds that had no part in the selection to clear
     the same bar on their own is what stops a lucky screening draw from
     carrying a recipe through confirmation.
+
+    The failure state is stage-specific. A P1 confirmation failure leaves the
+    documented deep profile untested and therefore authorises P2 screening; a
+    P2 confirmation failure ends the ladder.
     """
-    threshold = final_threshold(benchmark_mean_corr)
-    three_seed_mean = (float(corr_42) + float(corr_1337) + float(corr_2024)) / 3.0
-    pair_mean = (float(corr_1337) + float(corr_2024)) / 2.0
+    assert_stage(stage)
+    c42 = assert_finite_scalar(corr_42, name=f"{stage} seed-42 confirmation CORR")
+    c1337 = assert_finite_scalar(corr_1337, name=f"{stage} seed-1337 confirmation CORR")
+    c2024 = assert_finite_scalar(corr_2024, name=f"{stage} seed-2024 confirmation CORR")
+    benchmark = assert_finite_scalar(benchmark_mean_corr, name="benchmark mean CORR")
+    threshold = final_threshold(benchmark)
+
+    three_seed_mean = assert_finite_scalar(
+        (c42 + c1337 + c2024) / 3.0, name=f"{stage} three-seed mean CORR"
+    )
+    pair_mean = assert_finite_scalar(
+        (c1337 + c2024) / 2.0, name=f"{stage} untouched-pair mean CORR"
+    )
     three_seed_pass = three_seed_mean >= threshold
     pair_pass = pair_mean >= threshold
     confirmed = three_seed_pass and pair_pass
+    passed_state, failed_state = CONFIRMATION_STATES[stage]
     return {
-        "seeds": {"42": float(corr_42), "1337": float(corr_1337), "2024": float(corr_2024)},
-        "benchmark_mean_corr": float(benchmark_mean_corr),
+        "stage": stage,
+        "seeds": {"42": c42, "1337": c1337, "2024": c2024},
+        "benchmark_mean_corr": benchmark,
         "final_parity_fraction": FINAL_PARITY_FRACTION,
         "threshold": threshold,
         "three_seed_mean": three_seed_mean,
@@ -976,15 +1738,27 @@ def final_confirmation(
         "untouched_pair_gate_passed": pair_pass,
         "both_required": True,
         "confirmed": confirmed,
-        "terminal_state": KP35_PARITY_CONFIRMED if confirmed else KP35_CONFIRMATION_FAILED,
+        "terminal_state": passed_state if confirmed else failed_state,
+        "means": (
+            "parity backbone confirmed; this grants no promotion and no "
+            "deployment authority"
+            if confirmed
+            else (
+                "P2 screening may be separately authorised; the documented deep "
+                "profile remains untested"
+                if stage == P1
+                else "the ladder ends; neither proven mismatch restored parity"
+            )
+        ),
         "selection_input": "CORR only",
         "non_selecting": sorted(NON_SELECTING_DIAGNOSTICS),
+        "next_stage_started": False,
         "promotion_granted": False,
         CANDIDATE_V_RETURN_DENIAL_KEY: False,
     }
 
 
-# ------------------------------------------------------- one-shot artifact law
+# --------------------------------------------- one-shot artifact + attempt law
 ARTIFACT_KINDS: tuple[str, ...] = (
     "prediction",
     "fit_log",
@@ -995,13 +1769,26 @@ ARTIFACT_KINDS: tuple[str, ...] = (
     "final_report",
 )
 
+#: Normal invocation is attempt 1; ``--retry`` is attempt 2; there is no
+#: attempt 3. Each attempt owns a distinct failure path so a second failure can
+#: never be masked by the first failure file already existing.
+FIRST_ATTEMPT = 1
+RETRY_ATTEMPT = 2
+MAX_ATTEMPTS = RETRY_ATTEMPT
 
-def artifact_relpath(kind: str, *, stage: str | None = None, model_seed: int | None = None) -> str:
+
+def artifact_relpath(
+    kind: str,
+    *,
+    stage: str | None = None,
+    model_seed: int | None = None,
+    attempt: int | None = None,
+) -> str:
     """The unique create-new-only relative path for one future artifact.
 
-    Every scientific artifact path is a pure function of its kind, stage and
-    seed, so two different fits can never collide on one path and one fit can
-    never be written twice under two names.
+    Every scientific artifact path is a pure function of its kind, stage, seed
+    and (for failure records) attempt, so two different fits can never collide
+    on one path and one fit can never be written twice under two names.
     """
     if kind not in ARTIFACT_KINDS:
         raise ValueError(f"unknown artifact kind {kind!r}; expected one of {ARTIFACT_KINDS}")
@@ -1009,8 +1796,15 @@ def artifact_relpath(kind: str, *, stage: str | None = None, model_seed: int | N
         assert_stage(stage or "")
         if model_seed not in ALL_SEEDS:
             raise StageAuthorityError(f"model seed {model_seed} is not a KP35 seed")
+        if kind == "failure_record":
+            if attempt not in (FIRST_ATTEMPT, RETRY_ATTEMPT):
+                raise StageAuthorityError(
+                    f"failure records exist for attempts "
+                    f"{(FIRST_ATTEMPT, RETRY_ATTEMPT)} only, got {attempt!r}"
+                )
+            return f"failures/{stage}_seed{model_seed}_attempt{attempt}.json"
         suffix = "parquet" if kind == "prediction" else "json"
-        folder = {"prediction": "predictions", "fit_log": "logs", "failure_record": "failures"}[kind]
+        folder = {"prediction": "predictions", "fit_log": "logs"}[kind]
         return f"{folder}/{stage}_seed{model_seed}.{suffix}"
     if kind == "screen_result":
         assert_stage(stage or "")
@@ -1035,21 +1829,226 @@ def assert_create_new_only(exists: bool, path: str, *, kind: str) -> None:
         )
 
 
-def assert_retry_authorized(
-    *, prediction_exists: bool, prior_retries: int, stage: str, model_seed: int
-) -> None:
-    """At most one infrastructural retry, and only with no valid prediction."""
+def resolve_attempt(*, retry_requested: bool) -> int:
+    """Normal invocation is attempt 1; ``--retry`` is attempt 2."""
+    return RETRY_ATTEMPT if retry_requested else FIRST_ATTEMPT
+
+
+def assert_attempt_authorized(
+    *,
+    stage: str,
+    model_seed: int,
+    attempt: int,
+    prediction_exists: bool,
+    success_log_exists: bool,
+    attempt1_failure_exists: bool,
+    attempt2_failure_exists: bool,
+) -> dict:
+    """The complete attempt-posture law, derived from artifacts on disk.
+
+    No caller supplies a constant retry count: the posture is read from which
+    artifacts exist. A retry is authorised only when a first failure was
+    actually preserved, and a third attempt does not exist.
+    """
     assert_stage(stage)
+    if model_seed not in ALL_SEEDS:
+        raise StageAuthorityError(f"model seed {model_seed} is not a KP35 seed")
+    if attempt not in (FIRST_ATTEMPT, RETRY_ATTEMPT):
+        raise StageAuthorityError(
+            f"{stage} seed {model_seed}: attempt {attempt!r} does not exist; "
+            f"KP35 permits attempts {(FIRST_ATTEMPT, RETRY_ATTEMPT)} only"
+        )
+    prefix = f"{stage} seed {model_seed}"
     if prediction_exists:
         raise StageAuthorityError(
-            f"{stage} seed {model_seed}: a valid prediction artifact already "
-            "exists; a completed scientific fit is never rerun"
+            f"{prefix}: a valid prediction artifact already exists; a completed "
+            "scientific fit is never rerun"
         )
-    if prior_retries >= 1:
+    if success_log_exists:
         raise StageAuthorityError(
-            f"{stage} seed {model_seed}: one infrastructural retry is already "
-            "recorded; no further retry is authorised"
+            f"{prefix}: a success fit log already exists; a completed scientific "
+            "fit is never rerun"
         )
+    if attempt2_failure_exists:
+        raise StageAuthorityError(
+            f"{prefix}: an attempt-2 failure record is already preserved; no "
+            "further attempt is authorised"
+        )
+    if attempt == FIRST_ATTEMPT:
+        if attempt1_failure_exists:
+            raise StageAuthorityError(
+                f"{prefix}: an attempt-1 failure record already exists; the only "
+                "authorised continuation is a single explicit retry (attempt 2)"
+            )
+    else:
+        if not attempt1_failure_exists:
+            raise StageAuthorityError(
+                f"{prefix}: a retry may not be requested without a preserved "
+                "attempt-1 failure record"
+            )
+    return {
+        "stage": stage,
+        "model_seed": model_seed,
+        "attempt": attempt,
+        "authorized": True,
+        "max_attempts": MAX_ATTEMPTS,
+    }
+
+
+def validate_attempt1_failure_record(
+    record: Mapping,
+    *,
+    stage: str,
+    model_seed: int,
+    protocol_semantic: str,
+) -> None:
+    """A retry must inherit an unchanged first-failure envelope."""
+    assert_stage(stage)
+    checks = [
+        ("stage", record.get("stage"), stage),
+        ("model_seed", record.get("model_seed"), model_seed),
+        ("attempt", record.get("attempt"), FIRST_ATTEMPT),
+        ("protocol_semantic_sha256", record.get("protocol_semantic_sha256"), protocol_semantic),
+        ("params_sha256", record.get("params_sha256"), params_sha256(stage, model_seed)),
+        ("payout_target", record.get("payout_target"), PAYOUT_TARGET),
+        ("feature_list_sha256", record.get("feature_list_sha256"), FEATURE_LIST_SHA256),
+    ]
+    mismatches = [
+        f"{name}: {actual!r} != expected {expected!r}"
+        for name, actual, expected in checks
+        if actual != expected
+    ]
+    if mismatches:
+        raise StageAuthorityError(
+            f"{stage} seed {model_seed}: the preserved attempt-1 failure record does "
+            "not match this invocation, so a retry would not be the same fit: "
+            + "; ".join(mismatches)
+        )
+    if str(record.get("exit_status", "")).startswith("success"):
+        raise StageAuthorityError(
+            f"{stage} seed {model_seed}: the attempt-1 record is not a failure"
+        )
+
+
+# --------------------------------------------- authority + environment binding
+#: Public authority observed at source freeze. This is a dated snapshot, not a
+#: substitute for live revalidation: the execution assignment must independently
+#: re-query current public authority immediately before P1.
+AUTHORITY_SNAPSHOT: Mapping[str, object] = {
+    "retrieved_utc": "2026-08-19T03:10:55+00:00",
+    "round_number": 1335,
+    "payout_target": PAYOUT_TARGET,
+    "corr_config": {
+        "name": "correlation",
+        "display_name": "v2_corr20",
+        "version": "6",
+        "multiplier": 0.75,
+        "is_payout": True,
+    },
+    "mmc_config": {
+        "name": "meta_model_contribution",
+        "display_name": "mmc",
+        "version": "5",
+        "multiplier": 2.25,
+        "is_payout": True,
+    },
+    "ender60_payout_active": False,
+    "ender60_note": (
+        "corr60 v3 and mmc60 v3 are isPayout false with multiplier 0.0; no "
+        "Ender60 payout cutover has occurred"
+    ),
+    "dataset_version": "v5.3",
+    "query": (
+        "query { rounds(tournament: 8, number: 1335) { number openTime closeTime "
+        "target v3Staking payoutFactor roundScoreConfigs { name displayName "
+        "version isPayout defaultMultiplier minMultiplier maxMultiplier "
+        "totalScoreDays returnsLagDays roundNumberStart } } }"
+    ),
+    "docs_commit": "5bf294adbac78d0cde497a7d1589694ee9951169",
+    "live_revalidation_required_before_p1": True,
+}
+
+CORR_MULTIPLIER = 0.75
+MMC_MULTIPLIER = 2.25
+
+
+def assert_score_authority(
+    *,
+    payout_target: str,
+    corr_multiplier: object,
+    mmc_multiplier: object,
+    meta_model_column: str,
+) -> dict:
+    """Bind the evaluator's local ScoreAuthority to the frozen snapshot.
+
+    Pure and dataset-free: the caller passes the fields of whatever authority
+    it loaded. No network client is added to this packet -- live public
+    revalidation is a separate, mandatory step of the execution assignment.
+    """
+    assert_payout_target(payout_target)
+    corr = assert_finite_scalar(corr_multiplier, name="CORR multiplier")
+    mmc = assert_finite_scalar(mmc_multiplier, name="MMC multiplier")
+    if corr != CORR_MULTIPLIER:
+        raise EnvironmentBindingError(
+            f"CORR multiplier {corr!r} != frozen {CORR_MULTIPLIER!r}"
+        )
+    if mmc != MMC_MULTIPLIER:
+        raise EnvironmentBindingError(
+            f"MMC multiplier {mmc!r} != frozen {MMC_MULTIPLIER!r}"
+        )
+    if meta_model_column != META_MODEL_COLUMN:
+        raise EnvironmentBindingError(
+            f"Meta Model column {meta_model_column!r} != frozen {META_MODEL_COLUMN!r}"
+        )
+    return {
+        "payout_target": payout_target,
+        "corr_multiplier": corr,
+        "mmc_multiplier": mmc,
+        "meta_model_column": meta_model_column,
+        "matches_frozen_snapshot": True,
+        "live_revalidation_still_required_before_p1": True,
+    }
+
+
+#: The exact runtime the protocol freezes. A version mismatch stops before
+#: training rather than producing a result under an unfrozen toolchain.
+FROZEN_ENVIRONMENT: Mapping[str, str] = {
+    "python": "3.13.14",
+    "lightgbm": "4.7.0",
+    "numpy": "2.5.1",
+    "pandas": "3.0.5",
+    "pyarrow": "25.0.1",
+    "numerai_tools": "0.6.0",
+    "psutil": "7.2.2",
+}
+
+#: The packages whose identity determines a produced score. The evaluator must
+#: verify these even when it does not train.
+SCORE_PRODUCING_PACKAGES: tuple[str, ...] = ("python", "numpy", "pandas", "numerai_tools")
+
+
+def assert_runtime_versions(
+    observed: Mapping[str, str], *, required: Sequence[str] | None = None
+) -> dict:
+    """Every required package must match the frozen version exactly."""
+    names = tuple(required) if required is not None else tuple(FROZEN_ENVIRONMENT)
+    missing = [n for n in names if n not in observed]
+    if missing:
+        raise EnvironmentBindingError(
+            f"runtime environment does not report {missing}; refusing to proceed "
+            "under an unverified toolchain"
+        )
+    mismatches = [
+        f"{name}: observed {observed[name]!r} != frozen {FROZEN_ENVIRONMENT[name]!r}"
+        for name in names
+        if observed[name] != FROZEN_ENVIRONMENT.get(name)
+    ]
+    if mismatches:
+        raise EnvironmentBindingError(
+            "runtime environment differs from the frozen protocol: "
+            + "; ".join(mismatches)
+        )
+    return {"verified": sorted(names), "matches_frozen_environment": True}
 
 
 # ------------------------------------------------------------------- summary
@@ -1078,10 +2077,11 @@ class FrozenDesign:
         default=(
             KP35_P1_SCREEN_PASSED,
             KP35_P1_SCREEN_FAILED,
+            KP35_P1_CONFIRMATION_FAILED,
             KP35_P2_SCREEN_PASSED,
             KP35_PARITY_NOT_RESTORED,
+            KP35_P2_CONFIRMATION_FAILED,
             KP35_PARITY_CONFIRMED,
-            KP35_CONFIRMATION_FAILED,
         )
     )
     ends_if_both_fail: str = (
@@ -1119,4 +2119,10 @@ def frozen_constants() -> dict:
         "final_three_seed_threshold": FINAL_THREE_SEED_THRESHOLD,
         "untouched_pair_threshold": UNTOUCHED_PAIR_THRESHOLD,
         "stages": list(STAGES),
+        "frozen_sample": dict(FROZEN_SAMPLE),
+        "max_attempts": MAX_ATTEMPTS,
+        "corr_multiplier": CORR_MULTIPLIER,
+        "mmc_multiplier": MMC_MULTIPLIER,
+        "meta_model_column": META_MODEL_COLUMN,
+        "frozen_environment": dict(FROZEN_ENVIRONMENT),
     }

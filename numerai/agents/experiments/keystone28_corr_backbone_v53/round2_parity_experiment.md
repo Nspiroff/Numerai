@@ -181,9 +181,19 @@ This reproduces the KP34 audit-3 composition exactly.
 
 Isolates the **documented v5 deep LightGBM profile**.
 
-P2 becomes executable **only** when a valid P1 screen artifact exists and records
-`KP35_P1_SCREEN_FAILED_P2_AUTHORIZABLE`. A P1 *pass* goes to confirmation and can
-never reach P2.
+P2 becomes executable **only** when a valid, canonically located P1 result envelope
+records one of the two states that leave the deep profile untested:
+
+* `KP35_P1_SCREEN_FAILED_P2_AUTHORIZABLE` — P1 failed the one-seed screen; or
+* `KP35_P1_CONFIRMATION_FAILED_P2_AUTHORIZABLE` — P1 passed the screen but failed
+  three-seed confirmation.
+
+A P1 screen *pass* goes to P1 confirmation first and can never reach P2 directly.
+The second path is **preregistered here, before any KP35 score exists**: the frozen
+question asks whether *either* proven mismatch restores parity, so a P1 that fails
+confirmation must not be allowed to end the ladder with the deep profile untried.
+That is not a post-result rescue — it is the graph the registered question always
+required.
 
 P2 holds identical: target · feature list · feature count · training-era boundary ·
 purge · score zone · row cap · sampling seed · **the exact sampled `(era,id)`
@@ -266,7 +276,15 @@ The **untouched-pair gate** exists because seed 42 is the seed selection was per
 independently is what stops a lucky screening draw from carrying a recipe through
 confirmation. Either gate failing prevents confirmation.
 
-Terminal: `KP35_PARITY_BACKBONE_CONFIRMED` or `KP35_SCREEN_PASS_CONFIRMATION_FAILED`.
+The confirmation outcome is **stage-specific**:
+
+| stage | confirmation passes | confirmation fails |
+| --- | --- | --- |
+| P1 | `KP35_PARITY_BACKBONE_CONFIRMED` (terminal) | `KP35_P1_CONFIRMATION_FAILED_P2_AUTHORIZABLE` (**P2 becomes authorisable**) |
+| P2 | `KP35_PARITY_BACKBONE_CONFIRMED` (terminal) | `KP35_P2_SCREEN_PASS_CONFIRMATION_FAILED` (terminal) |
+
+There is deliberately no single ambiguous confirmation-failure state: which stage
+failed determines whether the ladder continues or ends.
 
 **No weighted-score, MMC, Ender60, bootstrap, recent-window, or risk statistic may
 change the parity decision.** Those are reported diagnostically; parity selection uses
@@ -371,19 +389,97 @@ because no GPU-enabled LightGBM is available here.
 
 | state | meaning |
 | --- | --- |
-| `KP35_P1_SCREEN_PASSED_AWAITING_CONFIRMATION` | P1 cleared the screen; confirmation is *authorisable* |
-| `KP35_P1_SCREEN_FAILED_P2_AUTHORIZABLE` | P1 failed; P2 is *authorisable* |
-| `KP35_P2_SCREEN_PASSED_AWAITING_CONFIRMATION` | P2 cleared the screen; confirmation is *authorisable* |
-| `KP35_PARITY_NOT_RESTORED_BY_PROVEN_MISMATCHES` | both proven mismatches failed; **absorbing** |
+| `KP35_P1_SCREEN_PASSED_AWAITING_CONFIRMATION` | P1 cleared the screen; P1 confirmation is *authorisable* |
+| `KP35_P1_SCREEN_FAILED_P2_AUTHORIZABLE` | P1 failed the screen; P2 is *authorisable* |
+| `KP35_P1_CONFIRMATION_FAILED_P2_AUTHORIZABLE` | P1 failed confirmation; P2 is *authorisable* |
+| `KP35_P2_SCREEN_PASSED_AWAITING_CONFIRMATION` | P2 cleared the screen; P2 confirmation is *authorisable* |
+| `KP35_PARITY_NOT_RESTORED_BY_PROVEN_MISMATCHES` | P2 failed the screen; both proven mismatches failed; **absorbing** |
+| `KP35_P2_SCREEN_PASS_CONFIRMATION_FAILED` | P2 failed confirmation; the ladder ends; **absorbing** |
 | `KP35_PARITY_BACKBONE_CONFIRMED` | both final gates passed; **absorbing** |
-| `KP35_SCREEN_PASS_CONFIRMATION_FAILED` | a gate failed at confirmation; **absorbing** |
+
+The complete forward graph:
+
+```
+SOURCE_FROZEN ─┬─► P1 screen pass ─► P1 confirmation ─┬─► PARITY_BACKBONE_CONFIRMED   (terminal)
+               │                                      └─► P1_CONFIRMATION_FAILED ──┐
+               └─► P1 screen fail ──────────────────────────────────────────────┐  │
+                                                                                ▼  ▼
+                                                     P2 screen ─┬─► pass ─► P2 confirmation
+                                                                │              ├─► CONFIRMED (terminal)
+                                                                │              └─► P2_CONFIRMATION_FAILED (terminal)
+                                                                └─► fail ─► PARITY_NOT_RESTORED (terminal)
+```
 
 Absorbing states admit no further transition, and no transition may run backward — a
-protected test asserts the complete forward transition law.
+protected test asserts the complete forward transition law, and another asserts that
+**every** non-confirming P1 outcome leaves P2 reachable.
 
 ---
 
-## 13. Non-actions at source freeze
+## 13. Execution-custody corrections (KP35-R1)
+
+One bounded correction cycle hardened the execution custody **before any fit ran**.
+No scientific constant changed: target, features, data identities, boundary, purge,
+score zone, sampling law and seed, both profiles, and every numeric threshold are
+bit-identical to the source freeze.
+
+**Authenticated prior results.** Previously a runner read `terminal_state` from any
+JSON path the caller named, so a hand-written file could unlock P2. Now a prior
+result authorises a successor only as a complete KP35 result envelope at its
+**canonical path under the same `--out-root`**, validated for record type, mode,
+stage, terminal state, predecessor state and legal transition, protocol semantic
+SHA-256, frozen benchmark value and tolerance, scoring-universe rows and hash,
+sample identity and canonical hash, required fit-log and prediction references, and
+the absence of self-authorisation. Validation runs in two phases: once before any
+model feature is loaded, and again after the frozen sample manifest is in hand.
+A valid artifact remains a *necessary* condition only — separate human execution
+authorisation is still required and nothing auto-runs.
+
+**Independent fit provenance.** The evaluator no longer trusts a fit log because the
+trainer wrote it. It reconstructs the profile, the exact LightGBM parameter
+dictionary and its digest from the frozen stage recipe; compares target, feature
+set, feature count and list hash, era range, row counts, source split and per-era
+counts against the *separately loaded external* sample manifest; and compares the
+prediction file's actual SHA-256 and actual `(era,id)` universe against the log.
+This runs for the one-seed screen too, where no second seed exists to compare
+against. Confirmation additionally requires that every individual fit match the
+frozen recipe **and** that the cohort differ only by the model seed. The evaluator
+also revalidates the data-file identities itself.
+
+**Real one-retry custody.** The hard-coded `prior_retries=0` caller is gone. A normal
+invocation is attempt 1, `--retry` is attempt 2, and there is no attempt 3. The
+posture is derived from which artifacts exist on disk. Each attempt owns its own
+failure path (`failures/{stage}_seed{seed}_attempt{n}.json`), so a second failure can
+never be masked by the first, and a retry requires a preserved attempt-1 failure
+record that matches this exact stage, seed, protocol, parameters and sample identity.
+
+**Fail-closed on non-finite values.** One reusable validator now guards the
+recomputed benchmark mean, the seed-42 screen CORR, every confirmation-seed CORR,
+every computed decision mean, and every dynamically supplied threshold input. A NaN
+or infinity raises before a terminal state exists; it can never pass a screen,
+become an ordinary failure, or move the state machine.
+
+**Frozen sample enforcement.** The source-freeze composition is now executable:
+1,084 eligible eras, 5,890,287 rows before sampling, 1,000,000 selected,
+529,780 train + 470,220 validation, canonical hash `e555e848…`. The freshly computed
+manifest must reproduce all of it before LightGBM is called, and a reloaded manifest
+is compared on the **complete custody envelope** rather than two hash fields. A
+mismatch raises `SampleCustodyError` and is explicitly an infrastructure, data or
+implementation stop — never a model result.
+
+**Authority and environment binding.** The dated public-authority snapshot
+(round 1335, `target_ender_20`, CORR `correlation` v6 / `v2_corr20` × 0.75, MMC
+`meta_model_contribution` v5 / `mmc` × 2.25, no active Ender60 payout configuration,
+retrieval UTC and exact query) is recorded in the protocol, and the evaluator
+validates its local `ScoreAuthority` against the frozen target, multipliers and Meta
+Model column. No network client was added to the packet. **Live public revalidation
+immediately before P1 remains mandatory** and is the execution assignment's
+responsibility — the snapshot is dated evidence, not a substitute. The exact runtime
+(Python, LightGBM, NumPy, pandas, PyArrow, numerai-tools, psutil) is verified before
+training and, for the score-producing packages, again by the evaluator; a version
+mismatch stops before training.
+
+## 14. Non-actions at source freeze
 
 No model training · no prediction generated · no scientific evaluator run on real
 artifacts · no GAP or HOLDOUT access · no Numerai account action, model creation,

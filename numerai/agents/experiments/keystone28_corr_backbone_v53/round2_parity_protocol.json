@@ -1,7 +1,9 @@
 {
  "record": "keystone35_round2_parity_protocol",
  "gate": "KP35_KEYSTONE_PARITY_LADDER_SOURCE_FREEZE",
+ "correction_cycle": "KP35_R1_EXECUTION_CUSTODY_CORRECTION",
  "frozen_utc": "2026-08-19T03:10:55+00:00",
+ "corrected_utc": "2026-08-19T04:20:00+00:00",
  "base_commit": "f247bcc0ddff6352b8b933d6d1192df590ef2330",
  "predecessor": {
   "round1_terminal_state": "STOPPED_AT_KW33_PIPELINE_PARITY_FAILURE",
@@ -31,6 +33,8 @@
   ],
   "if_both_stages_fail": "If both P1 and P2 fail, the experiment ends. Feature-universe and row-budget expansion require a later, separately reviewed gate.",
   "no_p3_rescue_in_this_gate": true,
+  "no_feature_expansion": true,
+  "no_row_budget_expansion": true,
   "no_return_to_candidate_v": "No return to Candidate-V is authorized by source freeze or even by a future parity pass. A separately reviewed recency experiment is required."
  },
  "payout_target": "target_ender_20",
@@ -81,7 +85,40 @@
   "stages": [
    "P1_HISTORY_BOUNDARY_1084",
    "P2_DEEP_PROFILE"
-  ]
+  ],
+  "frozen_sample": {
+   "eligible_era_range": [
+    "0001",
+    "1084"
+   ],
+   "n_eligible_eras": 1084,
+   "rows_before_sampling": 5890287,
+   "selected_row_count": 1000000,
+   "source_split_rows": {
+    "train": 529780,
+    "validation": 470220
+   },
+   "sample_canon_sha256": "e555e848770f4acd276020aca833541e8b0702a2f1b7c3ebc8068b657d101350",
+   "sampling_seed": 20260817,
+   "row_cap": 1000000,
+   "sampling_law_version": "kw33_era_balanced_v1",
+   "feature_set": "medium",
+   "feature_list_sha256": "dd03cd099eb2c2283786eb123fe13a374460251b49f4717ec5ad34cabede80ba",
+   "n_features": 780
+  },
+  "max_attempts": 2,
+  "corr_multiplier": 0.75,
+  "mmc_multiplier": 2.25,
+  "meta_model_column": "numerai_meta_model",
+  "frozen_environment": {
+   "python": "3.13.14",
+   "lightgbm": "4.7.0",
+   "numpy": "2.5.1",
+   "pandas": "3.0.5",
+   "pyarrow": "25.0.1",
+   "numerai_tools": "0.6.0",
+   "psutil": "7.2.2"
+  }
  },
  "documented_benchmark_construction": {
   "source": "numerai/docs @ numerai-tournament/models.md",
@@ -199,7 +236,11 @@
   },
   "P2_DEEP_PROFILE": {
    "identifier": "P2_DEEP_PROFILE",
-   "executable_only_when": "a valid P1 screen artifact exists AND records KP35_P1_SCREEN_FAILED_P2_AUTHORIZABLE",
+   "executable_only_when": "a valid, canonically located P1 result envelope records one of ['KP35_P1_CONFIRMATION_FAILED_P2_AUTHORIZABLE', 'KP35_P1_SCREEN_FAILED_P2_AUTHORIZABLE'] -- either the P1 screen failure or the P1 confirmation failure that leaves the documented deep profile untested",
+   "authorizing_states": [
+    "KP35_P1_CONFIRMATION_FAILED_P2_AUTHORIZABLE",
+    "KP35_P1_SCREEN_FAILED_P2_AUTHORIZABLE"
+   ],
    "identical_to_p1": [
     "target",
     "feature list",
@@ -216,7 +257,7 @@
     "evaluator",
     "output semantics"
    ],
-   "sample_reuse_law": "P2 must reuse the exact P1 sample selection, proven by comparing the canonical sample SHA-256 and the parameter-independent sample identity. Regenerating an allegedly equivalent sample without comparing identities is refused.",
+   "sample_reuse_law": "P2 must reuse the exact P1 sample selection, proven by comparing the complete sample custody envelope -- canonical SHA-256, parameter-independent identity, row counts, source split and per-era counts. Regenerating an allegedly equivalent sample is refused.",
    "lightgbm_profile": {
     "name": "DOCUMENTED_V5_DEEP",
     "objective": "regression",
@@ -263,7 +304,8 @@
      30000
     ]
    },
-   "screen_threshold_same_as_p1": true
+   "screen_threshold_same_as_p1": true,
+   "not_a_post_result_rescue": "P2 after a P1 confirmation failure is preregistered here before any KP35 score exists, and is required to answer the already frozen 'either mismatch' question."
   }
  },
  "scoring": {
@@ -293,7 +335,8 @@
    "sharpe",
    "weighted_score"
   ],
-  "ender60_role": "auxiliary only; the combined value is the HYPOTHETICAL_CUTOVER_WEIGHTED_DIAGNOSTIC; it has no input path to any KP35 decision function"
+  "ender60_role": "auxiliary only; the combined value is the HYPOTHETICAL_CUTOVER_WEIGHTED_DIAGNOSTIC; it has no input path to any KP35 decision function",
+  "non_finite_discipline": "every scalar that can move the state machine passes through assert_finite_scalar first; a NaN or infinity raises before a terminal state exists and never becomes a screen or confirmation failure"
  },
  "screen_law": {
   "frozen_benchmark_mean_corr": 0.02094843151562169,
@@ -305,8 +348,10 @@
   "screen_threshold": 0.014150665488802451,
   "law": "seed42_corr >= 0.6755 * benchmark_mean_corr",
   "screening_seed": 42,
-  "pass_means": "KP35_P1_SCREEN_PASSED_AWAITING_CONFIRMATION",
-  "fail_means": "KP35_P1_SCREEN_FAILED_P2_AUTHORIZABLE",
+  "p1_pass_means": "KP35_P1_SCREEN_PASSED_AWAITING_CONFIRMATION",
+  "p1_fail_means": "KP35_P1_SCREEN_FAILED_P2_AUTHORIZABLE",
+  "p2_pass_means": "KP35_P2_SCREEN_PASSED_AWAITING_CONFIRMATION",
+  "p2_fail_means": "KP35_PARITY_NOT_RESTORED_BY_PROVEN_MISMATCHES",
   "pass_is_not": [
    "final parity",
    "model promotion",
@@ -332,47 +377,212 @@
    "rationale": "seed 42 is the seed selection was performed on; the two seeds that took no part in selection must clear the same bar independently"
   },
   "both_required": true,
-  "terminal_states": [
-   "KP35_PARITY_BACKBONE_CONFIRMED",
-   "KP35_SCREEN_PASS_CONFIRMATION_FAILED"
-  ],
+  "stage_specific_outcomes": {
+   "P1_HISTORY_BOUNDARY_1084": {
+    "pass": "KP35_PARITY_BACKBONE_CONFIRMED",
+    "fail": "KP35_P1_CONFIRMATION_FAILED_P2_AUTHORIZABLE"
+   },
+   "P2_DEEP_PROFILE": {
+    "pass": "KP35_PARITY_BACKBONE_CONFIRMED",
+    "fail": "KP35_P2_SCREEN_PASS_CONFIRMATION_FAILED"
+   }
+  },
+  "p1_confirmation_failure_authorizes_p2": true,
+  "cohort_rule": "every individual fit must match the frozen recipe AND the cohort must differ only by the model seed",
   "non_selecting": "No weighted-score, MMC, Ender60, bootstrap, recent-window, or risk statistic may change the parity decision. Those quantities are reported diagnostically; parity selection uses CORR only."
  },
  "terminal_states": {
   "all": [
    "KP35_P1_SCREEN_PASSED_AWAITING_CONFIRMATION",
    "KP35_P1_SCREEN_FAILED_P2_AUTHORIZABLE",
+   "KP35_P1_CONFIRMATION_FAILED_P2_AUTHORIZABLE",
    "KP35_P2_SCREEN_PASSED_AWAITING_CONFIRMATION",
    "KP35_PARITY_NOT_RESTORED_BY_PROVEN_MISMATCHES",
-   "KP35_PARITY_BACKBONE_CONFIRMED",
-   "KP35_SCREEN_PASS_CONFIRMATION_FAILED"
+   "KP35_P2_SCREEN_PASS_CONFIRMATION_FAILED",
+   "KP35_PARITY_BACKBONE_CONFIRMED"
   ],
   "absorbing": [
+   "KP35_P2_SCREEN_PASS_CONFIRMATION_FAILED",
    "KP35_PARITY_BACKBONE_CONFIRMED",
-   "KP35_PARITY_NOT_RESTORED_BY_PROVEN_MISMATCHES",
-   "KP35_SCREEN_PASS_CONFIRMATION_FAILED"
+   "KP35_PARITY_NOT_RESTORED_BY_PROVEN_MISMATCHES"
+  ],
+  "p2_authorizing": [
+   "KP35_P1_CONFIRMATION_FAILED_P2_AUTHORIZABLE",
+   "KP35_P1_SCREEN_FAILED_P2_AUTHORIZABLE"
   ],
   "forward_transitions": {
    "KP35_SOURCE_FROZEN_AWAITING_INDEPENDENT_REVIEW": [
     "KP35_P1_SCREEN_FAILED_P2_AUTHORIZABLE",
     "KP35_P1_SCREEN_PASSED_AWAITING_CONFIRMATION"
    ],
+   "KP35_P1_SCREEN_PASSED_AWAITING_CONFIRMATION": [
+    "KP35_P1_CONFIRMATION_FAILED_P2_AUTHORIZABLE",
+    "KP35_PARITY_BACKBONE_CONFIRMED"
+   ],
    "KP35_P1_SCREEN_FAILED_P2_AUTHORIZABLE": [
     "KP35_P2_SCREEN_PASSED_AWAITING_CONFIRMATION",
     "KP35_PARITY_NOT_RESTORED_BY_PROVEN_MISMATCHES"
    ],
-   "KP35_P1_SCREEN_PASSED_AWAITING_CONFIRMATION": [
-    "KP35_PARITY_BACKBONE_CONFIRMED",
-    "KP35_SCREEN_PASS_CONFIRMATION_FAILED"
+   "KP35_P1_CONFIRMATION_FAILED_P2_AUTHORIZABLE": [
+    "KP35_P2_SCREEN_PASSED_AWAITING_CONFIRMATION",
+    "KP35_PARITY_NOT_RESTORED_BY_PROVEN_MISMATCHES"
    ],
    "KP35_P2_SCREEN_PASSED_AWAITING_CONFIRMATION": [
-    "KP35_PARITY_BACKBONE_CONFIRMED",
-    "KP35_SCREEN_PASS_CONFIRMATION_FAILED"
+    "KP35_P2_SCREEN_PASS_CONFIRMATION_FAILED",
+    "KP35_PARITY_BACKBONE_CONFIRMED"
    ],
    "KP35_PARITY_NOT_RESTORED_BY_PROVEN_MISMATCHES": [],
    "KP35_PARITY_BACKBONE_CONFIRMED": [],
-   "KP35_SCREEN_PASS_CONFIRMATION_FAILED": []
+   "KP35_P2_SCREEN_PASS_CONFIRMATION_FAILED": []
+  },
+  "stage_screen_states": {
+   "P1_HISTORY_BOUNDARY_1084": [
+    "KP35_P1_SCREEN_PASSED_AWAITING_CONFIRMATION",
+    "KP35_P1_SCREEN_FAILED_P2_AUTHORIZABLE"
+   ],
+   "P2_DEEP_PROFILE": [
+    "KP35_P2_SCREEN_PASSED_AWAITING_CONFIRMATION",
+    "KP35_PARITY_NOT_RESTORED_BY_PROVEN_MISMATCHES"
+   ]
+  },
+  "stage_confirmation_states": {
+   "P1_HISTORY_BOUNDARY_1084": [
+    "KP35_PARITY_BACKBONE_CONFIRMED",
+    "KP35_P1_CONFIRMATION_FAILED_P2_AUTHORIZABLE"
+   ],
+   "P2_DEEP_PROFILE": [
+    "KP35_PARITY_BACKBONE_CONFIRMED",
+    "KP35_P2_SCREEN_PASS_CONFIRMATION_FAILED"
+   ]
   }
+ },
+ "prior_result_authority": {
+  "principle": "An arbitrary JSON file containing a plausible terminal_state never authorizes P2 screening, P1 confirmation, P2 confirmation, or any later fit. A prior result is validated as a complete KP35 result envelope at its canonical path under the same --out-root.",
+  "canonical_paths": {
+   "P1_HISTORY_BOUNDARY_1084:screen": [],
+   "P1_HISTORY_BOUNDARY_1084:confirmation": [
+    "results/P1_HISTORY_BOUNDARY_1084_screen.json"
+   ],
+   "P2_DEEP_PROFILE:screen": [
+    "results/P1_HISTORY_BOUNDARY_1084_screen.json",
+    "results/P1_HISTORY_BOUNDARY_1084_confirmation.json"
+   ],
+   "P2_DEEP_PROFILE:confirmation": [
+    "results/P2_DEEP_PROFILE_screen.json"
+   ]
+  },
+  "requirements": {
+   "P1_HISTORY_BOUNDARY_1084:screen": [],
+   "P1_HISTORY_BOUNDARY_1084:confirmation": [
+    {
+     "relpath": "results/P1_HISTORY_BOUNDARY_1084_screen.json",
+     "record": "kp35_screen_result",
+     "mode": "screen",
+     "stage": "P1_HISTORY_BOUNDARY_1084",
+     "terminal_state": "KP35_P1_SCREEN_PASSED_AWAITING_CONFIRMATION"
+    }
+   ],
+   "P2_DEEP_PROFILE:screen": [
+    {
+     "relpath": "results/P1_HISTORY_BOUNDARY_1084_screen.json",
+     "record": "kp35_screen_result",
+     "mode": "screen",
+     "stage": "P1_HISTORY_BOUNDARY_1084",
+     "terminal_state": "KP35_P1_SCREEN_FAILED_P2_AUTHORIZABLE"
+    },
+    {
+     "relpath": "results/P1_HISTORY_BOUNDARY_1084_confirmation.json",
+     "record": "kp35_confirmation_result",
+     "mode": "confirmation",
+     "stage": "P1_HISTORY_BOUNDARY_1084",
+     "terminal_state": "KP35_P1_CONFIRMATION_FAILED_P2_AUTHORIZABLE"
+    }
+   ],
+   "P2_DEEP_PROFILE:confirmation": [
+    {
+     "relpath": "results/P2_DEEP_PROFILE_screen.json",
+     "record": "kp35_screen_result",
+     "mode": "screen",
+     "stage": "P2_DEEP_PROFILE",
+     "terminal_state": "KP35_P2_SCREEN_PASSED_AWAITING_CONFIRMATION"
+    }
+   ]
+  },
+  "result_envelope_required_fields": [
+   "record",
+   "mode",
+   "stage",
+   "terminal_state",
+   "prior_state",
+   "protocol_semantic_sha256",
+   "benchmark",
+   "scoring_universe",
+   "sample_custody",
+   "fit_provenance",
+   "authorizes_next_fit"
+  ],
+  "validated_properties": [
+   "canonical expected path under the same --out-root",
+   "exact record type",
+   "exact mode",
+   "exact stage",
+   "exact terminal state",
+   "exact predecessor state and a legal forward transition",
+   "exact protocol semantic SHA-256",
+   "exact frozen benchmark value and tolerance",
+   "exact scoring-universe row count and canonical hash",
+   "exact sample identity and sample canonical hash",
+   "exact required fit-log references",
+   "exact prediction SHA references",
+   "no missing required field",
+   "no contradictory stage, mode, seed or state",
+   "no unexpected predecessor transition"
+  ],
+  "phases": [
+   "phase 1: validate the prior envelope before loading model features",
+   "phase 2: after loading the frozen sample manifest, prove the prior result references the same sample identity"
+  ],
+  "human_authorization_still_required": "A valid artifact is a necessary condition, never a sufficient one. A separate human execution authorization is required and nothing auto-runs."
+ },
+ "fit_provenance": {
+  "required_fit_log_fields": [
+   "record",
+   "stage",
+   "model_seed",
+   "role",
+   "attempt",
+   "payout_target",
+   "feature_set",
+   "n_features",
+   "feature_list_sha256",
+   "profile_name",
+   "num_trees",
+   "params",
+   "params_sha256",
+   "protocol_semantic_sha256",
+   "data_identities",
+   "sample_identity_sha256",
+   "sample_canon_sha256",
+   "rows_before_sampling",
+   "rows_after_sampling",
+   "source_split_rows",
+   "selected_rows_per_era",
+   "eligible_era_range",
+   "n_eligible_eras",
+   "scored_eras",
+   "no_early_stopping",
+   "no_evaluation_set",
+   "model_artifact_written",
+   "exit_status",
+   "prediction_rows",
+   "prediction_sha256",
+   "prediction_canon_sha256"
+  ],
+  "independent_reconstruction": "the evaluator recomputes the profile, the exact LightGBM parameter dictionary and its digest from the frozen stage recipe, compares the sample fields against the separately loaded external manifest, and compares the prediction file's actual SHA-256 and actual (era,id) universe against the log",
+  "one_seed_screen_rule": "for a one-seed screen there is no second seed to compare against, so the frozen stage recipe is the reference; the log is never trusted on its own",
+  "confirmation_rule": "every individual fit must match the frozen recipe AND the cohort must differ only by the model seed",
+  "data_identities_revalidated_by_evaluator": true,
+  "sample_manifest_loaded_and_validated_by_evaluator": true
  },
  "exact_row_contract": {
   "repairs": "the prospective KW33 source-contract gap, without altering any merged Round-1 file",
@@ -462,6 +672,46 @@
    "profile",
    "stage"
   ],
+  "custody_envelope_fields": [
+   "data_identities",
+   "eligible_era_range",
+   "n_eligible_eras",
+   "feature_set",
+   "feature_list_sha256",
+   "n_features",
+   "sampling_law_version",
+   "sampling_seed",
+   "row_cap",
+   "rows_before_sampling",
+   "selected_row_count",
+   "selected_rows_per_era",
+   "source_split_rows",
+   "sample_canon_sha256",
+   "sample_identity_sha256"
+  ],
+  "frozen_sample": {
+   "eligible_era_range": [
+    "0001",
+    "1084"
+   ],
+   "n_eligible_eras": 1084,
+   "rows_before_sampling": 5890287,
+   "selected_row_count": 1000000,
+   "source_split_rows": {
+    "train": 529780,
+    "validation": 470220
+   },
+   "sample_canon_sha256": "e555e848770f4acd276020aca833541e8b0702a2f1b7c3ebc8068b657d101350",
+   "sampling_seed": 20260817,
+   "row_cap": 1000000,
+   "sampling_law_version": "kw33_era_balanced_v1",
+   "feature_set": "medium",
+   "feature_list_sha256": "dd03cd099eb2c2283786eb123fe13a374460251b49f4717ec5ad34cabede80ba",
+   "n_features": 780
+  },
+  "enforcement": "before any LightGBM call the freshly computed manifest must reproduce every frozen value; a mismatch is an infrastructure, data, or implementation stop and is NOT a model result",
+  "reload_rule": "when an existing manifest is loaded the complete custody envelope is compared, not merely two hash fields",
+  "evaluator_validates_independently": true,
   "external_root": "D:/numerai-data/keystone28/round2-parity",
   "outside_git": true,
   "p1_and_p2_share_one_identity": true,
@@ -489,6 +739,77 @@
    "no automatic stage chaining"
   ],
   "atomic_replace": "permitted for first-time artifact creation only; a final path is never replaced"
+ },
+ "attempt_law": {
+  "normal_invocation": 1,
+  "retry_invocation": 2,
+  "max_attempts": 2,
+  "no_third_attempt": true,
+  "failure_paths": {
+   "attempt1": "failures/P1_HISTORY_BOUNDARY_1084_seed42_attempt1.json",
+   "attempt2": "failures/P1_HISTORY_BOUNDARY_1084_seed42_attempt2.json"
+  },
+  "posture_derived_from_artifacts": "no caller supplies a constant retry count; the attempt posture is read from which artifacts exist on disk",
+  "normal_preconditions": [
+   "no completed prediction",
+   "no success log",
+   "no attempt-1 failure",
+   "no attempt-2 failure"
+  ],
+  "retry_preconditions": [
+   "no completed prediction",
+   "no success log",
+   "a valid attempt-1 failure record exists",
+   "the attempt-1 failure record matches the exact stage, seed, protocol, parameters, data and sample identity",
+   "no attempt-2 failure exists"
+  ],
+  "successful_retry_log_records": [
+   "attempt = 2",
+   "exact retry_of path",
+   "SHA-256 of the attempt-1 failure record",
+   "unchanged stage",
+   "unchanged seed",
+   "unchanged protocol",
+   "unchanged parameters",
+   "unchanged data",
+   "unchanged sample identity"
+  ],
+  "second_failure_preserved_separately": true
+ },
+ "authority_snapshot": {
+  "retrieved_utc": "2026-08-19T03:10:55+00:00",
+  "round_number": 1335,
+  "payout_target": "target_ender_20",
+  "corr_config": {
+   "name": "correlation",
+   "display_name": "v2_corr20",
+   "version": "6",
+   "multiplier": 0.75,
+   "is_payout": true
+  },
+  "mmc_config": {
+   "name": "meta_model_contribution",
+   "display_name": "mmc",
+   "version": "5",
+   "multiplier": 2.25,
+   "is_payout": true
+  },
+  "ender60_payout_active": false,
+  "ender60_note": "corr60 v3 and mmc60 v3 are isPayout false with multiplier 0.0; no Ender60 payout cutover has occurred",
+  "dataset_version": "v5.3",
+  "query": "query { rounds(tournament: 8, number: 1335) { number openTime closeTime target v3Staking payoutFactor roundScoreConfigs { name displayName version isPayout defaultMultiplier minMultiplier maxMultiplier totalScoreDays returnsLagDays roundNumberStart } } }",
+  "docs_commit": "5bf294adbac78d0cde497a7d1589694ee9951169",
+  "live_revalidation_required_before_p1": true
+ },
+ "authority_binding": {
+  "validated_locally": [
+   "payout target",
+   "CORR multiplier",
+   "MMC multiplier",
+   "Meta Model column"
+  ],
+  "no_network_client_in_packet": true,
+  "live_revalidation_before_p1_is_mandatory": "The future execution assignment must independently revalidate live public Numerai authority immediately before P1. The snapshot recorded here is dated evidence, not a substitute."
  },
  "data_identities": {
   "features.json": {
@@ -523,15 +844,25 @@
  "data_root": "D:/numerai-data/keystone28/v5.3",
  "external_output_root": "D:/numerai-data/keystone28/round2-parity",
  "environment": {
-  "python": "3.13.14 (venv D:/numerai-data/venv-ka28)",
-  "lightgbm": "4.7.0 (PyPI CPU wheel)",
-  "numpy": "2.5.1",
-  "pandas": "3.0.5",
-  "pyarrow": "25.0.1",
-  "scipy": "1.18.0",
-  "scikit_learn": "1.9.0",
-  "numerai_tools": "0.6.0",
-  "psutil": "7.2.2",
+  "frozen": {
+   "python": "3.13.14",
+   "lightgbm": "4.7.0",
+   "numpy": "2.5.1",
+   "pandas": "3.0.5",
+   "pyarrow": "25.0.1",
+   "numerai_tools": "0.6.0",
+   "psutil": "7.2.2"
+  },
+  "score_producing_packages": [
+   "python",
+   "numpy",
+   "pandas",
+   "numerai_tools"
+  ],
+  "verified_before_training": true,
+  "verified_by_evaluator": true,
+  "mismatch_is_a_stop": true,
+  "venv": "D:/numerai-data/venv-ka28",
   "cpu": "AMD EPYC 7543P slice: 4 cores / 8 logical",
   "ram_gb_total": 28.0,
   "gpu": "present but UNUSED: no GPU-enabled LightGBM available; CPU deterministic training only"
@@ -552,5 +883,5 @@
    "note": "seed-42 artifact reused, never rerun"
   }
  },
- "prohibitions": "No GAP 1223-1230 or HOLDOUT >=1231 row for training, scoring, metrics, or selection; no bare `target` alias; no early stopping; no evaluation set; no Candidate-V stage; no P3 rescue in this gate; no automatic stage chaining; no parameter or authority change after a result is seen; no model artifact written unless a future execution protocol explicitly requires one; no upload, model creation, submission, staking, deployment, or Numerai account action."
+ "prohibitions": "No GAP 1223-1230 or HOLDOUT >=1231 row for training, scoring, metrics, or selection; no bare `target` alias; no early stopping; no evaluation set; no Candidate-V stage; no P3 rescue in this gate; no feature expansion; no row-budget expansion; no automatic stage chaining; no parameter or authority change after a result is seen; no model artifact written unless a future execution protocol explicitly requires one; no upload, model creation, submission, staking, deployment, or Numerai account action."
 }

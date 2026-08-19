@@ -20,10 +20,10 @@
 # Two jobs, one contract each:
 #   * `portable-source-contract` (ubuntu-24.04): in-memory compile of the
 #     whole `numerai/agents` tree plus the seven platform-portable
-#     source-contract test modules (170 tests, including the 32-test
+#     source-contract test modules (238 tests, including the 32-test
 #     Keystone Round-0 scoring-harness suite added under SC32 review
 #     4952411743, the 24-test Keystone Round-1 walk-forward suite, and
-#     the 76-test Keystone KP35 parity-ladder suite).
+#     the 144-test Keystone KP35 parity-ladder suite).
 #   * `windows-terminal-custody-contract` (windows-2022): the complete,
 #     unmodified Ender26 and Ender27 archived evaluator custody suites
 #     (38 tests). Those terminal packets were governed and executed on
