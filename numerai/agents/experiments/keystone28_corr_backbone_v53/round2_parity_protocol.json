@@ -1,0 +1,556 @@
+{
+ "record": "keystone35_round2_parity_protocol",
+ "gate": "KP35_KEYSTONE_PARITY_LADDER_SOURCE_FREEZE",
+ "frozen_utc": "2026-08-19T03:10:55+00:00",
+ "base_commit": "f247bcc0ddff6352b8b933d6d1192df590ef2330",
+ "predecessor": {
+  "round1_terminal_state": "STOPPED_AT_KW33_PIPELINE_PARITY_FAILURE",
+  "merged_pull_request": 33,
+  "merge_parents": [
+   "dcacb0a3b78d718f059891138ea36f5c065a8a79",
+   "ad1b6a56067dee56ecb296eef3eec560eef9e28f"
+  ],
+  "kw33_control_t_parity_fraction": 0.317475
+ },
+ "primary_question": "Can either the documented benchmark information boundary or the documented v5 deep LightGBM profile restore a static Keystone CONTROL backbone to benchmark-plausible CORR on eras 1133-1219?",
+ "scope": {
+  "kind": "parity calibration only",
+  "ladder": [
+   "P1_HISTORY_BOUNDARY_1084",
+   "P2_DEEP_PROFILE"
+  ],
+  "does_not_test": [
+   "Candidate-V",
+   "validation recency promotion",
+   "MMC specialist models",
+   "feature ensembles",
+   "target ensembles",
+   "blending",
+   "deployment",
+   "live performance"
+  ],
+  "if_both_stages_fail": "If both P1 and P2 fail, the experiment ends. Feature-universe and row-budget expansion require a later, separately reviewed gate.",
+  "no_p3_rescue_in_this_gate": true,
+  "no_return_to_candidate_v": "No return to Candidate-V is authorized by source freeze or even by a future parity pass. A separately reviewed recency experiment is required."
+ },
+ "payout_target": "target_ender_20",
+ "feature_set": "medium",
+ "feature_list_sha256": "dd03cd099eb2c2283786eb123fe13a374460251b49f4717ec5ad34cabede80ba",
+ "n_features": 780,
+ "frozen_constants": {
+  "score_zone": [
+   "1133",
+   "1219"
+  ],
+  "n_score_eras": 87,
+  "scoring_universe_rows": 575597,
+  "scoring_universe_canon_sha256": "91e519aff5c656c9acf7cc6fe74daebfc034650bae47ee4e3889a98ec8fac033",
+  "benchmark_chunk": [
+   1093,
+   1248
+  ],
+  "purge": [
+   1085,
+   1092
+  ],
+  "history_boundary_end": 1084,
+  "gap": [
+   1223,
+   1230
+  ],
+  "holdout_start": 1231,
+  "payout_target": "target_ender_20",
+  "feature_set": "medium",
+  "n_features": 780,
+  "feature_list_sha256": "dd03cd099eb2c2283786eb123fe13a374460251b49f4717ec5ad34cabede80ba",
+  "sampling_seed": 20260817,
+  "sampling_law_version": "kw33_era_balanced_v1",
+  "max_sampled_rows": 1000000,
+  "screening_seed": 42,
+  "confirmation_seeds": [
+   1337,
+   2024
+  ],
+  "benchmark_mean_corr": 0.02094843151562169,
+  "benchmark_mean_corr_tolerance": 1e-12,
+  "screen_factor": 0.6755,
+  "screen_threshold": 0.014150665488802451,
+  "final_parity_fraction": 0.7,
+  "final_three_seed_threshold": 0.014663902060935183,
+  "untouched_pair_threshold": 0.014663902060935183,
+  "stages": [
+   "P1_HISTORY_BOUNDARY_1084",
+   "P2_DEEP_PROFILE"
+  ]
+ },
+ "documented_benchmark_construction": {
+  "source": "numerai/docs @ numerai-tournament/models.md",
+  "chunk_eras": 156,
+  "purge_eras_20d": 8,
+  "purge_eras_60d": 16,
+  "window_law": "window n trains 1..148+156*(n-1); purges the next 8; predicts 157+156*(n-1)..312+156*(n-1)",
+  "window_containing_score_zone": {
+   "window": 7,
+   "train_end": 1084,
+   "purge_start": 1085,
+   "purge_end": 1092,
+   "predict_start": 1093,
+   "predict_end": 1248
+  },
+  "naming_formula": "{data_version}_LGBM_{target} -> v53_lgbm_ender20 = v5.3 data, ender-20 target",
+  "authority_class": [
+   "PUBLISHED_V5_BENCHMARK_WALKFORWARD_AND_DEEP_PROFILE_PROVEN",
+   "EXACT_V53_LGBM_ENDER20_FULL_RECIPE_NOT_PROVEN"
+  ],
+  "unbound_factors": [
+   "exact feature subset",
+   "exact row policy",
+   "implementation seed",
+   "model-specific preprocessing",
+   "exact code/artifact identity"
+  ]
+ },
+ "stages": {
+  "P1_HISTORY_BOUNDARY_1084": {
+   "identifier": "P1_HISTORY_BOUNDARY_1084",
+   "procedure": "static CONTROL",
+   "model_seed": 42,
+   "target": "target_ender_20",
+   "feature_set": "medium",
+   "n_features": 780,
+   "feature_list_sha256": "dd03cd099eb2c2283786eb123fe13a374460251b49f4717ec5ad34cabede80ba",
+   "max_sampled_rows": 1000000,
+   "sampling_seed": 20260817,
+   "sampling_law_version": "kw33_era_balanced_v1",
+   "sampling_law": "deterministic era-balanced sampling: rows presented sorted by (era,id); if cohort <= cap take all; else equal per-era quota cap//n_eras with per-era fixed permutations from SeedSequence([20260817, int(era)]), remainder granted in ascending era order; invariant across model seeds and model profiles (round2_parity_lib.era_balanced_sample_positions, reproduced verbatim from the frozen KW33 law)",
+   "lightgbm_profile": {
+    "name": "FALLBACK",
+    "objective": "regression",
+    "num_trees": 6000,
+    "learning_rate": 0.005,
+    "max_depth": 8,
+    "num_leaves": 255,
+    "min_data_in_leaf": 10000,
+    "feature_fraction": 0.1,
+    "num_threads": 8,
+    "deterministic": true,
+    "force_row_wise": true,
+    "device": "cpu",
+    "no_early_stopping": true,
+    "no_evaluation_set": true
+   },
+   "eligible_training_data": {
+    "train.parquet": [
+     "0001",
+     "0574"
+    ],
+    "resolved_validation_history": [
+     "0575",
+     "1084"
+    ]
+   },
+   "explicitly_excluded": {
+    "purge": [
+     "1085",
+     "1092"
+    ],
+    "benchmark_prediction_chunk": [
+     "1093",
+     "1248"
+    ],
+    "gap": [
+     "1223",
+     "1230"
+    ],
+    "holdout": [
+     "1231",
+     "and later"
+    ]
+   },
+   "sole_configured_change_from_kw33_control_t": "the eligible training-history endpoint (0574 -> 1084)",
+   "honest_composition_statement": "Because the one-million-row cap remains fixed, this configuration mechanically changes the sampled era composition and REPLACES some original train rows with history rows. P1 is NOT a pure additive-data experiment. Keys-only audit at source freeze: 1,084 eligible eras; 5,890,287 rows before sampling; per-era quota 922 (take 922-1,474); sample = 529,780 train rows (52.978%) + 470,220 validation rows (47.022%).",
+   "keys_only_composition_audit": {
+    "non_scientific": true,
+    "stage": "P1_HISTORY_BOUNDARY_1084",
+    "eligible_era_range": [
+     "0001",
+     "1084"
+    ],
+    "n_eligible_eras": 1084,
+    "rows_before_sampling": 5890287,
+    "rows_after_sampling": 1000000,
+    "nominal_quota": 922,
+    "per_era_take_min": 922,
+    "per_era_take_max": 1474,
+    "sampled_from_train": 529780,
+    "sampled_from_validation": 470220,
+    "train_share_pct": 52.978,
+    "sample_canon_sha256": "e555e848770f4acd276020aca833541e8b0702a2f1b7c3ebc8068b657d101350",
+    "sampling_seed": 20260817,
+    "row_cap": 1000000,
+    "kp34_audit3_claim": {
+     "rows_before_sampling": 5890287,
+     "nominal_quota": 922,
+     "sampled_from_train": 529780,
+     "sampled_from_validation": 470220
+    },
+    "reproduces_kp34_audit3": true
+   }
+  },
+  "P2_DEEP_PROFILE": {
+   "identifier": "P2_DEEP_PROFILE",
+   "executable_only_when": "a valid P1 screen artifact exists AND records KP35_P1_SCREEN_FAILED_P2_AUTHORIZABLE",
+   "identical_to_p1": [
+    "target",
+    "feature list",
+    "feature count",
+    "training-era boundary",
+    "purge",
+    "score zone",
+    "row cap",
+    "sampling seed",
+    "exact sampled (era,id) universe",
+    "model seed 42",
+    "scoring universe",
+    "benchmark reference",
+    "evaluator",
+    "output semantics"
+   ],
+   "sample_reuse_law": "P2 must reuse the exact P1 sample selection, proven by comparing the canonical sample SHA-256 and the parameter-independent sample identity. Regenerating an allegedly equivalent sample without comparing identities is refused.",
+   "lightgbm_profile": {
+    "name": "DOCUMENTED_V5_DEEP",
+    "objective": "regression",
+    "num_trees": 30000,
+    "learning_rate": 0.001,
+    "max_depth": 10,
+    "num_leaves": 1024,
+    "min_data_in_leaf": 10000,
+    "feature_fraction": 0.1,
+    "num_threads": 8,
+    "deterministic": true,
+    "force_row_wise": true,
+    "device": "cpu",
+    "no_early_stopping": true,
+    "no_evaluation_set": true
+   },
+   "only_model_change": "the documented v5 deep profile",
+   "declared_difference_fields": [
+    "learning_rate",
+    "max_depth",
+    "name",
+    "num_leaves",
+    "num_trees"
+   ],
+   "profile_difference": {
+    "learning_rate": [
+     0.005,
+     0.001
+    ],
+    "max_depth": [
+     8,
+     10
+    ],
+    "name": [
+     "FALLBACK",
+     "DOCUMENTED_V5_DEEP"
+    ],
+    "num_leaves": [
+     255,
+     1024
+    ],
+    "num_trees": [
+     6000,
+     30000
+    ]
+   },
+   "screen_threshold_same_as_p1": true
+  }
+ },
+ "scoring": {
+  "eras": [
+   "1133",
+   "1219"
+  ],
+  "n_eras": 87,
+  "universe_rows": 575597,
+  "universe_canon_sha256": "91e519aff5c656c9acf7cc6fe74daebfc034650bae47ee4e3889a98ec8fac033",
+  "canonicalisation": "stable sort by (era,id); join 'era,id' with newline; utf-8; sha256",
+  "benchmark_reference": "v53_lgbm_ender20",
+  "benchmark_scored_on": "identical rows and eras as every candidate vector",
+  "harness": "agents.code.metrics.keystone_round0.score_round0 with ScoreAuthority.from_json(round0_score_authority.json)",
+  "official_metric_implementation": "numerai_tools 0.6.0 (pinned) - CORR and MMC are never rederived",
+  "screening_authority": "CORR",
+  "diagnostic_report_only": [
+   "benchmark_correlation",
+   "bmc",
+   "corr60",
+   "ender60",
+   "hypothetical_cutover_weighted_diagnostic",
+   "max_drawdown_zero_baseline",
+   "mmc",
+   "mmc60",
+   "recent_20",
+   "sharpe",
+   "weighted_score"
+  ],
+  "ender60_role": "auxiliary only; the combined value is the HYPOTHETICAL_CUTOVER_WEIGHTED_DIAGNOSTIC; it has no input path to any KP35 decision function"
+ },
+ "screen_law": {
+  "frozen_benchmark_mean_corr": 0.02094843151562169,
+  "benchmark_identity_tolerance": 1e-12,
+  "benchmark_identity_rule": "before any future scientific evaluation the benchmark mean CORR is recomputed from the published benchmark column on the identical rows and must equal the frozen value within the declared tolerance",
+  "seed_dispersion_allowance": 0.035,
+  "screen_factor": 0.6755,
+  "screen_factor_derivation": "0.70 * (1 - 0.0350) = 0.6755, from the worst KW33 CONTROL-T single-seed deviation (-3.50%, seed 2024)",
+  "screen_threshold": 0.014150665488802451,
+  "law": "seed42_corr >= 0.6755 * benchmark_mean_corr",
+  "screening_seed": 42,
+  "pass_means": "KP35_P1_SCREEN_PASSED_AWAITING_CONFIRMATION",
+  "fail_means": "KP35_P1_SCREEN_FAILED_P2_AUTHORIZABLE",
+  "pass_is_not": [
+   "final parity",
+   "model promotion",
+   "recency promotion",
+   "deployment authority"
+  ],
+  "no_automatic_chaining": "Do not automatically begin confirmation or P2 after evaluating P1. Each stage requires an explicit, separately reviewed invocation."
+ },
+ "confirmation_law": {
+  "reuse": "reuse the completed seed-42 artifact; never rerun a valid seed-42 fit",
+  "additional_seeds": [
+   1337,
+   2024
+  ],
+  "identical_recipe_and_sample_identity_required": true,
+  "gate_1_three_seed": {
+   "law": "mean(corr_42, corr_1337, corr_2024) >= 0.70 * benchmark_mean_corr",
+   "threshold": 0.014663902060935183
+  },
+  "gate_2_untouched_pair": {
+   "law": "mean(corr_1337, corr_2024) >= 0.70 * benchmark_mean_corr",
+   "threshold": 0.014663902060935183,
+   "rationale": "seed 42 is the seed selection was performed on; the two seeds that took no part in selection must clear the same bar independently"
+  },
+  "both_required": true,
+  "terminal_states": [
+   "KP35_PARITY_BACKBONE_CONFIRMED",
+   "KP35_SCREEN_PASS_CONFIRMATION_FAILED"
+  ],
+  "non_selecting": "No weighted-score, MMC, Ender60, bootstrap, recent-window, or risk statistic may change the parity decision. Those quantities are reported diagnostically; parity selection uses CORR only."
+ },
+ "terminal_states": {
+  "all": [
+   "KP35_P1_SCREEN_PASSED_AWAITING_CONFIRMATION",
+   "KP35_P1_SCREEN_FAILED_P2_AUTHORIZABLE",
+   "KP35_P2_SCREEN_PASSED_AWAITING_CONFIRMATION",
+   "KP35_PARITY_NOT_RESTORED_BY_PROVEN_MISMATCHES",
+   "KP35_PARITY_BACKBONE_CONFIRMED",
+   "KP35_SCREEN_PASS_CONFIRMATION_FAILED"
+  ],
+  "absorbing": [
+   "KP35_PARITY_BACKBONE_CONFIRMED",
+   "KP35_PARITY_NOT_RESTORED_BY_PROVEN_MISMATCHES",
+   "KP35_SCREEN_PASS_CONFIRMATION_FAILED"
+  ],
+  "forward_transitions": {
+   "KP35_SOURCE_FROZEN_AWAITING_INDEPENDENT_REVIEW": [
+    "KP35_P1_SCREEN_FAILED_P2_AUTHORIZABLE",
+    "KP35_P1_SCREEN_PASSED_AWAITING_CONFIRMATION"
+   ],
+   "KP35_P1_SCREEN_FAILED_P2_AUTHORIZABLE": [
+    "KP35_P2_SCREEN_PASSED_AWAITING_CONFIRMATION",
+    "KP35_PARITY_NOT_RESTORED_BY_PROVEN_MISMATCHES"
+   ],
+   "KP35_P1_SCREEN_PASSED_AWAITING_CONFIRMATION": [
+    "KP35_PARITY_BACKBONE_CONFIRMED",
+    "KP35_SCREEN_PASS_CONFIRMATION_FAILED"
+   ],
+   "KP35_P2_SCREEN_PASSED_AWAITING_CONFIRMATION": [
+    "KP35_PARITY_BACKBONE_CONFIRMED",
+    "KP35_SCREEN_PASS_CONFIRMATION_FAILED"
+   ],
+   "KP35_PARITY_NOT_RESTORED_BY_PROVEN_MISMATCHES": [],
+   "KP35_PARITY_BACKBONE_CONFIRMED": [],
+   "KP35_SCREEN_PASS_CONFIRMATION_FAILED": []
+  }
+ },
+ "exact_row_contract": {
+  "repairs": "the prospective KW33 source-contract gap, without altering any merged Round-1 file",
+  "applies_to": [
+   "prediction vector",
+   "scoring target frame",
+   "Meta Model frame",
+   "published Ender20 benchmark frame",
+   "published Ender60 benchmark frame when auxiliary diagnostics are loaded"
+  ],
+  "compares": [
+   "total rows",
+   "era set",
+   "per-era row counts",
+   "complete sorted (era,id) pairs",
+   "canonical SHA-256"
+  ],
+  "rejects": [
+   "any strict subset",
+   "any strict superset",
+   "any missing row",
+   "any extra row",
+   "any duplicate ID",
+   "any era disagreement",
+   "any row with an unexpected era",
+   "any non-finite prediction"
+  ],
+  "independent_recomputation_at_source_freeze": {
+   "frames": {
+    "validation.parquet": {
+     "rows": 575597,
+     "n_eras": 87,
+     "unique_ids": 575597,
+     "per_era_rows_min": 6057,
+     "per_era_rows_max": 7231,
+     "canon_sha256": "91e519aff5c656c9acf7cc6fe74daebfc034650bae47ee4e3889a98ec8fac033"
+    },
+    "meta_model.parquet": {
+     "rows": 575597,
+     "n_eras": 87,
+     "unique_ids": 575597,
+     "per_era_rows_min": 6057,
+     "per_era_rows_max": 7231,
+     "canon_sha256": "91e519aff5c656c9acf7cc6fe74daebfc034650bae47ee4e3889a98ec8fac033"
+    },
+    "validation_benchmark_models.parquet": {
+     "rows": 575597,
+     "n_eras": 87,
+     "unique_ids": 575597,
+     "per_era_rows_min": 6057,
+     "per_era_rows_max": 7231,
+     "canon_sha256": "91e519aff5c656c9acf7cc6fe74daebfc034650bae47ee4e3889a98ec8fac033"
+    }
+   },
+   "all_three_identical": true,
+   "canon_sha256": "91e519aff5c656c9acf7cc6fe74daebfc034650bae47ee4e3889a98ec8fac033",
+   "kp34_scratch_claim": "91e519aff5c656c9acf7cc6fe74daebfc034650bae47ee4e3889a98ec8fac033",
+   "reproduces_kp34_claim": true
+  }
+ },
+ "sample_custody": {
+  "required_fields": [
+   "record",
+   "data_identities",
+   "eligible_era_range",
+   "n_eligible_eras",
+   "feature_set",
+   "feature_list_sha256",
+   "n_features",
+   "sampling_law_version",
+   "sampling_seed",
+   "row_cap",
+   "rows_before_sampling",
+   "selected_row_count",
+   "selected_rows_per_era",
+   "source_split_rows",
+   "sample_canon_sha256",
+   "sample_identity_sha256"
+  ],
+  "identity_excludes": [
+   "learning_rate",
+   "max_depth",
+   "model_seed",
+   "num_leaves",
+   "num_trees",
+   "params_sha256",
+   "profile",
+   "stage"
+  ],
+  "external_root": "D:/numerai-data/keystone28/round2-parity",
+  "outside_git": true,
+  "p1_and_p2_share_one_identity": true,
+  "confirmation_seeds_share_the_recipe_specific_identity": true
+ },
+ "one_shot_artifact_law": {
+  "artifact_kinds": [
+   "prediction",
+   "fit_log",
+   "failure_record",
+   "screen_result",
+   "confirmation_result",
+   "sample_identity",
+   "final_report"
+  ],
+  "rules": [
+   "never overwrite a completed prediction",
+   "never rerun a completed fit",
+   "never overwrite a failed-attempt record",
+   "an infrastructural retry is permitted at most once",
+   "retry only when no valid prediction artifact exists",
+   "preserve the original failure",
+   "seed, stage, data, rows, parameters, and sample identity must remain unchanged",
+   "the evaluator must refuse a second invocation against an existing result path",
+   "no automatic stage chaining"
+  ],
+  "atomic_replace": "permitted for first-time artifact creation only; a final path is never replaced"
+ },
+ "data_identities": {
+  "features.json": {
+   "bytes": 387149,
+   "sha256": "27de6b598b0d479415dba8062d050fc190469776f9c905feea9ee3f2bdda3631"
+  },
+  "train.parquet": {
+   "bytes": 3296841026,
+   "sha256": "bae773ddd7eea6ed07c55d87b882cc061901abbb724972b2a630381417c328f8"
+  },
+  "train_benchmark_models.parquet": {
+   "bytes": 65045676,
+   "sha256": "5a8729941c481abe95236920663e1d3cb1140407cc743e3a7f71afbf78f80248"
+  },
+  "validation.parquet": {
+   "bytes": 5611121884,
+   "sha256": "8ed7859b707aee8e4d6c4476fb9ecb1123caa429311dbf9f45c574722c24fae6"
+  },
+  "validation_benchmark_models.parquet": {
+   "bytes": 126278375,
+   "sha256": "801876e33d643523b197980aa0a5f6af2585869eb44e390708cae47dd6a5aaf5"
+  },
+  "meta_model.parquet": {
+   "bytes": 13590154,
+   "sha256": "add541799bdf08043256f80afe9ddc9f3d294c96533f1041e3579aed4b98d6d6"
+  },
+  "validation_example_preds.parquet": {
+   "bytes": 97057487,
+   "sha256": "4bfd3ab7afa61c2638c756feb3f6d9e0b41d565cafe0b622b289711cec83c5e3"
+  }
+ },
+ "data_root": "D:/numerai-data/keystone28/v5.3",
+ "external_output_root": "D:/numerai-data/keystone28/round2-parity",
+ "environment": {
+  "python": "3.13.14 (venv D:/numerai-data/venv-ka28)",
+  "lightgbm": "4.7.0 (PyPI CPU wheel)",
+  "numpy": "2.5.1",
+  "pandas": "3.0.5",
+  "pyarrow": "25.0.1",
+  "scipy": "1.18.0",
+  "scikit_learn": "1.9.0",
+  "numerai_tools": "0.6.0",
+  "psutil": "7.2.2",
+  "cpu": "AMD EPYC 7543P slice: 4 cores / 8 logical",
+  "ram_gb_total": 28.0,
+  "gpu": "present but UNUSED: no GPU-enabled LightGBM available; CPU deterministic training only"
+ },
+ "expected_compute": {
+  "P1_HISTORY_BOUNDARY_1084": {
+   "runtime": "15-23 min",
+   "peak_ram": "~16.5 GB",
+   "basis": "18 KW33 fits of identical 1M x 780 shape ran 907-1,380 s at peak 16.53 GB"
+  },
+  "P2_DEEP_PROFILE": {
+   "runtime": "~2.7 h train + 10-20 min predict",
+   "peak_ram": "~17-19 GB",
+   "basis": "KW33 throughput probe measured 0.3212 s/tree at depth 10 / 1,024 leaves on this exact shape"
+  },
+  "confirmation": {
+   "runtime": "2 x winning-stage time (0.5-5.4 h)",
+   "note": "seed-42 artifact reused, never rerun"
+  }
+ },
+ "prohibitions": "No GAP 1223-1230 or HOLDOUT >=1231 row for training, scoring, metrics, or selection; no bare `target` alias; no early stopping; no evaluation set; no Candidate-V stage; no P3 rescue in this gate; no automatic stage chaining; no parameter or authority change after a result is seen; no model artifact written unless a future execution protocol explicitly requires one; no upload, model creation, submission, staking, deployment, or Numerai account action."
+}
