@@ -19,10 +19,11 @@
 #
 # Two jobs, one contract each:
 #   * `portable-source-contract` (ubuntu-24.04): in-memory compile of the
-#     whole `numerai/agents` tree plus the five platform-portable
-#     source-contract test modules (70 tests, including the 32-test
+#     whole `numerai/agents` tree plus the seven platform-portable
+#     source-contract test modules (238 tests, including the 32-test
 #     Keystone Round-0 scoring-harness suite added under SC32 review
-#     4952411743).
+#     4952411743, the 24-test Keystone Round-1 walk-forward suite, and
+#     the 144-test Keystone KP35 parity-ladder suite).
 #   * `windows-terminal-custody-contract` (windows-2022): the complete,
 #     unmodified Ender26 and Ender27 archived evaluator custody suites
 #     (38 tests). Those terminal packets were governed and executed on
@@ -101,7 +102,7 @@ jobs:
         # here: their frozen custody tests encode the Windows reservation
         # error envelope and run in the windows-terminal-custody-contract
         # job instead. See .github/ci/research-source-scope.md.
-        run: python -m unittest -v agents.tests.test_target_transforms agents.tests.test_ender22_evaluators agents.tests.test_ender23_protocol agents.tests.test_ender24_evaluator agents.tests.test_keystone28_round0_metrics
+        run: python -m unittest -v agents.tests.test_target_transforms agents.tests.test_ender22_evaluators agents.tests.test_ender23_protocol agents.tests.test_ender24_evaluator agents.tests.test_keystone28_round0_metrics agents.tests.test_keystone28_round1_walkforward agents.tests.test_keystone35_parity_ladder
 
   windows-terminal-custody-contract:
     name: "Windows terminal evaluator custody contracts"
